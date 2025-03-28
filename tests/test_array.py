@@ -11,14 +11,14 @@
 
 import pytest
 
-from earthkit.utils.testing import NO_CUPY
-from earthkit.utils.testing import NO_JAX
-from earthkit.utils.testing import NO_TORCH
 from earthkit.utils.array import _CUPY
 from earthkit.utils.array import _JAX
 from earthkit.utils.array import _NUMPY
 from earthkit.utils.array import _TORCH
 from earthkit.utils.array import get_backend
+from earthkit.utils.testing import NO_CUPY
+from earthkit.utils.testing import NO_JAX
+from earthkit.utils.testing import NO_TORCH
 
 """These tests are for the array backend utilities mostly used in other tests."""
 
@@ -56,7 +56,11 @@ def test_utils_array_backend_numpy():
 @pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
 def test_utils_array_backend_torch():
     b = get_backend("pytorch")
-    assert b.name == "pytorch"
+    assert b.name == "torch"
+    assert b is _TORCH
+
+    b = get_backend("torch")
+    assert b.name == "torch"
     assert b is _TORCH
 
     import numpy as np

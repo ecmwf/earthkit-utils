@@ -15,56 +15,134 @@ from functools import partial
 import array_api_compat
 
 
+def is_scalar(data):
+    return isinstance(data, (int, float)) or data is not data
+
+
 class ArrayBackend(metaclass=ABCMeta):
     name = None
     module_name = None
-
-    @property
-    def name(self):
-        return self._name
 
     @abstractmethod
     def _make_sample(self):
         return None
 
-    @property
+    @cached_property
     @abstractmethod
     def namespace(self):
+        """Return the patched array-api-compat namespace."""
         pass
 
     @cached_property
     @abstractmethod
     def raw_namespace(self):
+        """Return the original module namespace."""
+        pass
+
+    @cached_property
+    @abstractmethod
+    def compat_namespace(self):
+        """Return the array-api-compat namespace of the backend."""
         pass
 
     @abstractmethod
     def to_numpy(self, v):
+        """Convert an array to a numpy array."""
         pass
 
     @abstractmethod
     def from_numpy(self, v):
+        """Convert a numpy array to an array."""
         pass
 
     @abstractmethod
     def from_other(self, v, **kwargs):
+        """Convert an array-like object to an array."""
         pass
 
     @property
     @abstractmethod
     def dtypes(self):
+        """Return a dictionary of dtype classes."""
         pass
 
+    @cached_property
+    def float64(self):
+        """Return the float64 dtype class."""
+        return self.dtypes.get("float64")
+
+    @cached_property
+    def float32(self):
+        """Return the float32 dtype class."""
+        return self.dtypes.get("float32")
+
     def to_dtype(self, dtype):
+        """Return the dtype class from a string or dtype class."""
         if isinstance(dtype, str):
             return self.dtypes.get(dtype, None)
         return dtype
 
     def match_dtype(self, v, dtype):
+        """Return True if the dtype of an array matches the specified dtype."""
         if dtype is not None:
             dtype = self.to_dtype(dtype)
             f = v.dtype == dtype if dtype is not None else False
             return f
         return True
+
+    def astype(self, *args, **kwargs):
+        """Convert an array to a new dtype."""
+        return self.namespace.astype(*args, **kwargs)
+
+    def asarray(self, *data, **kwargs):
+        """Convert data to an array.
+
+        Parameters
+        ----------
+        data: tuple
+            The data to convert to an array.
+        kwargs: dict
+            Additional keyword arguments.
+
+        This method is a wrapper around the namespace.asarray method, which does
+        not work with scalars. It ensures that scalars are converted to arrays
+        with the correct dtype.
+        """
+        # TODO: add support for dtype
+        res = [self.namespace.asarray(d, **kwargs) for d in data]
+        # if "dtype" not in kwargs:
+        #     dtype = res[0].dtype
+        #     for i in range(1, len(res)):
+        #         res[i] = self.namespace.asarray(res[i], dtype=dtype)
+
+        r = res if len(res) > 1 else res[0]
+        return r
+
+    def allclose(self, *args, **kwargs):
+        """Return True if all arrays are equal within a tolerance.
+
+        This method is a wrapper around the namespace.asarray method. It ensures that
+        scalars are converted to arrays with the correct dtype.
+        """
+        if is_scalar(args[0]):
+            dtype = self.float64
+            v = [self.asarray(a, dtype=dtype) for a in args]
+        else:
+            v = args
+        return self.namespace.allclose(*v, **kwargs)
+
+    def isclose(self, *args, **kwargs):
+        """Return True if all arrays are equal within a tolerance.
+
+        This method is a wrapper around the namespace.isclose method. It ensures that
+        scalars are converted to arrays with the correct dtype.
+        """
+        if is_scalar(args[0]):
+            dtype = self.float64
+            v = [self.asarray(a, dtype=dtype) for a in args]
+        else:
+            v = args
+        return self.namespace.isclose(*v, **kwargs)
 
 
 class NumpyBackend(ArrayBackend):
@@ -85,6 +163,11 @@ class NumpyBackend(ArrayBackend):
         import earthkit.utils.namespace.numpy as xp
 
         return xp
+
+    @cached_property
+    def compat_namespace(self):
+        """Return the array-api-compat numpy namespace."""
+        return array_api_compat.numpy
 
     @cached_property
     def raw_namespace(self):
@@ -133,6 +216,11 @@ class TorchBackend(ArrayBackend):
         return xp
 
     @cached_property
+    def compat_namespace(self):
+        """Return the array-api-compat torch namespace."""
+        return array_api_compat.torch
+
+    @cached_property
     def raw_namespace(self):
         import torch
 
@@ -178,6 +266,11 @@ class CupyBackend(ArrayBackend):
         return xp
 
     @cached_property
+    def compat_namespace(self):
+        """Return the array-api-compat cupy namespace."""
+        return array_api_compat.cupy
+
+    @cached_property
     def raw_namespace(self):
         import cupy
 
@@ -215,12 +308,15 @@ class JaxBackend(ArrayBackend):
 
     @cached_property
     def namespace(self):
-        import jax.numpy as jarray
-
-        return jarray
+        """Return the of the array-api-compat jax namespace."""
+        return array_api_compat.array_namespace(self._make_sample())
 
     @cached_property
-    def namespace(self):
+    def compat_namespace(self):
+        return self.namespace
+
+    @cached_property
+    def raw_namespace(self):
         import jax.numpy as jarray
 
         return jarray
@@ -255,7 +351,7 @@ _BACKENDS = [_NUMPY, _TORCH, _CUPY, _JAX]
 _BACKENDS_BY_NAME = {v.name: v for v in _BACKENDS}
 _BACKENDS_BY_MODULE = {v.module_name: v for v in _BACKENDS}
 
-# add pytorch for backward compatibility
+# add pytorch name for backward compatibility
 _BACKENDS_BY_NAME["pytorch"] = _TORCH
 
 
