@@ -20,8 +20,6 @@ from earthkit.utils.testing import NO_CUPY
 from earthkit.utils.testing import NO_JAX
 from earthkit.utils.testing import NO_TORCH
 
-"""These tests are for the array backend utilities mostly used in other tests."""
-
 
 def test_utils_array_backend_numpy():
     b = get_backend("numpy")
@@ -42,6 +40,9 @@ def test_utils_array_backend_numpy():
     assert get_backend(np) is b
 
     assert np.isclose(b.namespace.mean(v), 1.0)
+    assert b.namespace.isclose(b.namespace.mean(v_lst), 1.0)
+    assert b.compat_namespace.isclose(b.compat_namespace.mean(v_lst), 1.0)
+    assert b.raw_namespace.isclose(b.raw_namespace.mean(v_lst), 1.0)
 
     if not NO_TORCH:
         import torch
@@ -73,6 +74,13 @@ def test_utils_array_backend_torch():
     assert torch.allclose(b.from_numpy(v_np), v)
     assert torch.allclose(b.from_other(v_lst, dtype=torch.float64), v)
     assert get_backend(v) is b
+
+    x = b.asarray(v_lst, dtype=b.float64)
+    ref = b.asarray(1.0, dtype=b.float64)
+    assert torch.isclose(b.namespace.mean(x), ref)
+    assert b.namespace.isclose(b.namespace.mean(x), ref)
+    assert b.compat_namespace.isclose(b.compat_namespace.mean(x), ref)
+    assert b.raw_namespace.isclose(b.raw_namespace.mean(x), ref)
 
     r = b.to_numpy(v)
     assert isinstance(r, np.ndarray)
@@ -133,6 +141,43 @@ def test_utils_array_backend_jax():
     assert np.allclose(r, v_np)
 
     assert np.isclose(b.namespace.mean(v), 1.0)
+
+
+def test_patched_namespace_numpy():
+    from earthkit.utils.array import get_backend
+
+    b = get_backend("numpy")
+    ns = b.namespace
+
+    c = ns.asarray([1.0, 2.0, 3.0])
+    x = ns.asarray([1.0, 2.0, 3.0])
+    assert ns.allclose(ns.polyval(c, x), ns.asarray([6.0, 17.0, 34.0]))
+
+    assert ns.allclose(ns.pow(c, 2), ns.asarray([1.0, 4.0, 9.0]))
+
+
+@pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
+def test_patched_namespace_torch():
+    from earthkit.utils.array import get_backend
+
+    b = get_backend("torch")
+    ns = b.namespace
+
+    # polyval
+    c = ns.asarray([1.0, 2.0, 3.0])
+    x = ns.asarray([1.0, 2.0, 3.0])
+    assert ns.allclose(ns.polyval(c, x), ns.asarray([6.0, 17.0, 34.0]))
+
+    # pow
+    assert ns.allclose(ns.pow(c, 2), ns.asarray([1.0, 4.0, 9.0]))
+
+    # percentile
+    x = ns.asarray([[10, 7, 4], [3, 2, 1]], dtype=ns.float64)
+    assert ns.allclose(ns.percentile(x, 50), ns.asarray(3.5, dtype=ns.float64))
+
+    # sign
+    x = ns.asarray([1.0, -2.4, ns.nan], dtype=ns.float64)
+    assert ns.allclose(ns.sign(x), ns.asarray([1.0, -1.0, ns.nan], dtype=ns.float64), equal_nan=True)
 
 
 if __name__ == "__main__":

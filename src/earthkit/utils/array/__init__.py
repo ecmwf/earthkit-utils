@@ -20,6 +20,14 @@ def is_scalar(data):
 
 
 class ArrayBackend(metaclass=ABCMeta):
+    """Abstract base class for array backends.
+
+    An ArrayBackend enables using different array libraries
+    (numpy, torch, cupy, jax) in a uniform way. It provides methods to
+    convert between different array types, and to access the related
+    array namespaces
+    """
+
     name = None
     module_name = None
 
@@ -160,7 +168,7 @@ class NumpyBackend(ArrayBackend):
     @cached_property
     def namespace(self):
         """Return the patched version of the array-api-compat numpy namespace."""
-        import earthkit.utils.namespace.numpy as xp
+        import earthkit.utils.array.namespace.numpy as xp
 
         return xp
 
@@ -211,7 +219,7 @@ class TorchBackend(ArrayBackend):
     @cached_property
     def namespace(self):
         """Return the patched version of the array-api-compat torch namespace."""
-        import earthkit.utils.namespace.torch as xp
+        import earthkit.utils.array.namespace.torch as xp
 
         return xp
 
@@ -261,7 +269,7 @@ class CupyBackend(ArrayBackend):
     @cached_property
     def namespace(self):
         """Return the patched version of the array-api-compat numpy namespace."""
-        import earthkit.utils.namespace.cupy as xp
+        import earthkit.utils.array.namespace.cupy as xp
 
         return xp
 
@@ -399,7 +407,7 @@ def array_namespace(*args):
     -----
     The array namespace is extended with the following methods when necessary:
         - polyval: evaluate a polynomial (available in numpy)
-        - percentile: compute the nth percentile of the data along the
+        - percentile: compute the n-th percentile of the data along the
           specified axis (available in numpy)
         - histogram2d: compute a 2D histogram (available in numpy)
     Some other methods may be reimplemented for a given namespace to ensure correct
@@ -515,10 +523,10 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
     return r
 
 
-def match(v1, v2):
-    get_backend(v1) == get_backend(v2)
+# def match(v1, v2):
+#     get_backend(v1) == get_backend(v2)
 
 
-# added for backward compatibility
-def ensure_backend(backend):
-    return None
+# # added for backward compatibility
+# def ensure_backend(backend):
+#     return None

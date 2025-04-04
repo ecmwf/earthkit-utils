@@ -15,7 +15,7 @@ from array_api_compat.cupy import *  # noqa: F403
 # make polyval available on the namespace
 from cupy.polynomial.polynomial import polyval  # noqa: F401
 
-from earthkit.utils.compute import seterr
+from earthkit.utils.array.compute import seterr
 
 # make these methods available on the namespace
 seterr = partial(seterr, _xp)
