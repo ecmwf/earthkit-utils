@@ -11,6 +11,8 @@ import logging
 import os
 from importlib import import_module
 
+from earthkit.utils.array import backend_from_name
+
 LOG = logging.getLogger(__name__)
 
 
@@ -43,7 +45,16 @@ if not NO_CUPY:
     except Exception:
         NO_CUPY = True
 
-NO_JAX = not modules_installed("jax")
+ARRAY_BACKENDS = ["numpy"]
+if not NO_TORCH:
+    ARRAY_BACKENDS.append("torch")
+
+if not NO_CUPY:
+    ARRAY_BACKENDS.append("cupy")
+
+
+ARRAY_BACKENDS = [backend_from_name(b) for b in ARRAY_BACKENDS]
+_ARRAY_BACKENDS_BY_NAME = {b.name: b for b in ARRAY_BACKENDS}
 
 
 def check_array_type(array, expected_backend, dtype=None):
@@ -68,30 +79,44 @@ def get_array_namespace(backend):
     return get_backend(backend).namespace
 
 
-ARRAY_BACKENDS = ["numpy"]
-if not NO_TORCH:
-    ARRAY_BACKENDS.append("torch")
+def get_array_backend(backend, skip=None, raise_on_missing=True):
+    if backend is None:
+        backend = "numpy"
 
-if not NO_CUPY:
-    ARRAY_BACKENDS.append("cupy")
+    if isinstance(backend, list):
+        res = []
+        for b in backend:
+            b = get_array_backend(b, raise_on_missing=raise_on_missing)
+            if b:
+                res.append(b)
+        return res
+
+    if isinstance(backend, str):
+        b = _ARRAY_BACKENDS_BY_NAME.get(backend)
+        if b is None:
+            if raise_on_missing:
+                raise ValueError(f"Unknown array backend: {backend}")
+        return b
+
+    return backend
 
 
-def main(path):
-    import sys
+def skip_array_backend(backends, skip):
+    if not isinstance(backends, (list, tuple)):
+        backends = [backends]
+    if not isinstance(skip, (list, tuple)):
+        skip = [skip]
 
-    import pytest
+    if not skip:
+        return backends
 
-    # Parallel does not work on darwin, gets RuntimeError: context has already been set
-    # because pytest-parallel changes the context from `spawn` to `fork`
+    backends = get_array_backend(backends)
+    skip = get_array_backend(skip, raise_on_missing=False)
+    if not skip:
+        return backends
 
-    args = ["-p", "no:parallel", "-E", "release"]
-
-    if len(sys.argv) > 1 and sys.argv[1] == "--no-debug":
-        args += ["-o", "log_cli=False"]
-    else:
-        logging.basicConfig(level=logging.DEBUG)
-        args += ["-o", "log_cli=True"]
-
-    args += [path]
-
-    sys.exit(pytest.main(args))
+    res = []
+    for b in backends:
+        if b not in skip:
+            res.append(b)
+    return res

@@ -12,10 +12,10 @@ from functools import partial
 import array_api_compat.torch as _xp
 from array_api_compat.torch import *  # noqa: F403
 
-from earthkit.utils.compute import histogram2d
-from earthkit.utils.compute import percentile
-from earthkit.utils.compute import polyval
-from earthkit.utils.compute import seterr
+from earthkit.utils.array.compute import histogram2d
+from earthkit.utils.array.compute import percentile
+from earthkit.utils.array.compute import polyval
+from earthkit.utils.array.compute import seterr
 
 # make these methods available on the namespace
 histogram2d = partial(histogram2d, _xp)

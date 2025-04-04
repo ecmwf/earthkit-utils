@@ -367,5 +367,5 @@ test.db
 
 *.idx
 
-
+# ruff
 .ruff_cache

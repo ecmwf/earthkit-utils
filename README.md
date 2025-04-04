@@ -1,26 +1,22 @@
-<a href="https://github.com/ecmwf/earthkit-utils">
-  <p align="center">
-    <picture>
-      <source srcset="https://github.com/ecmwf/logos/raw/refs/heads/main/logos/earthkit/earthkit-utils-dark.svg" media="(prefers-color-scheme: dark)">
-      <img src="https://github.com/ecmwf/logos/raw/refs/heads/main/logos/earthkit/earthkit-utils-light.svg" height=80>
-    </picture>
-  </p>
-</a>
+<p align="center">
+  <picture>
+    <source srcset="https://github.com/ecmwf/logos/raw/refs/heads/main/logos/earthkit/earthkit-utils-dark.svg" media="(prefers-color-scheme: dark)">
+    <img src="https://github.com/ecmwf/logos/raw/refs/heads/main/logos/earthkit/earthkit-utils-light.svg" height="120">
+  </picture>
+</p>
 
 <p align="center">
   <a href="https://github.com/ecmwf/codex/raw/refs/heads/main/ESEE">
-    <img src="https://github.com/ecmwf/codex/raw/refs/heads/main/ESEE/foundation_badge.svg" alt="Static Badge">
+    <img src="https://github.com/ecmwf/codex/raw/refs/heads/main/ESEE/foundation_badge.svg" alt="ECMWF Software EnginE">
   </a>
-  <a href="https://github.com/ecmwf/codex/raw/refs/heads/main/Project%20Maturity">
-    <img src="https://github.com/ecmwf/codex/raw/refs/heads/main/Project%20Maturity/emerging_badge.svg" alt="Static Badge">
+  <a href="https://github.com/ecmwf/codex/raw/refs/heads/main/Project Maturity">
+    <img src="https://github.com/ecmwf/codex/raw/refs/heads/main/Project Maturity/emerging_badge.svg" alt="Maturity Level">
   </a>
-
-<a href="https://opensource.org/licenses/apache-2-0">
-    <img src="https://img.shields.io/badge/License-Apache 2.0-blue.svg" alt="License: Apache 2.0">
+  <a href="https://opensource.org/licenses/apache-2-0">
+    <img src="https://img.shields.io/badge/Licence-Apache 2.0-blue.svg" alt="Licence">
   </a>
-
-<a href="https://github.com/ecmwf/earthkit-utils/releases">
-    <img src="https://img.shields.io/github/v/release/ecmwf/earthkit-utils?color=blue&label=Release&style=flat-square" alt="Latest Release">
+  <a href="https://github.com/ecmwf/earthkit-utils/releases">
+    <img src="https://img.shields.io/github/v/release/ecmwf/earthkit-utils?color=purple&label=Release" alt="Latest Release">
   </a>
 </p>
 
@@ -29,7 +25,7 @@
 
 Utilities for the Earthkit ecosystem.
 
-## License
+## Licence
 
 ```
 Copyright 2025, European Centre for Medium Range Weather Forecasts.
