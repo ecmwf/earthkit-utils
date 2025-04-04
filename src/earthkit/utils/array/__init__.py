@@ -521,12 +521,3 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
     if not target_is_list:
         return r[0]
     return r
-
-
-# def match(v1, v2):
-#     get_backend(v1) == get_backend(v2)
-
-
-# # added for backward compatibility
-# def ensure_backend(backend):
-#     return None
