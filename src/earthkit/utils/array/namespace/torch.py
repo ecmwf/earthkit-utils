@@ -23,6 +23,21 @@ percentile = partial(percentile, _xp)
 polyval = partial(polyval, _xp)
 seterr = partial(seterr, _xp)
 
+def nanmax(x, dim=None, keepdims=False):
+    """Compute the maximum value of an array, treating NaNs as missing values.
+    """
+    min_value = _xp.finfo(x.dtype).min
+    output = _xp.max(_xp.nan_to_num(x, min_value), axis = dim, keepdims=keepdims)
+    return output
+
+
+def nanmin(x, dim=None, keepdims=False):
+    """Compute the minimum value of an array, treating NaNs as missing values.
+    """
+    max_value = _xp.finfo(x.dtype).max
+    output = _xp.min(_xp.nan_to_num(x, max_value), axis = dim, keepdims=keepdims)
+    return output
+
 
 def sign(x, *args, **kwargs):
     """Reimplement the sign function to handle NaNs.
