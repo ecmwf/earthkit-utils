@@ -35,3 +35,12 @@ def sign(x, *args, **kwargs):
     r = _xp.asarray(r)
     r[_xp.isnan(x)] = _xp.nan
     return r
+
+
+# This is needed to ensure the tensor can be used in Xarray
+if not hasattr(_xp.Tensor, "__array_function__"):
+
+    def __array_function__(self, func, types, args, kwargs):
+        raise NotImplementedError("PyTorch does not support __array_function__")
+
+    _xp.Tensor.__array_function__ = __array_function__

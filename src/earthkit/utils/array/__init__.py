@@ -455,7 +455,11 @@ def backend_from_module(module, raise_exception=True):
 
     r = None
     if inspect.ismodule(module):
-        r = _BACKENDS_BY_MODULE.get(module.__name__, None)
+        name = module.__name__
+        if "." in name:
+            name = name.split(".")[-1]  # get the top-level module name
+
+        r = _BACKENDS_BY_MODULE.get(name, None)
         if raise_exception and r is None:
             raise ValueError(f"Unknown array backend module={module}")
     return r

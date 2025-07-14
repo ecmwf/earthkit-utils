@@ -86,7 +86,7 @@ def test_utils_array_backend_torch():
     assert isinstance(r, np.ndarray)
     assert np.allclose(r, v_np)
 
-    assert np.isclose(b.namespace.mean(v), 1.0)
+    assert np.isclose(b.to_numpy(b.namespace.mean(v)), 1.0)
 
 
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
