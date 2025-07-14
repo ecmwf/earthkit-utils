@@ -68,6 +68,30 @@ class ArrayBackend(metaclass=ABCMeta):
         """Convert an array-like object to an array."""
         pass
 
+    def dtype(self, v):
+        """Return the dtype of an array."""
+        if isinstance(v, str):
+            d = self.compat_namespace.__array_namespace_info__().dtypes()
+            return d.get(v, None)
+        return None
+
+    def to_numpy_dtype(self, dtype):
+        dtype = self.dtype_to_str(dtype)
+        if dtype is None:
+            return None
+        else:
+            return _NUMPY.dtype(dtype)
+
+    def dtype_to_str(self, dtype):
+        """Convert a dtype to a numpy dtype."""
+        if not isinstance(dtype, str):
+            d = self.compat_namespace.__array_namespace_info__().dtypes()
+            for k, v in d.items():
+                if v == dtype:
+                    return k
+            return None
+        return dtype
+
     @property
     @abstractmethod
     def dtypes(self):
@@ -175,7 +199,9 @@ class NumpyBackend(ArrayBackend):
     @cached_property
     def compat_namespace(self):
         """Return the array-api-compat numpy namespace."""
-        return array_api_compat.numpy
+        import array_api_compat.numpy as xp
+
+        return xp
 
     @cached_property
     def raw_namespace(self):
@@ -196,6 +222,13 @@ class NumpyBackend(ArrayBackend):
             return v
 
         return np.array(v, **kwargs)
+
+    def to_numpy_dtype(self, dtype):
+        dtype = self.dtype_to_str(dtype)
+        if dtype is None:
+            return None
+        else:
+            return self.dtype(dtype)
 
     @cached_property
     def dtypes(self):
@@ -226,7 +259,9 @@ class TorchBackend(ArrayBackend):
     @cached_property
     def compat_namespace(self):
         """Return the array-api-compat torch namespace."""
-        return array_api_compat.torch
+        import array_api_compat.torch as xp
+
+        return xp
 
     @cached_property
     def raw_namespace(self):
@@ -276,7 +311,9 @@ class CupyBackend(ArrayBackend):
     @cached_property
     def compat_namespace(self):
         """Return the array-api-compat cupy namespace."""
-        return array_api_compat.cupy
+        import array_api_compat.cupy as xp
+
+        return xp
 
     @cached_property
     def raw_namespace(self):
@@ -476,6 +513,14 @@ def get_backend(data):
         r = backend_from_array(data)
 
     return r
+
+
+def to_numpy_dtype(dtype, default=None):
+    for b in _BACKENDS:
+        v = b.to_numpy_dtype(dtype)
+        if v is not None:
+            return v
+    return default
 
 
 class Converter:
