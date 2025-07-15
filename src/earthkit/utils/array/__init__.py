@@ -122,6 +122,23 @@ class ArrayBackend(metaclass=ABCMeta):
             return f
         return True
 
+    def to_device(self, v, device=None):
+        """Convert an array to a specific device.
+
+        Parameters
+        ----------
+        v: array-like
+            The array to convert.
+        device: str, optional
+            The device to convert the array to. If None, the array is not converted.
+
+        Returns
+        -------
+        array-like
+            The converted array.
+        """
+        return self.namespace.to_device(v, device)
+
     def astype(self, *args, **kwargs):
         """Convert an array to a new dtype."""
         return self.namespace.astype(*args, **kwargs)
