@@ -131,7 +131,6 @@ class ArrayBackend(metaclass=ABCMeta):
     def _make_device(self, device):
         pass
 
-
     def astype(self, *args, **kwargs):
         """Convert an array to a new dtype."""
         return self.namespace.astype(*args, **kwargs)
@@ -318,8 +317,8 @@ class TorchBackend(ArrayBackend):
         if b is not self:
             v = self.from_other(v)
 
-        return v.to(device, *args, **kwargs)  
-        
+        return v.to(device, *args, **kwargs)
+
 
 class CupyBackend(ArrayBackend):
     name = "cupy"
@@ -384,9 +383,9 @@ class CupyBackend(ArrayBackend):
             dev_id = int(idx) if idx else 0
         else:
             dev_id = device
-        
+
         with self.namespace.cuda.Device(dev_id):
-           return self.namespace.asarray(v)
+            return self.namespace.asarray(v)
 
 
 class JaxBackend(ArrayBackend):
@@ -630,19 +629,22 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
 
 def to_device(v, device, array_backend, *args, **kwargs):
     """
-    Return a copy/view of arr* located on *device*.
+    Return a copy/view of array located on device.
 
     Parameters
     ----------
-    arr      : array-like
-    device   : backend‑specific device spec or str
-    backend  : {"torch", "cupy", "jax", None, …}, optional
-            • "torch"/"pytorch" - always use PyTorch
-            • "cupy" - convert/move with CuPy
-            • "jax" - move with JAX
-            • any other value - the module will be imported and queried for an
-                Array‑API namespace.
-    *args, **kwargs : forwarded to the underlying backend call.
+    v      : array-like
+        The array to be moved to the specified device.
+    device   : backend-specific device spec or str
+        The device to which the array should be moved. For example,
+        "cpu", "cuda:0", etc.
+    array_backend : str or ArrayBackend
+        The backend to use for the conversion. If None, the follwing logic
+        is applied:
+        - if the device is "cpu", it will use the numpy backend
+        - otherwise it will use the backend of the array ``v``, but if that
+          backend is numpy, it will use the cupy backend.
+    *args, **kwargs : forwarded to the underlying backend call
     """
     if array_backend is None:
         if device == "cpu":
@@ -655,7 +657,7 @@ def to_device(v, device, array_backend, *args, **kwargs):
                 array_backend = current_backend
     else:
         array_backend = get_backend(array_backend)
-    
+
     assert array_backend is not None, "The 'backend' argument must be specified."
 
     return array_backend.to_device(v, device, *args, **kwargs)
