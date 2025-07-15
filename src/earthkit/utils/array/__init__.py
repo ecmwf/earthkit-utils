@@ -35,6 +35,11 @@ class ArrayBackend(metaclass=ABCMeta):
     def _make_sample(self):
         return None
 
+    @abstractmethod
+    def match_namespace(self, xp):
+        """Check if the given namespace matches this backend."""
+        pass
+
     @cached_property
     @abstractmethod
     def namespace(self):
@@ -122,7 +127,11 @@ class ArrayBackend(metaclass=ABCMeta):
             return f
         return True
 
-    def to_device(self, v, device=None):
+    @abstractmethod
+    def _make_device(self, device):
+        pass
+
+    def to_device(self, v, device, *args, **kwargs):
         """Convert an array to a specific device.
 
         Parameters
@@ -137,6 +146,10 @@ class ArrayBackend(metaclass=ABCMeta):
         array-like
             The converted array.
         """
+        b = get_backend(v)
+        if b is not self:
+            v = self.from_other(v)
+
         return self.namespace.to_device(v, device)
 
     def astype(self, *args, **kwargs):
@@ -253,6 +266,9 @@ class NumpyBackend(ArrayBackend):
 
         return {"float64": numpy.float64, "float32": numpy.float32}
 
+    def _make_device(self, device):
+        return device
+
 
 class TorchBackend(ArrayBackend):
     name = "torch"
@@ -305,6 +321,9 @@ class TorchBackend(ArrayBackend):
 
         return {"float64": torch.float64, "float32": torch.float32}
 
+    def _make_device(self, device):
+        return device
+
 
 class CupyBackend(ArrayBackend):
     name = "cupy"
@@ -355,6 +374,9 @@ class CupyBackend(ArrayBackend):
 
         return {"float64": cp.float64, "float32": cp.float32}
 
+    def _make_device(self, device):
+        return device
+
 
 class JaxBackend(ArrayBackend):
     name = "jax"
@@ -401,6 +423,9 @@ class JaxBackend(ArrayBackend):
         import jax.numpy as jarray
 
         return {"float64": jarray.float64, "float32": jarray.float32}
+
+    def _make_device(self, device):
+        return device
 
 
 _NUMPY = NumpyBackend()
