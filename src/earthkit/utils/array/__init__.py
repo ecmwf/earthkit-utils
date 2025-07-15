@@ -131,26 +131,6 @@ class ArrayBackend(metaclass=ABCMeta):
     def _make_device(self, device):
         pass
 
-    def to_device(self, v, device, *args, **kwargs):
-        """Convert an array to a specific device.
-
-        Parameters
-        ----------
-        v: array-like
-            The array to convert.
-        device: str, optional
-            The device to convert the array to. If None, the array is not converted.
-
-        Returns
-        -------
-        array-like
-            The converted array.
-        """
-        b = get_backend(v)
-        if b is not self:
-            v = self.from_other(v)
-
-        return self.namespace.to_device(v, device)
 
     def astype(self, *args, **kwargs):
         """Convert an array to a new dtype."""
@@ -269,6 +249,15 @@ class NumpyBackend(ArrayBackend):
     def _make_device(self, device):
         return device
 
+    def to_device(self, v, device, *args, **kwargs):
+        if device != "cpu":
+            raise ValueError(f"Can only specify 'cpu' as device for numpy backend, got {device}")
+        b = get_backend(v)
+        if b is not self:
+            v = b.to_numpy(v)
+
+        return self.namespace.asarray(v)
+
 
 class TorchBackend(ArrayBackend):
     name = "torch"
@@ -324,6 +313,13 @@ class TorchBackend(ArrayBackend):
     def _make_device(self, device):
         return device
 
+    def to_device(self, v, device, *args, **kwargs):
+        b = get_backend(v)
+        if b is not self:
+            v = self.from_other(v)
+
+        return v.to(device, *args, **kwargs)  
+        
 
 class CupyBackend(ArrayBackend):
     name = "cupy"
@@ -377,6 +373,21 @@ class CupyBackend(ArrayBackend):
     def _make_device(self, device):
         return device
 
+    def to_device(self, v, device, *args, **kwargs):
+        b = get_backend(v)
+        if b is not self:
+            v = self.from_other(v)
+
+        # CuPy uses integer devices; "cuda:1" is 1, "cuda" is 0
+        if isinstance(device, str) and device.startswith("cuda"):
+            _, _, idx = device.partition(":")
+            dev_id = int(idx) if idx else 0
+        else:
+            dev_id = device
+        
+        with self.namespace.cuda.Device(dev_id):
+           return self.namespace.asarray(v)
+
 
 class JaxBackend(ArrayBackend):
     name = "jax"
@@ -426,6 +437,9 @@ class JaxBackend(ArrayBackend):
 
     def _make_device(self, device):
         return device
+
+    def to_device(self, v, device, *args, **kwargs):
+        raise NotImplementedError("")
 
 
 _NUMPY = NumpyBackend()
@@ -612,3 +626,36 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
     if not target_is_list:
         return r[0]
     return r
+
+
+def to_device(v, device, array_backend, *args, **kwargs):
+    """
+    Return a copy/view of arr* located on *device*.
+
+    Parameters
+    ----------
+    arr      : array-like
+    device   : backend‑specific device spec or str
+    backend  : {"torch", "cupy", "jax", None, …}, optional
+            • "torch"/"pytorch" - always use PyTorch
+            • "cupy" - convert/move with CuPy
+            • "jax" - move with JAX
+            • any other value - the module will be imported and queried for an
+                Array‑API namespace.
+    *args, **kwargs : forwarded to the underlying backend call.
+    """
+    if array_backend is None:
+        if device == "cpu":
+            array_backend = get_backend("numpy")
+        else:
+            current_backend = get_backend(v)
+            if current_backend.name == "numpy":
+                array_backend = get_backend("cupy")
+            else:
+                array_backend = current_backend
+    else:
+        array_backend = get_backend(array_backend)
+    
+    assert array_backend is not None, "The 'backend' argument must be specified."
+
+    return array_backend.to_device(v, device, *args, **kwargs)
