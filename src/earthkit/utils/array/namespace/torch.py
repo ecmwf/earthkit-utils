@@ -44,3 +44,17 @@ if not hasattr(_xp.Tensor, "__array_function__"):
         raise NotImplementedError("PyTorch does not support __array_function__")
 
     _xp.Tensor.__array_function__ = __array_function__
+
+if not hasattr(_xp.Tensor, "__array_ufunc__"):
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        raise NotImplementedError("PyTorch does not support __array_ufunc__")
+
+    _xp.Tensor.__array_ufunc__ = __array_ufunc__
+
+if not hasattr(_xp.Tensor, "__array_namespace__"):
+
+    def __array_namespace__(self):
+        return _xp
+
+    _xp.Tensor.__array_namespace__ = __array_namespace__
