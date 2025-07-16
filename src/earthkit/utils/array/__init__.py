@@ -627,7 +627,7 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
     return r
 
 
-def to_device(v, device, array_backend, *args, **kwargs):
+def to_device(v, device, array_backend=None, *args, **kwargs):
     """
     Return a copy/view of array located on device.
 
