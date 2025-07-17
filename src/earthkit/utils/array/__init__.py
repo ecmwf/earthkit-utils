@@ -128,7 +128,7 @@ class ArrayBackend(metaclass=ABCMeta):
         return True
 
     @abstractmethod
-    def _make_device(self, device):
+    def to_device(self, v, device, *args, **kwargs):
         pass
 
     def astype(self, *args, **kwargs):
@@ -245,9 +245,6 @@ class NumpyBackend(ArrayBackend):
 
         return {"float64": numpy.float64, "float32": numpy.float32}
 
-    def _make_device(self, device):
-        return device
-
     def to_device(self, v, device, *args, **kwargs):
         if device != "cpu":
             raise ValueError(f"Can only specify 'cpu' as device for numpy backend, got {device}")
@@ -309,9 +306,6 @@ class TorchBackend(ArrayBackend):
 
         return {"float64": torch.float64, "float32": torch.float32}
 
-    def _make_device(self, device):
-        return device
-
     def to_device(self, v, device, *args, **kwargs):
         b = get_backend(v)
         if b is not self:
@@ -368,9 +362,6 @@ class CupyBackend(ArrayBackend):
         import cupy as cp
 
         return {"float64": cp.float64, "float32": cp.float32}
-
-    def _make_device(self, device):
-        return device
 
     def to_device(self, v, device, *args, **kwargs):
         b = get_backend(v)
@@ -433,9 +424,6 @@ class JaxBackend(ArrayBackend):
         import jax.numpy as jarray
 
         return {"float64": jarray.float64, "float32": jarray.float32}
-
-    def _make_device(self, device):
-        return device
 
     def to_device(self, v, device, *args, **kwargs):
         raise NotImplementedError("")
@@ -629,7 +617,7 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
 
 def to_device(v, device, array_backend=None, *args, **kwargs):
     """
-    Return a copy/view of array located on device.
+    Return a copy/view of array moved to device.
 
     Parameters
     ----------
