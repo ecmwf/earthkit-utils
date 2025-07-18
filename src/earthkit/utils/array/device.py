@@ -8,7 +8,7 @@
 #
 
 
-def to_device(v, device, array_backend=None, *args, **kwargs):
+def to_device(v, device, *args, array_backend=None, **kwargs):
     """
     Return a copy/view of array moved to device.
 
