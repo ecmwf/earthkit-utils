@@ -11,7 +11,7 @@ import logging
 import os
 from importlib import import_module
 
-from earthkit.utils.array import backend_from_name
+from earthkit.utils.array.backend import backend_from_name
 
 LOG = logging.getLogger(__name__)
 
@@ -56,6 +56,16 @@ if not NO_CUPY:
 ARRAY_BACKENDS = [backend_from_name(b) for b in ARRAY_BACKENDS]
 _ARRAY_BACKENDS_BY_NAME = {b.name: b for b in ARRAY_BACKENDS}
 
+NO_XARRAY = not modules_installed("xarray")
+
+
+def match_dtype(array, backend, dtype):
+    """Return True if the dtype of an array matches the specified dtype."""
+    if dtype is not None:
+        dtype = backend.make_dtype(dtype)
+        r = array.dtype == dtype if dtype is not None else False
+        return r
+
 
 def check_array_type(array, expected_backend, dtype=None):
     from earthkit.utils.array import get_backend
@@ -67,7 +77,8 @@ def check_array_type(array, expected_backend, dtype=None):
 
     expected_dtype = dtype
     if expected_dtype is not None:
-        assert b2.match_dtype(array, expected_dtype), f"{array.dtype}, {expected_dtype=}"
+        assert match_dtype(array, b2, expected_dtype), f"{array.dtype}, {expected_dtype=}"
+        # assert b2.match_dtype(array, expected_dtype), f"{array.dtype}, {expected_dtype=}"
 
 
 def get_array_namespace(backend):
