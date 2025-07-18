@@ -95,5 +95,5 @@ def test_array_convert_cupy_to_torch():
     assert get_backend(x) is _CUPY
     x_torch = convert_array(x, target_backend="torch")
     assert get_backend(x_torch) is _TORCH
-    x_torch_cpu = to_device(x_torch, "cpu",array_backend="torch")
+    x_torch_cpu = to_device(x_torch, "cpu", array_backend="torch")
     assert _TORCH.allclose(x_torch_cpu, _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32"))
