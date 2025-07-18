@@ -83,7 +83,7 @@ class TorchToCupyConverter(Converter):
         from torch.utils.dlpack import to_dlpack
 
         # Convert it into a DLPack tensor.
-        dx = to_dlpack(array.cuda().to_dlpack(array))
+        dx = to_dlpack(array.cuda())
 
         # Convert it into a CuPy array.
         return cupy.fromDlpack(dx)
