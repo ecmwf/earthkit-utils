@@ -11,14 +11,17 @@
 
 import pytest
 
-from earthkit.utils.array import _CUPY
-from earthkit.utils.array import _JAX
-from earthkit.utils.array import _NUMPY
-from earthkit.utils.array import _TORCH
+from earthkit.utils.array import array_namespace_xarray
 from earthkit.utils.array import get_backend
+from earthkit.utils.array import to_device
+from earthkit.utils.array.backend import _CUPY
+from earthkit.utils.array.backend import _JAX
+from earthkit.utils.array.backend import _NUMPY
+from earthkit.utils.array.backend import _TORCH
 from earthkit.utils.testing import NO_CUPY
 from earthkit.utils.testing import NO_JAX
 from earthkit.utils.testing import NO_TORCH
+from earthkit.utils.testing import NO_XARRAY
 
 
 def test_utils_array_backend_numpy():
@@ -178,6 +181,73 @@ def test_patched_namespace_torch():
     # sign
     x = ns.asarray([1.0, -2.4, ns.nan], dtype=ns.float64)
     assert ns.allclose(ns.sign(x), ns.asarray([1.0, -1.0, ns.nan], dtype=ns.float64), equal_nan=True)
+
+
+def test_to_device_numpy():
+    b = get_backend("numpy")
+    assert b is _NUMPY
+    xp = b.namespace
+    x = xp.asarray([1.0, 2.0, 3.0])
+    y = to_device(x, "cpu")
+    b_y = get_backend(y)
+    assert b_y is _NUMPY
+    assert _NUMPY.has_device("cpu")
+    assert xp.allclose(x, y)
+
+
+@pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
+def test_to_device_torch_mps_1():
+    x = _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32")
+
+    x1 = to_device(x, "cpu", array_backend="torch")
+    b_x1 = get_backend(x1)
+    assert b_x1 is _TORCH
+    assert x1.get_device() == -1
+
+    if _TORCH.has_device("mps"):
+        # move to gpu
+        x2 = to_device(x1, "mps", array_backend="torch")
+        b_x2 = get_backend(x2)
+        assert b_x2 is _TORCH
+        assert x2.get_device() == 0
+        x2 += 1.0
+
+        # move back to cpu
+        x3 = to_device(x2, "cpu", array_backend="torch")
+        b_x3 = get_backend(x3)
+        assert b_x3 is _TORCH
+        assert x3.get_device() == -1
+        x3_ref = _TORCH.asarray([2.0, 3.0, 4.0], dtype="float32")
+        assert _TORCH.allclose(x3, x3_ref)
+
+
+def _make_xarray(backend):
+    import xarray as xr
+
+    v = backend.asarray([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype="float32")
+    a = xr.DataArray(
+        v,
+        dims=["level", "x"],
+        coords={"level": [500, 700], "x": [0, 1, 2]},
+        name="dummyvar",
+    )
+    return a
+
+
+@pytest.mark.skipif(NO_XARRAY, reason="No xarray installed")
+def test_namespace_xarray_numpy():
+    a = _make_xarray(_NUMPY)
+    b = array_namespace_xarray(a)
+    assert b is _NUMPY.namespace
+
+
+@pytest.mark.xfail
+@pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
+@pytest.mark.skipif(NO_XARRAY, reason="No xarray installed")
+def test_namespace_xarray_torch():
+    a = _make_xarray(_TORCH)
+    b = array_namespace_xarray(a)
+    assert b is _TORCH.namespace
 
 
 if __name__ == "__main__":
