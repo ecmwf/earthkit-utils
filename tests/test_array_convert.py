@@ -13,6 +13,7 @@ import pytest
 
 from earthkit.utils.array import convert_array
 from earthkit.utils.array import get_backend
+from earthkit.utils.array import to_device
 from earthkit.utils.array.backend import _CUPY
 from earthkit.utils.array.backend import _NUMPY
 from earthkit.utils.array.backend import _TORCH
@@ -94,4 +95,5 @@ def test_array_convert_cupy_to_torch():
     assert get_backend(x) is _CUPY
     x_torch = convert_array(x, target_backend="torch")
     assert get_backend(x_torch) is _TORCH
-    assert _TORCH.allclose(x_torch, _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32"))
+    x_torch_cpu = to_device(x_torch, "cpu",array_backend="torch")
+    assert _TORCH.allclose(x_torch_cpu, _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32"))
