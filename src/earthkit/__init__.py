@@ -14,11 +14,13 @@ _lock = threading.RLock()
 
 __path__ = pkgutil.extend_path(__path__, __name__)
 
-__all__ = tuple(
-    name
-    for _, name, ispkg in pkgutil.iter_modules(__path__)
-    if ispkg and not name.startswith("_") and not name in {"importlib", "pkgutil", "threading"}
-)
+modules = set()
+for path in __path__:
+    for _, name, ispkg in pkgutil.iter_modules([path]):
+        if ispkg and not name.startswith("_") and name not in {"importlib", "pkgutil", "threading"}:
+            modules.add(name)
+
+__all__ = tuple(sorted(modules))
 
 print(__all__)
 print(__path__)
