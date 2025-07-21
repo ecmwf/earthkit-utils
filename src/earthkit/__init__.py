@@ -9,16 +9,23 @@
 import importlib
 import pkgutil
 import threading
+import os
 
 _lock = threading.RLock()
 
 __path__ = pkgutil.extend_path(__path__, __name__)
 
 modules = set()
+
 for path in __path__:
-    for _, name, ispkg in pkgutil.iter_modules([path]):
-        if ispkg and not name.startswith("_") and name not in {"importlib", "pkgutil", "threading"}:
-            modules.add(name)
+    if not os.path.isdir(path):
+        continue
+    for name in os.listdir(path):
+        full_path = os.path.join(path, name)
+        if os.path.isdir(full_path) and not name.startswith('_') and name not in {"importlib", "pkgutil", "threading", "os"}:
+            spec = importlib.util.find_spec(f"{__name__}.{name}")
+            if spec is not None:
+                modules.add(name)
 
 __all__ = tuple(sorted(modules))
 
