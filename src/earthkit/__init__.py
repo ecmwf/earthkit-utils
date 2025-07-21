@@ -23,7 +23,7 @@ __all__ = tuple(
 try:
     from earthkit._version import __version__
 except:
-    __version__ = -
+    __version__ = -1
 
 def __getattr__(name):
     if name not in __all__:
