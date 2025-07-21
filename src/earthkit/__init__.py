@@ -20,6 +20,9 @@ __all__ = tuple(
     if ispkg and not name.startswith("_") and not name in {"importlib", "pkgutil", "threading"}
 )
 
+print(__all__)
+print(__path__)
+
 try:
     from earthkit._version import __version__
 except:
