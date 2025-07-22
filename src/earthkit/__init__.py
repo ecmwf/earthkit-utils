@@ -40,6 +40,7 @@ except:
 
 def __getattr__(name):
     with _lock:
+        print(f"getattr to get {name}")
         if name in globals():
             return globals()[name]
         try:
