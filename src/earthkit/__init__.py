@@ -12,8 +12,7 @@ import threading
 
 _lock = threading.RLock()
 
-# extend path (doesn't seem to be necessary)
-# __path__ = pkgutil.extend_path(__path__, __name__)
+__path__ = pkgutil.extend_path(__path__, __name__)
 
 EXCLUDE = {"importlib", "pkgutil", "threading"}
 discovered = {
