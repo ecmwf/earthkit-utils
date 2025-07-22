@@ -9,25 +9,26 @@
 import importlib
 import pkgutil
 import threading
-import os
 
 _lock = threading.RLock()
 
-__path__ = pkgutil.extend_path(__path__, __name__)
+# extend path (doesn't seem to be necessary)
+# __path__ = pkgutil.extend_path(__path__, __name__)
 
-modules = set()
+EXCLUDE = {"importlib", "pkgutil", "threading"}
+discovered = {
+    name
+    for _, name, ispkg in pkgutil.iter_modules(__path__)
+    if ispkg and not name.startswith("_") and name not in EXCLUDE
+}
 
-for path in __path__:
-    if not os.path.isdir(path):
-        continue
-    for name in os.listdir(path):
-        full_path = os.path.join(path, name)
-        if os.path.isdir(full_path) and not name.startswith('_') and name not in {"importlib", "pkgutil", "threading", "os"}:
-            spec = importlib.util.find_spec(f"{__name__}.{name}")
-            if spec is not None:
-                modules.add(name)
+# TODO: decide if we want this or not
+# CANDIDATES = ["climate", "data", "geo", "hydro", "meteo", "plots", "regrid", "time", "transforms", "utils", "workflows"]
+# for name in CANDIDATES:
+#     if name not in discovered and importlib.util.find_spec(f"{__name__}.{name}") is not None:
+#         discovered.add(name)
 
-__all__ = tuple(sorted(modules))
+__all__ = tuple(sorted(discovered))
 
 print(__all__)
 print(__path__)
@@ -38,15 +39,18 @@ except:
     __version__ = -1
 
 def __getattr__(name):
-    if name not in __all__:
-        raise AttributeError(f"No such submodule: {name}")
-
     with _lock:
         if name in globals():
             return globals()[name]
-        mod = importlib.import_module(f"{__name__}.{name}")
+        try:
+            mod = importlib.import_module(f"{__name__}.{name}")
+        except Exception as e:
+            raise AttributeError(
+                f"Module '{__name__}' has no attribute '{name}' "
+                f"(failed to import '{__name__}.{name}'): {e}"
+            ) from e
         globals()[name] = mod
-    return mod
+        return mod
 
 
 def __dir__():
