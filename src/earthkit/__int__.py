@@ -39,7 +39,8 @@ def __getattr__(name):
             mod = importlib.import_module(f"{__name__}.{name}")
         except Exception as e:
             raise AttributeError(
-                f"Module '{__name__}' has no attribute '{name}' " f"(failed to import '{__name__}.{name}'): {e}"
+                f"Module '{__name__}' has no attribute '{name}' "
+                f"(failed to import '{__name__}.{name}'): {e}"
             ) from e
         globals()[name] = mod
         return mod
