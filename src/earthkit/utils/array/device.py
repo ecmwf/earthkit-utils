@@ -14,13 +14,13 @@ def to_device(v, device, *args, array_backend=None, **kwargs):
 
     Parameters
     ----------
-    v      : array-like
+    v : array-like
         The array to be moved to the specified device.
-    device   : backend-specific device spec or str
+    device : backend-specific device spec or str
         The device to which the array should be moved. For example,
         "cpu", "cuda:0", etc.
     array_backend : str or ArrayBackend
-        The backend to use for the conversion. If None, the follwing logic
+        The backend to use for the conversion. If None, the following logic
         is applied:
         - if the device is "cpu", it will use the numpy backend
         - otherwise it will use the backend of the array ``v``, but if that
@@ -29,18 +29,23 @@ def to_device(v, device, *args, array_backend=None, **kwargs):
     """
     from .backend import get_backend
 
+    current_backend = get_backend(v)
     if array_backend is None:
         if device == "cpu":
-            array_backend = get_backend("numpy")
+            target_backend = get_backend("numpy")
         else:
-            current_backend = get_backend(v)
             if current_backend.name == "numpy":
-                array_backend = get_backend("cupy")
+                target_backend = get_backend("cupy")
             else:
-                array_backend = current_backend
+                target_backend = current_backend
     else:
-        array_backend = get_backend(array_backend)
+        target_backend = get_backend(array_backend)
 
-    assert array_backend is not None, "The 'backend' argument must be specified."
-
-    return array_backend.to_device(v, device, *args, **kwargs)
+    # if target backend matches current backend, just move to device
+    # otherwise go through numpy
+    if current_backend == target_backend:
+        return target_backend.asarray(v, device=device, *args, **kwargs)
+    else:
+        return target_backend.asarray(
+            target_backend.from_numpy(current_backend.to_numpy(v)), device=device, *args, **kwargs
+        )

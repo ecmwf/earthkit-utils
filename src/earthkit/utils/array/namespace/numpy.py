@@ -7,8 +7,17 @@
 # nor does it submit to any jurisdiction.
 #
 
+import array_api_compat.numpy as np
 
-from array_api_compat.numpy import *  # noqa: F403
+from .abstract import PatchedNamespace
 
-# make polyval available on the namespace
-from numpy.polynomial.polynomial import polyval  # noqa: F401
+
+class PatchedNumpyNamespace(PatchedNamespace):
+
+    def __init__(self):
+        super().__init__(np)
+
+    def polyval(self, *args, **kwargs):
+        from numpy.polynomial.polynomial import polyval
+
+        return polyval(*args, **kwargs)

@@ -8,7 +8,6 @@
 #
 
 import typing as T
-from functools import partial
 
 import array_api_compat
 
@@ -22,30 +21,7 @@ from .backend import get_backend  # noqa: F401
 from .convert import array_to_numpy  # noqa: F401
 from .convert import convert_array  # noqa: F401
 from .device import to_device  # noqa: F401
-
-
-# TODO: maybe this is not necessary
-def other_namespace(xp: T.Any) -> T.Any:
-    """Return the patched version of an array-api-compat namespace."""
-    if not hasattr(xp, "histogram2d"):
-        from .compute import histogram2d
-
-        xp.histogram2d = partial(histogram2d, xp)
-    if not hasattr(xp, "polyval"):
-        from .compute import polyval
-
-        xp.polyval = partial(polyval, xp)
-    if not hasattr(xp, "percentile"):
-        from .compute import percentile
-
-        xp.percentile = partial(percentile, xp)
-
-    if not hasattr(xp, "seterr"):
-        from .compute import seterr
-
-        xp.seterr = partial(seterr, xp)
-
-    return xp
+from .namespace.abstract import PatchedNamespace
 
 
 def array_namespace(*args: T.Any) -> T.Any:
@@ -83,7 +59,7 @@ def array_namespace(*args: T.Any) -> T.Any:
             if b.match_namespace(xp):
                 return b.namespace
 
-        return xp
+        return PatchedNamespace(xp)
 
 
 # This is experimental and may not be needed in the future.
