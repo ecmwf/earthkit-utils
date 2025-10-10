@@ -102,6 +102,13 @@ class ArrayBackend(metaclass=ABCMeta):
         """Return the float32 dtype class."""
         return self._dtypes.get("float32")
 
+    # Not array-api-compliant but used by tests in earthkit-meteo
+    # TODO: update ekm and remove
+
+    def astype(self, *args, **kwargs):
+        """Convert an array to a new dtype."""
+        return self.namespace.astype(*args, **kwargs)
+
     def asarray(self, *data, dtype=None, **kwargs):
         """Convert data to an array.
 
