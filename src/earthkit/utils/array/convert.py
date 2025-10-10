@@ -16,6 +16,7 @@ from .backend import _JAX
 from .backend import _NUMPY
 from .backend import _TORCH
 from .backend import get_backend
+from .backends.abstract import ArrayBackend
 from .namespace.abstract import PatchedNamespace
 from .namespace.cupy import PatchedCupyNamespace  # noqa: F401
 from .namespace.numpy import PatchedNumpyNamespace  # noqa: F401
@@ -126,22 +127,32 @@ _NAMESPACES_BY_NAME = {
 
 
 def converter(array, target_xp, **kwargs):
+    # TODO: remove this, but currently blocked by ekd
+    if isinstance(target_xp, ArrayBackend):
+        target_xp = target_xp.namespace
+
     if isinstance(target_xp, PatchedNamespace):
         pass
     else:
-        name = target_xp.__name__
-        if "jax" in name:
-            name = "jax"
-        elif "numpy" in name:
-            name = "numpy"
-        elif "cupy" in name:
-            name = "cupy"
-        elif "torch" in name:
-            name = "torch"
+        if type(target_xp) is str:
+            name = target_xp
+            # TODO: remove once ekd test reliant on this
+            if name == "pytorch":
+                name = "torch"
         else:
-            # previous logic
-            if "." in name:
-                name = name.split(".")[-1]
+            name = target_xp.__name__
+            if "jax" in name:
+                name = "jax"
+            elif "numpy" in name:
+                name = "numpy"
+            elif "cupy" in name:
+                name = "cupy"
+            elif "torch" in name:
+                name = "torch"
+            else:
+                # previous logic
+                if "." in name:
+                    name = name.split(".")[-1]
 
         matched_xp = _NAMESPACES_BY_NAME.get(name, None)
         if matched_xp is None:
