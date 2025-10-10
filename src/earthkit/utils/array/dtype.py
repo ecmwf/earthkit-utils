@@ -6,3 +6,13 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 #
+
+from .backend import _BACKENDS
+
+
+def to_numpy_dtype(dtype, default=None):
+    for b in _BACKENDS:
+        v = b.to_numpy_dtype(dtype)
+        if v is not None:
+            return v
+    return default
