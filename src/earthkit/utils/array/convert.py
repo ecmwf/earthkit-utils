@@ -126,8 +126,6 @@ _NAMESPACES_BY_NAME = {
 
 
 def converter(array, target_xp, **kwargs):
-    # load the correct namespace, not just the default patched one
-
     if isinstance(target_xp, PatchedNamespace):
         pass
     else:
@@ -142,8 +140,8 @@ def converter(array, target_xp, **kwargs):
 
     source_xp = array_namespace(array)
 
-    if source_xp == target_xp:
-        return array
+    # if source_xp == target_xp:
+    #     return array
 
     key = (source_xp._earthkit_array_namespace_name, target_xp._earthkit_array_namespace_name)
 

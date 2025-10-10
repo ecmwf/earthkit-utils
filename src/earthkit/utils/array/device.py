@@ -49,7 +49,7 @@ def to_device(v, device=None, array_backend=None, **kwargs):
                     target_xp = current_xp
     else:
         if type(array_backend) is str:
-            target_xp = _NAMESPACES_BY_NAME[array_backend]
+            target_xp = _NAMESPACES_BY_NAME[array_backend]()
         else:
             target_xp = array_backend
 
