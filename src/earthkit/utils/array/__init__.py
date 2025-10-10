@@ -17,4 +17,5 @@ from .backend import _NUMPY
 from .backend import _TORCH
 from .backend import get_backend
 from .convert import array_to_numpy
+from .convert import convert_array
 from .device import to_device  # noqa: F401

@@ -186,6 +186,28 @@ def converter(array, target_xp, **kwargs):
         return c.convert(array, **kwargs)
 
 
+def convert_array(array, target_backend=None, target_array_sample=None, **kwargs):
+    if target_backend is not None and target_array_sample is not None:
+        raise ValueError("Only one of target_backend or target_array_sample can be specified")
+    if target_backend is not None:
+        target = target_backend
+    else:
+        target = array_namespace(target_array_sample)
+
+    r = []
+    target_is_list = True
+    if not isinstance(array, (list, tuple)):
+        array = [array]
+        target_is_list = False
+
+    for a in array:
+        r.append(converter(a, target))
+
+    if not target_is_list:
+        return r[0]
+    return r
+
+
 def array_to_numpy(array):
     from .backend import backend_from_array
 
