@@ -6,6 +6,13 @@ class PatchedNamespace:
     def __getattr__(self, name):
         return getattr(self._xp, name)  # Delegate to underlying namespace
 
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    @property
+    def _earthkit_array_namespace_name(self):
+        return None
+
     def polyval(self, x, c):
         """Evaluation of a polynomial using Horner's scheme.
 

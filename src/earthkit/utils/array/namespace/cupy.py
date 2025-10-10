@@ -7,15 +7,19 @@
 # nor does it submit to any jurisdiction.
 #
 
-import array_api_compat.cupy as cp
-
 from .abstract import PatchedNamespace
 
 
 class PatchedCupyNamespace(PatchedNamespace):
 
     def __init__(self):
+        import array_api_compat.cupy as cp
+
         super().__init__(cp)
+
+    @property
+    def _earthkit_array_namespace_name(self):
+        return "cupy"
 
     def polyval(self, *args, **kwargs):
         from cupy.polynomial.polynomial import polyval
@@ -30,7 +34,7 @@ class PatchedCupyNamespace(PatchedNamespace):
                 dev_id = int(idx) if idx else 0
             else:
                 dev_id = device
-            with cp.cuda.Device(dev_id):
+            with self._xp.cuda.Device(dev_id):
                 self._xp.asarray(*args, **kwargs)
         else:
             self._xp.asarray(*args, **kwargs)

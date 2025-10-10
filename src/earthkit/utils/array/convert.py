@@ -10,12 +10,16 @@
 from abc import ABCMeta
 from abc import abstractmethod
 
+from .array_backend import array_namespace
 from .backend import _CUPY
 from .backend import _JAX
 from .backend import _NUMPY
 from .backend import _TORCH
-from .backend import backend_from_array
 from .backend import get_backend
+from .namespace.abstract import PatchedNamespace
+from .namespace.cupy import PatchedCupyNamespace  # noqa: F401
+from .namespace.numpy import PatchedNumpyNamespace  # noqa: F401
+from .namespace.torch import PatchedTorchNamespace  # noqa: F401
 
 
 class Converter(metaclass=ABCMeta):
@@ -114,51 +118,60 @@ CONVERTERS = {
     ]
 }
 
-
-def converter(array, target):
-    if target is None:
-        return None
-
-    source_backend = backend_from_array(array)
-    target_backend = get_backend(target)
-
-    if source_backend == target_backend:
-        return None
-
-    key = (source_backend.name, target_backend.name)
-    c = CONVERTERS.get(key, None)
-
-    if c is None:
-        c = DefaultConverter(target_backend)
-    return c
+_NAMESPACES_BY_NAME = {
+    "numpy": PatchedNumpyNamespace,
+    "cupy": PatchedCupyNamespace,
+    "torch": PatchedTorchNamespace,
+}
 
 
-def convert_array(array, target_backend=None, target_array_sample=None, **kwargs):
-    if target_backend is not None and target_array_sample is not None:
-        raise ValueError("Only one of target_backend or target_array_sample can be specified")
-    if target_backend is not None:
-        target = target_backend
+def converter(array, target_xp, **kwargs):
+    # load the correct namespace, not just the default patched one
+
+    if isinstance(target_xp, PatchedNamespace):
+        pass
     else:
-        target = backend_from_array(target_array_sample)
-
-    r = []
-    target_is_list = True
-    if not isinstance(array, (list, tuple)):
-        array = [array]
-        target_is_list = False
-
-    for a in array:
-        c = converter(a, target)
-        if c is None:
-            r.append(a)
+        name = target_xp.__name__
+        if "." in name:
+            name = name.split(".")[-1]
+        matched_xp = _NAMESPACES_BY_NAME.get(name, None)
+        if matched_xp is None:
+            target_xp = PatchedNamespace(target_xp)
         else:
-            r.append(c.convert(a, **kwargs))
+            target_xp = matched_xp()
 
-    if not target_is_list:
-        return r[0]
-    return r
+    source_xp = array_namespace(array)
 
+    if source_xp == target_xp:
+        return array
 
-def array_to_numpy(array):
-    """Convert an array to a numpy array."""
-    return backend_from_array(array).to_numpy(array)
+    key = (source_xp._earthkit_array_namespace_name, target_xp._earthkit_array_namespace_name)
+
+    if key[1] is None:
+        # we don't know about the target
+
+        # try DLPack conversion
+        if hasattr(array, "__dlpack") and hasattr(target_xp, "from_dlpack"):
+            return target_xp.from_dlpack(array.__dlpack__(), **kwargs)
+        # hope xp.asarray works, otherwise try xp.array
+        else:
+            try:
+                return target_xp.asarray(array, **kwargs)
+            except Exception:
+                try:
+                    import numpy as np
+
+                    return target_xp.asarray(np.array(array), **kwargs)
+                except Exception:
+                    try:
+                        return target_xp.array(array, **kwargs)
+                    except Exception:
+                        return target_xp.array(np.array(array), **kwargs)
+
+    else:
+        c = CONVERTERS.get(key, None)
+        if c is None:
+            target_backend = get_backend(target_xp._earthkit_array_namespace_name)
+            c = DefaultConverter(target_backend)
+
+        return c.convert(array, **kwargs)

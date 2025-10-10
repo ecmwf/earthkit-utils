@@ -40,10 +40,15 @@ class TorchBackend(ArrayBackend):
     def to_numpy(self, v):
         return v.cpu().numpy()
 
-    def from_numpy(self, v):
+    def from_numpy(self, v, **kwargs):
         import torch
 
-        return torch.from_numpy(v)
+        device = kwargs.pop("device", None)
+        out = torch.from_numpy(v)
+        if device is not None:
+            return out.to(device)
+        else:
+            return out
 
     def from_other(self, v, **kwargs):
         import torch

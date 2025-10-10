@@ -53,7 +53,7 @@ class ArrayBackend(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def from_numpy(self, v):
+    def from_numpy(self, v, **kwargs):
         """Convert a numpy array to an array."""
         pass
 

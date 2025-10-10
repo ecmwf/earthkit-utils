@@ -7,8 +7,14 @@
 # nor does it submit to any jurisdiction.
 #
 
+from .array_backend import array_namespace
+from .convert import _NAMESPACES_BY_NAME
+from .convert import converter
+from .namespace.cupy import PatchedCupyNamespace
+from .namespace.numpy import PatchedNumpyNamespace
 
-def to_device(v, device, *args, array_backend=None, **kwargs):
+
+def to_device(v, device=None, array_backend=None, **kwargs):
     """
     Return a copy/view of array moved to device.
 
@@ -27,25 +33,29 @@ def to_device(v, device, *args, array_backend=None, **kwargs):
           backend is numpy, it will use the cupy backend.
     *args, **kwargs : forwarded to the underlying backend call
     """
-    from .backend import get_backend
-
-    current_backend = get_backend(v)
     if array_backend is None:
-        if device == "cpu":
-            target_backend = get_backend("numpy")
+        if device is None:
+            return v
         else:
-            if current_backend.name == "numpy":
-                target_backend = get_backend("cupy")
+            current_xp = array_namespace(v)
+            if device == "cpu":
+                device = None
+                target_xp = PatchedNumpyNamespace()
             else:
-                target_backend = current_backend
+                if current_xp._earthkit_array_namespace_name == "numpy":
+                    device = None
+                    target_xp = PatchedCupyNamespace()
+                else:
+                    target_xp = current_xp
     else:
-        target_backend = get_backend(array_backend)
+        if type(array_backend) is str:
+            target_xp = _NAMESPACES_BY_NAME[array_backend]
+        else:
+            target_xp = array_backend
 
-    # if target backend matches current backend, just move to device
-    # otherwise go through numpy
-    if current_backend == target_backend:
-        return target_backend.asarray(v, device=device, *args, **kwargs)
+    # TODO: if target_xp == current_xp: do something smarter
+
+    if device is None:
+        return converter(v, target_xp, **kwargs)
     else:
-        return target_backend.asarray(
-            target_backend.from_numpy(current_backend.to_numpy(v)), device=device, *args, **kwargs
-        )
+        return converter(v, target_xp, device=device, **kwargs)

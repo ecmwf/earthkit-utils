@@ -7,7 +7,6 @@
 # nor does it submit to any jurisdiction.
 #
 
-import array_api_compat.torch as torch
 
 from .abstract import PatchedNamespace
 
@@ -15,7 +14,13 @@ from .abstract import PatchedNamespace
 class PatchedTorchNamespace(PatchedNamespace):
 
     def __init__(self):
+        import array_api_compat.torch as torch
+
         super().__init__(torch)
+
+    @property
+    def _earthkit_array_namespace_name(self):
+        return "torch"
 
     def sign(self, x, *args, **kwargs):
         """Reimplement the sign function to handle NaNs.

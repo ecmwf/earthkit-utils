@@ -41,7 +41,7 @@ class NumpyBackend(ArrayBackend):
     def to_numpy(self, v):
         return v
 
-    def from_numpy(self, v):
+    def from_numpy(self, v, **kwargs):
         return v
 
     def from_other(self, v, **kwargs):

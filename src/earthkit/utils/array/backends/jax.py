@@ -27,7 +27,7 @@ class JaxBackend(ArrayBackend):
     @cached_property
     def compat_namespace(self):
         # jnp is array-api-compliant (see jax-ml/jax#22818)
-        return self.raw_namespace()
+        return self.raw_namespace
 
     @cached_property
     def raw_namespace(self):
@@ -40,8 +40,8 @@ class JaxBackend(ArrayBackend):
 
         return np.array(v)
 
-    def from_numpy(self, v):
-        return self.from_other(v)
+    def from_numpy(self, v, **kwargs):
+        return self.from_other(v, **kwargs)
 
     def from_other(self, v, **kwargs):
         import jax.numpy as jnp

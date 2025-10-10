@@ -37,7 +37,7 @@ class CupyBackend(ArrayBackend):
 
         return cupy
 
-    def from_numpy(self, v):
+    def from_numpy(self, v, **kwargs):
         return self.from_other(v)
 
     def to_numpy(self, v):

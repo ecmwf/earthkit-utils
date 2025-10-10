@@ -7,15 +7,19 @@
 # nor does it submit to any jurisdiction.
 #
 
-import array_api_compat.numpy as np
-
 from .abstract import PatchedNamespace
 
 
 class PatchedNumpyNamespace(PatchedNamespace):
 
     def __init__(self):
+        import array_api_compat.numpy as np
+
         super().__init__(np)
+
+    @property
+    def _earthkit_array_namespace_name(self):
+        return "numpy"
 
     def polyval(self, *args, **kwargs):
         from numpy.polynomial.polynomial import polyval
