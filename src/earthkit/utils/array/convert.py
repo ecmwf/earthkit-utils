@@ -130,8 +130,19 @@ def converter(array, target_xp, **kwargs):
         pass
     else:
         name = target_xp.__name__
-        if "." in name:
-            name = name.split(".")[-1]
+        if "jax" in name:
+            name = "jax"
+        elif "numpy" in name:
+            name = "numpy"
+        elif "cupy" in name:
+            name = "cupy"
+        elif "torch" in name:
+            name = "torch"
+        else:
+            # previous logic
+            if "." in name:
+                name = name.split(".")[-1]
+
         matched_xp = _NAMESPACES_BY_NAME.get(name, None)
         if matched_xp is None:
             target_xp = PatchedNamespace(target_xp)
