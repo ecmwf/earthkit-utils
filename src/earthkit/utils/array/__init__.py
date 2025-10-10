@@ -16,4 +16,5 @@ from .backend import _JAX
 from .backend import _NUMPY
 from .backend import _TORCH
 from .backend import get_backend
+from .convert import array_to_numpy
 from .device import to_device  # noqa: F401

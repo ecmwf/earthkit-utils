@@ -184,3 +184,10 @@ def converter(array, target_xp, **kwargs):
             c = DefaultConverter(target_backend)
 
         return c.convert(array, **kwargs)
+
+
+def array_to_numpy(array):
+    from .backend import backend_from_array
+
+    """Convert an array to a numpy array."""
+    return backend_from_array(array).to_numpy(array)
