@@ -2,7 +2,7 @@ from functools import cached_property
 
 import array_api_compat
 
-from .abstract import ArrayBackend
+from .backend import ArrayBackend
 
 
 class JaxBackend(ArrayBackend):
@@ -20,7 +20,7 @@ class JaxBackend(ArrayBackend):
     @cached_property
     def namespace(self):
         """Return the of the array-api-compat jax namespace."""
-        from earthkit.utils.array.namespace.abstract import PatchedNamespace
+        from earthkit.utils.array.namespace.namespace import PatchedNamespace
 
         return PatchedNamespace(self.compat_namespace)
 

@@ -4,7 +4,7 @@ import array_api_compat
 
 from .backend import _BACKENDS  # noqa: F401
 from .backend import _DEFAULT_BACKEND
-from .namespace.abstract import PatchedNamespace
+from .namespace.namespace import PatchedNamespace
 
 
 def array_namespace(*args: T.Any) -> T.Any:

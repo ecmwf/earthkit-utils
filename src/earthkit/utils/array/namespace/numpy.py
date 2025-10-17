@@ -7,7 +7,7 @@
 # nor does it submit to any jurisdiction.
 #
 
-from .abstract import PatchedNamespace
+from .namespace import PatchedNamespace
 
 
 class PatchedNumpyNamespace(PatchedNamespace):

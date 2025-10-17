@@ -8,7 +8,7 @@
 #
 
 
-from .abstract import PatchedNamespace
+from .namespace import PatchedNamespace
 
 
 class PatchedTorchNamespace(PatchedNamespace):

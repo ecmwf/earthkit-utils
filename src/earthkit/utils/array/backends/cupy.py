@@ -2,7 +2,7 @@ from functools import cached_property
 
 import array_api_compat
 
-from .abstract import ArrayBackend
+from .backend import ArrayBackend
 
 
 class CupyBackend(ArrayBackend):

@@ -16,9 +16,9 @@ from .backend import _JAX
 from .backend import _NUMPY
 from .backend import _TORCH
 from .backend import get_backend
-from .backends.abstract import ArrayBackend
-from .namespace.abstract import PatchedNamespace
+from .backends.backend import ArrayBackend
 from .namespace.cupy import PatchedCupyNamespace  # noqa: F401
+from .namespace.namespace import PatchedNamespace
 from .namespace.numpy import PatchedNumpyNamespace  # noqa: F401
 from .namespace.torch import PatchedTorchNamespace  # noqa: F401
 
