@@ -158,6 +158,19 @@ def test_patched_namespace_numpy():
 
     assert ns.allclose(ns.pow(c, 2), ns.asarray([1.0, 4.0, 9.0]))
 
+    # size, shape
+    x = ns.asarray([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    assert ns.size(x) == 6
+    assert ns.shape(x) == (2, 3)
+
+    x = ns.asarray([3.14])
+    assert ns.size(x) == 1
+    assert ns.shape(x) == (1,)
+
+    x = ns.asarray(3.14)
+    assert ns.size(x) == 1
+    assert ns.shape(x) == tuple()
+
 
 @pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
 def test_patched_namespace_torch():
@@ -181,6 +194,19 @@ def test_patched_namespace_torch():
     # sign
     x = ns.asarray([1.0, -2.4, ns.nan], dtype=ns.float64)
     assert ns.allclose(ns.sign(x), ns.asarray([1.0, -1.0, ns.nan], dtype=ns.float64), equal_nan=True)
+
+    # size, shape
+    x = ns.asarray([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    assert ns.size(x) == 6
+    assert ns.shape(x) == (2, 3)
+
+    x = ns.asarray([3.14])
+    assert ns.size(x) == 1
+    assert ns.shape(x) == (1,)
+
+    x = ns.asarray(3.14)
+    assert ns.size(x) == 1
+    assert ns.shape(x) == tuple()
 
 
 def test_to_device_numpy():

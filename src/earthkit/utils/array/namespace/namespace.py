@@ -80,3 +80,13 @@ class PatchedNamespace:
         Just a placeholder for the numpy function.
         """
         return dict()
+
+    def size(self, x):
+        """Return the size of an array."""
+        x = self._xp.asarray(x)
+        return x.size
+
+    def shape(self, x):
+        """Return the shape of an array."""
+        x = self._xp.asarray(x)
+        return x.shape

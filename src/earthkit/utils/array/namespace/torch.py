@@ -33,3 +33,13 @@ class PatchedTorchNamespace(PatchedNamespace):
         r = self._xp.asarray(r)
         r[self._xp.isnan(x)] = self._xp.nan
         return r
+
+    def size(self, x):
+        """Return the size of an array."""
+        x = self._xp.asarray(x)
+        return x.numel()
+
+    def shape(self, x):
+        """Return the shape of an array."""
+        x = self._xp.asarray(x)
+        return tuple(x.shape)
