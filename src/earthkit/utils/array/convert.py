@@ -15,12 +15,14 @@ from .namespace.cupy import PatchedCupyNamespace  # noqa: F401
 from .namespace.namespace import PatchedNamespace
 from .namespace.numpy import PatchedNumpyNamespace  # noqa: F401
 from .namespace.torch import PatchedTorchNamespace  # noqa: F401
-from .testing_backends import _CUPY
-from .testing_backends import _JAX
-from .testing_backends import _NUMPY
-from .testing_backends import _TORCH
-from .testing_backends import get_backend
-from .testing_backends.backend import ArrayBackend
+
+# TODO: avoid using testing internals
+from .testing import _CUPY
+from .testing import _JAX
+from .testing import _NUMPY
+from .testing import _TORCH
+from .testing import get_backend
+from .testing.backend import ArrayBackend
 
 
 class Converter(metaclass=ABCMeta):

@@ -13,15 +13,15 @@ import pytest
 
 from earthkit.utils.array import array_namespace_xarray
 from earthkit.utils.array import to_device
-from earthkit.utils.array.testing_backends import _CUPY
-from earthkit.utils.array.testing_backends import _JAX
-from earthkit.utils.array.testing_backends import _NUMPY
-from earthkit.utils.array.testing_backends import _TORCH
-from earthkit.utils.array.testing_backends import get_backend
-from earthkit.utils.testing import NO_CUPY
-from earthkit.utils.testing import NO_JAX
-from earthkit.utils.testing import NO_TORCH
-from earthkit.utils.testing import NO_XARRAY
+from earthkit.utils.array.testing import _CUPY
+from earthkit.utils.array.testing import _JAX
+from earthkit.utils.array.testing import _NUMPY
+from earthkit.utils.array.testing import _TORCH
+from earthkit.utils.array.testing import get_backend
+from earthkit.utils.array.testing.testing import NO_CUPY
+from earthkit.utils.array.testing.testing import NO_JAX
+from earthkit.utils.array.testing.testing import NO_TORCH
+from earthkit.utils.array.testing.testing import NO_XARRAY
 
 
 def test_utils_array_backend_numpy():

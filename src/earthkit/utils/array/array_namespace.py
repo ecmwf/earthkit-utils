@@ -3,8 +3,10 @@ import typing as T
 import array_api_compat
 
 from .namespace.namespace import PatchedNamespace
-from .testing_backends.backend import _BACKENDS  # noqa: F401
-from .testing_backends.backend import _DEFAULT_BACKEND
+
+# TODO: avoid using testing internals
+from .testing.backend import _BACKENDS
+from .testing.backend import _DEFAULT_BACKEND
 
 
 def array_namespace(*args: T.Any) -> T.Any:
