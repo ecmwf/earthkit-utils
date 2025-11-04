@@ -2,9 +2,9 @@ import typing as T
 
 import array_api_compat
 
-from .backend import _BACKENDS  # noqa: F401
-from .backend import _DEFAULT_BACKEND
 from .namespace.namespace import PatchedNamespace
+from .testing_backends.backend import _BACKENDS  # noqa: F401
+from .testing_backends.backend import _DEFAULT_BACKEND
 
 
 def array_namespace(*args: T.Any) -> T.Any:

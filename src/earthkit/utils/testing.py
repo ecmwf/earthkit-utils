@@ -11,7 +11,7 @@ import logging
 import os
 from importlib import import_module
 
-from earthkit.utils.array.backend import backend_from_name
+from earthkit.utils.array.testing_backends.backend import backend_from_name
 
 LOG = logging.getLogger(__name__)
 

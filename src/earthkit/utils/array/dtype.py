@@ -7,7 +7,7 @@
 # nor does it submit to any jurisdiction.
 #
 
-from .backend import _BACKENDS
+from .testing_backends.backend import _BACKENDS
 
 
 def to_numpy_dtype(dtype, default=None):

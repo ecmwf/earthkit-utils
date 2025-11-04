@@ -12,12 +12,12 @@
 import pytest
 
 from earthkit.utils.array import array_namespace_xarray
-from earthkit.utils.array import get_backend
 from earthkit.utils.array import to_device
-from earthkit.utils.array.backend import _CUPY
-from earthkit.utils.array.backend import _JAX
-from earthkit.utils.array.backend import _NUMPY
-from earthkit.utils.array.backend import _TORCH
+from earthkit.utils.array.testing_backends import _CUPY
+from earthkit.utils.array.testing_backends import _JAX
+from earthkit.utils.array.testing_backends import _NUMPY
+from earthkit.utils.array.testing_backends import _TORCH
+from earthkit.utils.array.testing_backends import get_backend
 from earthkit.utils.testing import NO_CUPY
 from earthkit.utils.testing import NO_JAX
 from earthkit.utils.testing import NO_TORCH
@@ -147,8 +147,6 @@ def test_utils_array_backend_jax():
 
 
 def test_patched_namespace_numpy():
-    from earthkit.utils.array import get_backend
-
     b = get_backend("numpy")
     ns = b.namespace
 
@@ -174,8 +172,6 @@ def test_patched_namespace_numpy():
 
 @pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
 def test_patched_namespace_torch():
-    from earthkit.utils.array import get_backend
-
     b = get_backend("torch")
     ns = b.namespace
 

@@ -7,7 +7,7 @@
 # nor does it submit to any jurisdiction.
 #
 
-from .array_backend import array_namespace
+from .array_namespace import array_namespace
 from .convert import _NAMESPACES_BY_NAME
 from .convert import converter
 from .namespace.cupy import PatchedCupyNamespace
