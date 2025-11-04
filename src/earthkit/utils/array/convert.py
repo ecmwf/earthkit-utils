@@ -10,12 +10,17 @@
 from abc import ABCMeta
 from abc import abstractmethod
 
+from .array_backend import array_namespace
 from .backend import _CUPY
 from .backend import _JAX
 from .backend import _NUMPY
 from .backend import _TORCH
-from .backend import backend_from_array
 from .backend import get_backend
+from .backends.backend import ArrayBackend
+from .namespace.cupy import PatchedCupyNamespace  # noqa: F401
+from .namespace.namespace import PatchedNamespace
+from .namespace.numpy import PatchedNumpyNamespace  # noqa: F401
+from .namespace.torch import PatchedTorchNamespace  # noqa: F401
 
 
 class Converter(metaclass=ABCMeta):
@@ -114,23 +119,82 @@ CONVERTERS = {
     ]
 }
 
+_NAMESPACES_BY_NAME = {
+    "numpy": PatchedNumpyNamespace,
+    "cupy": PatchedCupyNamespace,
+    "torch": PatchedTorchNamespace,
+}
 
-def converter(array, target):
-    if target is None:
-        return None
 
-    source_backend = backend_from_array(array)
-    target_backend = get_backend(target)
+def converter(array, target_xp, **kwargs):
+    # TODO: remove this, but currently blocked by ekd
+    if isinstance(target_xp, ArrayBackend):
+        target_xp = target_xp.namespace
 
-    if source_backend == target_backend:
-        return None
+    if isinstance(target_xp, PatchedNamespace):
+        pass
+    else:
+        if type(target_xp) is str:
+            name = target_xp
+            # TODO: remove once ekd test reliant on this
+            if name == "pytorch":
+                name = "torch"
+        else:
+            name = target_xp.__name__
+            if "jax" in name:
+                name = "jax"
+            elif "numpy" in name:
+                name = "numpy"
+            elif "cupy" in name:
+                name = "cupy"
+            elif "torch" in name:
+                name = "torch"
+            else:
+                # previous logic
+                if "." in name:
+                    name = name.split(".")[-1]
 
-    key = (source_backend.name, target_backend.name)
-    c = CONVERTERS.get(key, None)
+        matched_xp = _NAMESPACES_BY_NAME.get(name, None)
+        if matched_xp is None:
+            target_xp = PatchedNamespace(target_xp)
+        else:
+            target_xp = matched_xp()
 
-    if c is None:
-        c = DefaultConverter(target_backend)
-    return c
+    source_xp = array_namespace(array)
+
+    # if source_xp == target_xp:
+    #     return array
+
+    key = (source_xp._earthkit_array_namespace_name, target_xp._earthkit_array_namespace_name)
+
+    if key[1] is None:
+        # we don't know about the target
+
+        # try DLPack conversion
+        if hasattr(array, "__dlpack") and hasattr(target_xp, "from_dlpack"):
+            return target_xp.from_dlpack(array.__dlpack__(), **kwargs)
+        # hope xp.asarray works, otherwise try xp.array
+        else:
+            try:
+                return target_xp.asarray(array, **kwargs)
+            except Exception:
+                try:
+                    import numpy as np
+
+                    return target_xp.asarray(np.array(array), **kwargs)
+                except Exception:
+                    try:
+                        return target_xp.array(array, **kwargs)
+                    except Exception:
+                        return target_xp.array(np.array(array), **kwargs)
+
+    else:
+        c = CONVERTERS.get(key, None)
+        if c is None:
+            target_backend = get_backend(target_xp._earthkit_array_namespace_name)
+            c = DefaultConverter(target_backend)
+
+        return c.convert(array, **kwargs)
 
 
 def convert_array(array, target_backend=None, target_array_sample=None, **kwargs):
@@ -139,7 +203,7 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
     if target_backend is not None:
         target = target_backend
     else:
-        target = backend_from_array(target_array_sample)
+        target = array_namespace(target_array_sample)
 
     r = []
     target_is_list = True
@@ -148,11 +212,7 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
         target_is_list = False
 
     for a in array:
-        c = converter(a, target)
-        if c is None:
-            r.append(a)
-        else:
-            r.append(c.convert(a, **kwargs))
+        r.append(converter(a, target))
 
     if not target_is_list:
         return r[0]
@@ -160,5 +220,7 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
 
 
 def array_to_numpy(array):
+    from .backend import backend_from_array
+
     """Convert an array to a numpy array."""
     return backend_from_array(array).to_numpy(array)

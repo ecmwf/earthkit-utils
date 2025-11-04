@@ -7,15 +7,34 @@
 # nor does it submit to any jurisdiction.
 #
 
-from functools import partial
+from .namespace import PatchedNamespace
 
-import array_api_compat.cupy as _xp
-from array_api_compat.cupy import *  # noqa: F403
 
-# make polyval available on the namespace
-from cupy.polynomial.polynomial import polyval  # noqa: F401
+class PatchedCupyNamespace(PatchedNamespace):
 
-from earthkit.utils.array.compute import seterr
+    def __init__(self):
+        import array_api_compat.cupy as cp
 
-# make these methods available on the namespace
-seterr = partial(seterr, _xp)
+        super().__init__(cp)
+
+    @property
+    def _earthkit_array_namespace_name(self):
+        return "cupy"
+
+    def polyval(self, *args, **kwargs):
+        from cupy.polynomial.polynomial import polyval
+
+        return polyval(*args, **kwargs)
+
+    def asarray(self, *args, **kwargs):
+        device = kwargs.pop("device", None)
+        if device is not None:
+            if isinstance(device, str) and device.startswith("cuda"):
+                _, _, idx = device.partition(":")
+                dev_id = int(idx) if idx else 0
+            else:
+                dev_id = device
+            with self._xp.cuda.Device(dev_id):
+                self._xp.asarray(*args, **kwargs)
+        else:
+            self._xp.asarray(*args, **kwargs)

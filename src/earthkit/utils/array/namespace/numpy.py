@@ -7,8 +7,21 @@
 # nor does it submit to any jurisdiction.
 #
 
+from .namespace import PatchedNamespace
 
-from array_api_compat.numpy import *  # noqa: F403
 
-# make polyval available on the namespace
-from numpy.polynomial.polynomial import polyval  # noqa: F401
+class PatchedNumpyNamespace(PatchedNamespace):
+
+    def __init__(self):
+        import array_api_compat.numpy as np
+
+        super().__init__(np)
+
+    @property
+    def _earthkit_array_namespace_name(self):
+        return "numpy"
+
+    def polyval(self, *args, **kwargs):
+        from numpy.polynomial.polynomial import polyval
+
+        return polyval(*args, **kwargs)
