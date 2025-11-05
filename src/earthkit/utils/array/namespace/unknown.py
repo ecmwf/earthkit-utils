@@ -93,8 +93,22 @@ class UnknownPatchedNamespace:
         return x.shape
 
     def to_device(self, x, device, **kwargs):
-        # array.to_device(device, **kwargs) should be part of array api spec
+        # array.to_device(device, **kwargs) is part of array api spec
         # but in practice not all backends implement it yet
         # therefore we provide this function
         # in order to be able to patch it if needed
         return x.to_device(device, **kwargs)
+
+    def device(self, x):
+        # array.device is part of array api spec
+        # but in practice not all backends implement it yet
+        # therefore we provide this function
+        # in order to be able to patch it if needed
+        return x.device
+
+    def dtype(self, x):
+        # array.device is part of array api spec
+        # but in practice not all backends implement it yet
+        # therefore we provide this function
+        # in order to be able to patch it if needed
+        return x.dtype
