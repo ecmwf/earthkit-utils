@@ -1,3 +1,4 @@
+import sys
 import typing as T
 
 import array_api_compat
@@ -6,6 +7,11 @@ from .namespace import PatchedCupyNamespace
 from .namespace import PatchedNumpyNamespace
 from .namespace import PatchedTorchNamespace
 from .namespace import UnknownPatchedNamespace
+
+
+def _is_module_loaded(module_name: str) -> bool:
+    return module_name in sys.modules
+
 
 # TODO: avoid using testing internals
 
@@ -82,9 +88,8 @@ def array_namespace_xarray(data_object: T.Any) -> T.Any:
     TypeError
         If the array namespace cannot be inferred from the data object.
     """
-    from earthkit.utils.module import is_module_loaded
 
-    if not is_module_loaded("xarray"):
+    if not _is_module_loaded("xarray"):
         raise TypeError("xarray is not installed, cannot infer array namespace from data object.")
 
     import xarray as xr
