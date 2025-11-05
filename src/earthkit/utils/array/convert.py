@@ -11,10 +11,10 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 from .array_namespace import array_namespace
-from .namespace.cupy import PatchedCupyNamespace  # noqa: F401
+from .namespace.cupy import PatchedCupyNamespace
 from .namespace.namespace import PatchedNamespace
-from .namespace.numpy import PatchedNumpyNamespace  # noqa: F401
-from .namespace.torch import PatchedTorchNamespace  # noqa: F401
+from .namespace.numpy import PatchedNumpyNamespace
+from .namespace.torch import PatchedTorchNamespace
 
 # TODO: avoid using testing internals
 from .testing import _CUPY
@@ -222,7 +222,7 @@ def convert_array(array, target_backend=None, target_array_sample=None, **kwargs
 
 
 def array_to_numpy(array):
-    from .backend import backend_from_array
+    from .testing.backend import backend_from_array
 
     """Convert an array to a numpy array."""
     return backend_from_array(array).to_numpy(array)

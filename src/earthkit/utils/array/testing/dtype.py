@@ -8,7 +8,7 @@
 #
 
 # TODO: avoid using testing internals
-from .testing.backend import _BACKENDS
+from .backend import _BACKENDS
 
 
 def to_numpy_dtype(dtype, default=None):

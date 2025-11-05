@@ -6,6 +6,7 @@ class PatchedNamespace:
     def __getattr__(self, name):
         return getattr(self._xp, name)  # Delegate to underlying namespace
 
+    # TODO: come up with a better way to compare namespaces
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
