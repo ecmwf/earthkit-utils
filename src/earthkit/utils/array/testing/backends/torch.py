@@ -2,10 +2,10 @@ from functools import cached_property
 
 import array_api_compat
 
-from .backend import ArrayBackend
+from .unknown import UnknownArrayBackend
 
 
-class TorchBackend(ArrayBackend):
+class TorchBackend(UnknownArrayBackend):
     name = "torch"
     module_name = "torch"
 

@@ -7,12 +7,12 @@
 # nor does it submit to any jurisdiction.
 #
 
-from .namespace import PatchedNamespace
+from .unknown import UnknownPatchedNamespace
 
 
-class PatchedCupyNamespace(PatchedNamespace):
+class PatchedCupyNamespace(UnknownPatchedNamespace):
 
-    def __init__(self):
+    def __init__(self, xp=None):
         import array_api_compat.cupy as cp
 
         super().__init__(cp)

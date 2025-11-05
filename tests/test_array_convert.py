@@ -11,7 +11,7 @@
 
 import pytest
 
-from earthkit.utils.array import to_device
+from earthkit.utils.array import convert
 from earthkit.utils.array.testing import _CUPY
 from earthkit.utils.array.testing import _NUMPY
 from earthkit.utils.array.testing import _TORCH
@@ -22,7 +22,7 @@ from earthkit.utils.array.testing.testing import NO_TORCH
 
 def test_array_convert_numpy_to_numpy():
     x = _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_np = to_device(x, array_backend="numpy")
+    x_np = convert(x, array_backend="numpy")
     assert get_backend(x_np) is _NUMPY
     assert _NUMPY.allclose(x, x_np)
 
@@ -30,7 +30,7 @@ def test_array_convert_numpy_to_numpy():
 @pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
 def test_array_convert_torch_to_torch():
     x = _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_torch = to_device(x, array_backend="torch")
+    x_torch = convert(x, array_backend="torch")
     assert get_backend(x_torch) is _TORCH
     assert _TORCH.allclose(x, x_torch)
 
@@ -38,7 +38,7 @@ def test_array_convert_torch_to_torch():
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
 def test_array_convert_cupy_to_cupy():
     x = _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_cp = to_device(x, array_backend="cupy")
+    x_cp = convert(x, array_backend="cupy")
     assert get_backend(x_cp) is _CUPY
     assert _CUPY.allclose(x, x_cp)
 
@@ -46,7 +46,7 @@ def test_array_convert_cupy_to_cupy():
 @pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
 def test_array_convert_numpy_to_torch():
     x = _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_torch = to_device(x, array_backend="torch")
+    x_torch = convert(x, array_backend="torch")
     assert get_backend(x_torch) is _TORCH
     assert _TORCH.allclose(x_torch, _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32"))
 
@@ -55,7 +55,7 @@ def test_array_convert_numpy_to_torch():
 def test_array_convert_torch_to_numpy():
     x = _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32")
     assert get_backend(x) is _TORCH
-    x_np = to_device(x, array_backend="numpy")
+    x_np = convert(x, array_backend="numpy")
     assert get_backend(x_np) is _NUMPY
     assert _NUMPY.allclose(x_np, _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32"))
 
@@ -63,7 +63,7 @@ def test_array_convert_torch_to_numpy():
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
 def test_array_convert_numpy_to_cupy():
     x = _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_cp = to_device(x, array_backend="cupy")
+    x_cp = convert(x, array_backend="cupy")
     assert get_backend(x_cp) is _CUPY
     assert _CUPY.allclose(x_cp, _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32"))
 
@@ -72,7 +72,7 @@ def test_array_convert_numpy_to_cupy():
 def test_array_convert_cupy_to_numpy():
     x = _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32")
     assert get_backend(x) is _CUPY
-    x_np = to_device(x, array_backend="numpy")
+    x_np = convert(x, array_backend="numpy")
     assert get_backend(x_np) is _NUMPY
     assert _NUMPY.allclose(x_np, _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32"))
 
@@ -82,7 +82,7 @@ def test_array_convert_cupy_to_numpy():
 def test_array_convert_torch_to_cupy():
     x = _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32")
     assert get_backend(x) is _TORCH
-    x_cp = to_device(x, array_backend="cupy")
+    x_cp = convert(x, array_backend="cupy")
     assert get_backend(x_cp) is _CUPY
     assert _CUPY.allclose(x_cp, _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32"))
 
@@ -92,7 +92,7 @@ def test_array_convert_torch_to_cupy():
 def test_array_convert_cupy_to_torch():
     x = _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32")
     assert get_backend(x) is _CUPY
-    x_torch = to_device(x, array_backend="torch")
+    x_torch = convert(x, array_backend="torch")
     assert get_backend(x_torch) is _TORCH
-    x_torch_cpu = to_device(x_torch, "cpu", array_backend="torch")
+    x_torch_cpu = convert(x_torch, device="cpu", array_backend="torch")
     assert _TORCH.allclose(x_torch_cpu, _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32"))

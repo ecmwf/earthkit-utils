@@ -7,7 +7,7 @@ def is_scalar(data):
     return isinstance(data, (int, float)) or data is not data
 
 
-class ArrayBackend(metaclass=ABCMeta):
+class UnknownArrayBackend(metaclass=ABCMeta):
     """Abstract base class for array backends.
 
     An ArrayBackend enables using different array libraries

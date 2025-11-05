@@ -8,12 +8,12 @@
 #
 
 
-from .namespace import PatchedNamespace
+from .unknown import UnknownPatchedNamespace
 
 
-class PatchedTorchNamespace(PatchedNamespace):
+class PatchedTorchNamespace(UnknownPatchedNamespace):
 
-    def __init__(self):
+    def __init__(self, xp=None):
         import array_api_compat.torch as torch
 
         super().__init__(torch)

@@ -7,12 +7,12 @@
 # nor does it submit to any jurisdiction.
 #
 
-from .namespace import PatchedNamespace
+from .unknown import UnknownPatchedNamespace
 
 
-class PatchedNumpyNamespace(PatchedNamespace):
+class PatchedNumpyNamespace(UnknownPatchedNamespace):
 
-    def __init__(self):
+    def __init__(self, xp=None):
         import array_api_compat.numpy as np
 
         super().__init__(np)

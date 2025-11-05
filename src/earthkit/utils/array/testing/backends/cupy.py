@@ -2,10 +2,10 @@ from functools import cached_property
 
 import array_api_compat
 
-from .backend import ArrayBackend
+from .unknown import UnknownArrayBackend
 
 
-class CupyBackend(ArrayBackend):
+class CupyBackend(UnknownArrayBackend):
     name = "cupy"
     module_name = "cupy"
 

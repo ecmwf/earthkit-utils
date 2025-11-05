@@ -10,11 +10,11 @@
 
 import array_api_compat
 
-from .backends import ArrayBackend
 from .backends import CupyBackend
 from .backends import JaxBackend
 from .backends import NumpyBackend
 from .backends import TorchBackend
+from .backends import UnknownArrayBackend
 
 _NUMPY = NumpyBackend()
 _TORCH = TorchBackend()
@@ -68,7 +68,7 @@ def backend_from_module(module, raise_exception=True):
 def get_backend(data):
     import inspect
 
-    if isinstance(data, ArrayBackend):
+    if isinstance(data, UnknownArrayBackend):
         return data
     elif isinstance(data, str):
         return backend_from_name(data, raise_exception=True)

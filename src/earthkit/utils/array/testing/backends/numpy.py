@@ -2,10 +2,10 @@ from functools import cached_property
 
 import array_api_compat
 
-from .backend import ArrayBackend
+from .unknown import UnknownArrayBackend
 
 
-class NumpyBackend(ArrayBackend):
+class NumpyBackend(UnknownArrayBackend):
     name = "numpy"
     module_name = "numpy"
 

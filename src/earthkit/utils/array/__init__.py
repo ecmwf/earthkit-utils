@@ -10,7 +10,4 @@
 from earthkit.utils.array import testing
 
 from .array_namespace import array_namespace
-from .array_namespace import array_namespace_xarray
-from .convert import array_to_numpy
-from .convert import convert_array
-from .device import to_device
+from .convert import convert

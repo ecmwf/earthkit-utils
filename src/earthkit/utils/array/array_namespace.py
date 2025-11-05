@@ -2,7 +2,7 @@ import typing as T
 
 import array_api_compat
 
-from .namespace.namespace import PatchedNamespace
+from .namespace.unknown import UnknownPatchedNamespace
 
 # TODO: avoid using testing internals
 from .testing.backend import _BACKENDS
@@ -44,7 +44,7 @@ def array_namespace(*args: T.Any) -> T.Any:
             if b.match_namespace(xp):
                 return b.namespace
 
-        return PatchedNamespace(xp)
+        return UnknownPatchedNamespace(xp)
 
 
 # This is experimental and may not be needed in the future.

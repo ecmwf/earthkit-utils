@@ -11,8 +11,8 @@
 
 import pytest
 
-from earthkit.utils.array import array_namespace_xarray
-from earthkit.utils.array import to_device
+from earthkit.utils.array import convert
+from earthkit.utils.array.array_namespace import array_namespace_xarray
 from earthkit.utils.array.testing import _CUPY
 from earthkit.utils.array.testing import _JAX
 from earthkit.utils.array.testing import _NUMPY
@@ -210,7 +210,7 @@ def test_to_device_numpy():
     assert b is _NUMPY
     xp = b.namespace
     x = xp.asarray([1.0, 2.0, 3.0])
-    y = to_device(x, "cpu")
+    y = convert(x, device="cpu")
     b_y = get_backend(y)
     assert b_y is _NUMPY
     # assert _NUMPY.has_device("cpu")
@@ -221,7 +221,7 @@ def test_to_device_numpy():
 def test_to_device_torch_mps_1():
     x = _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32")
 
-    x1 = to_device(x, "cpu", array_backend="torch")
+    x1 = convert(x, device="cpu", array_backend="torch")
     b_x1 = get_backend(x1)
     assert b_x1 is _TORCH
     assert x1.get_device() == -1
@@ -233,14 +233,14 @@ def test_to_device_torch_mps_1():
 
     if mps_available:
         # move to gpu
-        x2 = to_device(x1, "mps", array_backend="torch")
+        x2 = convert(x1, device="mps", array_backend="torch")
         b_x2 = get_backend(x2)
         assert b_x2 is _TORCH
         assert x2.get_device() == 0
         x2 += 1.0
 
         # move back to cpu
-        x3 = to_device(x2, "cpu", array_backend="torch")
+        x3 = convert(x2, device="cpu", array_backend="torch")
         b_x3 = get_backend(x3)
         assert b_x3 is _TORCH
         assert x3.get_device() == -1
