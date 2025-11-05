@@ -25,3 +25,9 @@ class PatchedNumpyNamespace(UnknownPatchedNamespace):
         from numpy.polynomial.polynomial import polyval
 
         return polyval(*args, **kwargs)
+
+    def devices(self):
+        from numpy import __array_namespace_info__
+
+        info = __array_namespace_info__()
+        return info.devices()

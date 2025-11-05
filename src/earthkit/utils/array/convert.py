@@ -83,7 +83,6 @@ def convert(array, *, device=None, array_backend=None, **kwargs):
 
     if device is not None:
         xp = array_namespace(array)
-        # TODO: add this method to patched namespaces
         array = xp.to_device(array, device=device, **kwargs)
 
     return array
