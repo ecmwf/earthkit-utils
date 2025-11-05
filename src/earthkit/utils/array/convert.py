@@ -1,4 +1,8 @@
+import array_api_compat
+
+from .array_namespace import _get_array_name
 from .array_namespace import array_namespace
+from .array_namespace import namespaces
 from .converter import FromCupyConverter
 from .converter import FromJaxConverter
 from .converter import FromNumpyConverter
@@ -6,7 +10,6 @@ from .converter import FromTorchConverter
 from .converter import FromUnknownConverter
 from .namespace import PatchedCupyNamespace
 from .namespace import PatchedNumpyNamespace
-from .namespace import PatchedTorchNamespace
 from .namespace import UnknownPatchedNamespace
 
 converters = {
@@ -15,26 +18,6 @@ converters = {
     "torch": FromTorchConverter,
     "jax": FromJaxConverter,
 }
-
-namespaces = {
-    "numpy": PatchedNumpyNamespace,
-    "cupy": PatchedCupyNamespace,
-    "torch": PatchedTorchNamespace,
-}
-
-
-def _get_array_name(xp):
-    name = xp.__name__
-    if "jax" in name:
-        return "jax"
-    elif "numpy" in name:
-        return "numpy"
-    elif "cupy" in name:
-        return "cupy"
-    elif "torch" in name:
-        return "torch"
-    else:
-        return None
 
 
 def _get_converter(source_array_backend):
@@ -50,7 +33,8 @@ def _get_namespace(array_backend):
     if isinstance(array_backend, str):
         return namespaces[array_backend]()
     else:
-        return namespaces.get(_get_array_name(array_backend), UnknownPatchedNamespace)(array_backend)
+        xp = array_api_compat.array_namespace(array_backend.asarray(0))
+        return namespaces.get(_get_array_name(array_backend), UnknownPatchedNamespace)(xp)
 
 
 def convert(array, *, device=None, array_backend=None, **kwargs):

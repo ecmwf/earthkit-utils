@@ -2,11 +2,32 @@ import typing as T
 
 import array_api_compat
 
-from .namespace.unknown import UnknownPatchedNamespace
+from .namespace import PatchedCupyNamespace
+from .namespace import PatchedNumpyNamespace
+from .namespace import PatchedTorchNamespace
+from .namespace import UnknownPatchedNamespace
 
 # TODO: avoid using testing internals
-from .testing.backend import _BACKENDS
-from .testing.backend import _DEFAULT_BACKEND
+
+namespaces = {
+    "numpy": PatchedNumpyNamespace,
+    "cupy": PatchedCupyNamespace,
+    "torch": PatchedTorchNamespace,
+}
+
+
+def _get_array_name(xp):
+    name = xp.__name__
+    if "jax" in name:
+        return "jax"
+    elif "numpy" in name:
+        return "numpy"
+    elif "cupy" in name:
+        return "cupy"
+    elif "torch" in name:
+        return "torch"
+    else:
+        return None
 
 
 def array_namespace(*args: T.Any) -> T.Any:
@@ -37,14 +58,10 @@ def array_namespace(*args: T.Any) -> T.Any:
     """
     arrays = [a for a in args if hasattr(a, "shape")]
     if not arrays:
-        return _DEFAULT_BACKEND.namespace
+        return PatchedNumpyNamespace()
     else:
         xp = array_api_compat.array_namespace(*arrays)
-        for b in _BACKENDS:
-            if b.match_namespace(xp):
-                return b.namespace
-
-        return UnknownPatchedNamespace(xp)
+        return namespaces.get(_get_array_name(xp), UnknownPatchedNamespace)(xp)
 
 
 # This is experimental and may not be needed in the future.
