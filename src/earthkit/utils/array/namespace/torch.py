@@ -43,3 +43,6 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
         """Return the shape of an array."""
         x = self._xp.asarray(x)
         return tuple(x.shape)
+
+    def to_device(self, x, device, **kwargs):
+        return x.to(device, **kwargs)

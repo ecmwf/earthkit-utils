@@ -91,3 +91,10 @@ class UnknownPatchedNamespace:
         """Return the shape of an array."""
         x = self._xp.asarray(x)
         return x.shape
+
+    def to_device(self, x, device, **kwargs):
+        # array.to_device(device, **kwargs) should be part of array api spec
+        # but in practice not all backends implement it yet
+        # therefore we provide this function
+        # in order to be able to patch it if needed
+        return x.to_device(device, **kwargs)

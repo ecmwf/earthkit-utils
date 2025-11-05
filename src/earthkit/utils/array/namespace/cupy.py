@@ -38,3 +38,6 @@ class PatchedCupyNamespace(UnknownPatchedNamespace):
                 self._xp.asarray(*args, **kwargs)
         else:
             self._xp.asarray(*args, **kwargs)
+
+    def to_device(self, x, device, **kwargs):
+        return self.asarray(x, device=device, **kwargs)
