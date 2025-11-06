@@ -21,9 +21,9 @@ class NumpyBackend(UnknownArrayBackend):
     @cached_property
     def namespace(self):
         """Return the patched version of the array-api-compat numpy namespace."""
-        from earthkit.utils.array.namespace.numpy import PatchedNumpyNamespace
+        from earthkit.utils.array.namespace import NAMESPACES
 
-        return PatchedNumpyNamespace()
+        return NAMESPACES["numpy"]
 
     @cached_property
     def compat_namespace(self):

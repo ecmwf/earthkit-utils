@@ -20,9 +20,9 @@ class TorchBackend(UnknownArrayBackend):
     @cached_property
     def namespace(self):
         """Return the patched version of the array-api-compat torch namespace."""
-        from earthkit.utils.array.namespace.torch import PatchedTorchNamespace
+        from earthkit.utils.array.namespace import NAMESPACES
 
-        return PatchedTorchNamespace()
+        return NAMESPACES["torch"]
 
     @cached_property
     def compat_namespace(self):

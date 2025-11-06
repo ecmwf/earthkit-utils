@@ -265,7 +265,7 @@ def _make_xarray(backend):
 def test_namespace_xarray_numpy():
     a = _make_xarray(_NUMPY)
     b = array_namespace_xarray(a)
-    assert b == _NUMPY.namespace
+    assert b is _NUMPY.namespace
 
 
 @pytest.mark.xfail
@@ -274,7 +274,7 @@ def test_namespace_xarray_numpy():
 def test_namespace_xarray_torch():
     a = _make_xarray(_TORCH)
     b = array_namespace_xarray(a)
-    assert b == _TORCH.namespace
+    assert b is _TORCH.namespace
 
 
 if __name__ == "__main__":

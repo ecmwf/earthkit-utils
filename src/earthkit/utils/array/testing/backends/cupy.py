@@ -20,9 +20,9 @@ class CupyBackend(UnknownArrayBackend):
     @cached_property
     def namespace(self):
         """Return the patched version of the array-api-compat numpy namespace."""
-        from earthkit.utils.array.namespace.cupy import PatchedCupyNamespace
+        from earthkit.utils.array.namespace import NAMESPACES
 
-        return PatchedCupyNamespace()
+        return NAMESPACES["cupy"]
 
     @cached_property
     def compat_namespace(self):
