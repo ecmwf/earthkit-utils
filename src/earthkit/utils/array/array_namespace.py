@@ -3,8 +3,8 @@ import typing as T
 
 import array_api_compat
 
-from .namespace import DEFAULT_NAMESPACE
-from .namespace import NAMESPACES
+from .namespace import _DEFAULT_NAMESPACE
+from .namespace import _NAMESPACES
 from .namespace import UnknownPatchedNamespace
 
 
@@ -54,10 +54,10 @@ def array_namespace(*args: T.Any) -> T.Any:
     """
     arrays = [a for a in args if hasattr(a, "shape")]
     if not arrays:
-        return DEFAULT_NAMESPACE
+        return _DEFAULT_NAMESPACE
     else:
         xp = array_api_compat.array_namespace(*arrays)
-        namespace = NAMESPACES.get(_get_array_name(xp))
+        namespace = _NAMESPACES.get(_get_array_name(xp))
         if namespace is None:
             namespace = UnknownPatchedNamespace(xp)
         return namespace

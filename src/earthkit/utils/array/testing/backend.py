@@ -10,30 +10,16 @@
 
 import array_api_compat
 
-from .backends import CupyBackend
-from .backends import JaxBackend
-from .backends import NumpyBackend
-from .backends import TorchBackend
+from earthkit.utils.array.array_namespace import _get_array_name
+
+from .backends import _BACKENDS
 from .backends import UnknownArrayBackend
-
-_NUMPY = NumpyBackend()
-_TORCH = TorchBackend()
-_JAX = JaxBackend()
-_CUPY = CupyBackend()
-
-_DEFAULT_BACKEND = _NUMPY
-_BACKENDS = [_NUMPY, _TORCH, _CUPY, _JAX]
-_BACKENDS_BY_NAME = {v.name: v for v in _BACKENDS}
-_BACKENDS_BY_MODULE = {v.module_name: v for v in _BACKENDS}
-
-# add pytorch name for backward compatibility
-_BACKENDS_BY_NAME["pytorch"] = _TORCH
 
 
 def backend_from_array(array, raise_exception=True):
     """Return the array backend of an array-like object."""
     xp = array_api_compat.array_namespace(array)
-    for b in _BACKENDS:
+    for b in _BACKENDS.values():
         if b.match_namespace(xp):
             return b
 
@@ -44,7 +30,7 @@ def backend_from_array(array, raise_exception=True):
 
 
 def backend_from_name(name, raise_exception=True):
-    r = _BACKENDS_BY_NAME.get(name, None)
+    r = _BACKENDS.get(name, None)
     if raise_exception and r is None:
         raise ValueError(f"Unknown array backend name={name}")
     return r
@@ -55,11 +41,8 @@ def backend_from_module(module, raise_exception=True):
 
     r = None
     if inspect.ismodule(module):
-        name = module.__name__
-        if "." in name:
-            name = name.split(".")[-1]  # get the top-level module name
-
-        r = _BACKENDS_BY_MODULE.get(name, None)
+        name = _get_array_name(module)
+        r = _BACKENDS.get(name, None)
     if raise_exception and r is None:
         raise ValueError(f"Unknown array backend module={module}")
     return r

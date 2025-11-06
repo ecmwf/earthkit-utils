@@ -13,10 +13,10 @@ import pytest
 
 from earthkit.utils.array import convert
 from earthkit.utils.array.array_namespace import array_namespace_xarray
-from earthkit.utils.array.testing import _CUPY
-from earthkit.utils.array.testing import _JAX
-from earthkit.utils.array.testing import _NUMPY
-from earthkit.utils.array.testing import _TORCH
+from earthkit.utils.array.testing import _CUPY_BACKEND as _CUPY
+from earthkit.utils.array.testing import _JAX_BACKEND as _JAX
+from earthkit.utils.array.testing import _NUMPY_BACKEND as _NUMPY
+from earthkit.utils.array.testing import _TORCH_BACKEND as _TORCH
 from earthkit.utils.array.testing import get_backend
 from earthkit.utils.array.testing.testing import NO_CUPY
 from earthkit.utils.array.testing.testing import NO_JAX
@@ -51,7 +51,7 @@ def test_utils_array_backend_numpy():
         import torch
 
         v_pt = torch.ones(10, dtype=torch.float64)
-        pt_b = get_backend("pytorch")
+        pt_b = get_backend("torch")
         r = pt_b.from_other(v)
         assert torch.is_tensor(r)
         assert torch.allclose(r, v_pt)
@@ -59,7 +59,7 @@ def test_utils_array_backend_numpy():
 
 @pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
 def test_utils_array_backend_torch():
-    b = get_backend("pytorch")
+    b = get_backend("torch")
     assert b.name == "torch"
     assert b is _TORCH
 
