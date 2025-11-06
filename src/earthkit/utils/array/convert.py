@@ -21,7 +21,12 @@ def _get_namespace(array_backend):
     if isinstance(array_backend, str):
         return NAMESPACES[array_backend]
     else:
-        xp = array_api_compat.array_namespace(array_backend.asarray(0))
+        if hasattr(array_backend, "asarray"):
+            xp = array_api_compat.array_namespace(array_backend.asarray(0))
+        elif hasattr(array_backend, "array"):
+            xp = array_api_compat.array_namespace(array_backend.array(0))
+        else:
+            raise ValueError(f"Cannot determine array namespace from {array_backend}")
         namespace = NAMESPACES.get(_get_array_name(array_backend))
         if namespace is None:
             namespace = UnknownPatchedNamespace(xp)
