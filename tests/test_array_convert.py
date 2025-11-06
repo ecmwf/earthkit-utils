@@ -12,10 +12,10 @@
 import pytest
 
 from earthkit.utils.array import convert
-from earthkit.utils.array.testing import _CUPY_BACKEND as _CUPY
-from earthkit.utils.array.testing import _NUMPY_BACKEND as _NUMPY
-from earthkit.utils.array.testing import _TORCH_BACKEND as _TORCH
-from earthkit.utils.array.testing import get_backend
+from earthkit.utils.array.testing.backend import get_backend
+from earthkit.utils.array.testing.backends import _CUPY_BACKEND as _CUPY
+from earthkit.utils.array.testing.backends import _NUMPY_BACKEND as _NUMPY
+from earthkit.utils.array.testing.backends import _TORCH_BACKEND as _TORCH
 from earthkit.utils.array.testing.testing import NO_CUPY
 from earthkit.utils.array.testing.testing import NO_TORCH
 
