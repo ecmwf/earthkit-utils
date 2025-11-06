@@ -43,3 +43,9 @@ class PatchedNumpyNamespace(UnknownPatchedNamespace):
 
         info = __array_namespace_info__()
         return info.devices()
+
+    def isclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
+        return self.xp.isclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+    def allclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
+        return self.xp.allclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan)

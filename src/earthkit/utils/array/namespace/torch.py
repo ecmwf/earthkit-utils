@@ -69,11 +69,5 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
         if torch.backends.mps.is_available():
             for i in range(torch.mps.device_count()):
                 devices.append(f"mps:{i}")
-        if torch.backends.xpu.is_available():
-            for i in range(torch.xpu.device_count()):
-                devices.append(f"xpu:{i}")
-        if torch.backends.mtia.is_available():
-            for i in range(torch.mtia.device_count()):
-                devices.append(f"mtia:{i}")
 
         return devices

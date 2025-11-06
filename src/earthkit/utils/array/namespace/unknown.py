@@ -156,3 +156,14 @@ class UnknownPatchedNamespace:
         # therefore we provide this function
         # in order to be able to patch it if needed
         return x.dtype
+
+    def isclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
+        x, y = self.xp.asarray(x), self.xp.asarray(y)
+        result = self.xp.abs(x - y) <= atol + rtol * self.xp.abs(y)
+        if equal_nan:
+            nan_mask = self.xp.isnan(x) & self.xp.isnan(y)
+            result = result | nan_mask
+        return result
+
+    def allclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
+        return self.xp.all(self.isclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan))
