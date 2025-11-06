@@ -25,7 +25,7 @@ class FromUnknownConverter:
         5. Converts to numpy, then tries to convert using xp.array on the new numpy array.
         """
         if hasattr(array, "__dlpack__") and hasattr(xp, "from_dlpack"):
-            return xp.from_dlpack(array.__dlpack__(), **kwargs)
+            return xp.from_dlpack(array, **kwargs)
         else:
             try:
                 return xp.asarray(array, **kwargs)
