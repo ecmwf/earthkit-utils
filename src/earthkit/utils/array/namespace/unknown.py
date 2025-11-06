@@ -60,13 +60,23 @@ class UnknownPatchedNamespace:
                 c0 = c[-i] + c0 * x
             return c0
 
-    def percentile(self, a, q, **kwargs):
+    def percentile(self, a, q, axis=None, **kwargs):
         """Compute percentiles by calling the quantile function."""
-        if hasattr(self.xp, "percentile"):
-            return self.xp.percentile(a, q, **kwargs)
-        else:
-            # TODO: fix - this is not array-api compliant
-            return self.xp.quantile(a, q / 100, **kwargs)
+        if axis is None:
+            axis = 0
+            a = self.xp.reshape(a, -1)
+
+        a = self.xp.sort(a, axis=axis)
+        n = self.xp.shape(a)[axis]
+        rank = (q / 100) * (n - 1)
+        low = int(self.xp.floor(rank))
+        high = int(self.xp.ceil(rank))
+        weight = rank - low
+
+        a_low = self.xp.take(a, low, axis=axis)
+        a_high = self.xp.take(a, high, axis=axis)
+
+        return (1 - weight) * a_low + weight * a_high
 
     def histogram2d(self, x, y, *args, **kwargs):
         """Compute a 2D histogram.
@@ -94,12 +104,18 @@ class UnknownPatchedNamespace:
 
     def size(self, x):
         """Return the size of an array."""
-        x = self.xp.asarray(x)
+        # array.size is part of array api spec
+        # but in practice not all backends implement it yet
+        # therefore we provide this function
+        # in order to be able to patch it if needed
         return x.size
 
     def shape(self, x):
         """Return the shape of an array."""
-        x = self.xp.asarray(x)
+        # array.shape is part of array api spec
+        # but in practice not all backends implement it yet
+        # therefore we provide this function
+        # in order to be able to patch it if needed
         return x.shape
 
     def to_device(self, x, device, **kwargs):

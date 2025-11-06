@@ -37,6 +37,9 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
         r[self.xp.isnan(x)] = self.xp.nan
         return r
 
+    def percentile(self, a, q, axis=None, **kwargs):
+        return self._xp.quantile(a, q / 100, dim=axis, **kwargs)
+
     def size(self, x):
         """Return the size of an array."""
         x = self.xp.asarray(x)

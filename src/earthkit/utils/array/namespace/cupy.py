@@ -29,6 +29,9 @@ class PatchedCupyNamespace(UnknownPatchedNamespace):
 
         return polyval(*args, **kwargs)
 
+    def percentile(self, a, q, axis=None, **kwargs):
+        return self._xp.percentile(a, q, axis=axis, **kwargs)
+
     def asarray(self, *args, **kwargs):
         device = kwargs.pop("device", None)
         if device is not None:

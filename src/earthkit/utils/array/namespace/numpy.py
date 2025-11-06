@@ -29,6 +29,9 @@ class PatchedNumpyNamespace(UnknownPatchedNamespace):
 
         return polyval(*args, **kwargs)
 
+    def percentile(self, a, q, axis=None, **kwargs):
+        return self._xp.percentile(a, q, axis=axis, **kwargs)
+
     def devices(self):
         from numpy import __array_namespace_info__
 
