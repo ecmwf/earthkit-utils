@@ -29,8 +29,14 @@ class PatchedCupyNamespace(UnknownPatchedNamespace):
 
         return polyval(*args, **kwargs)
 
-    def percentile(self, a, q, axis=None, **kwargs):
-        return self._xp.percentile(a, q, axis=axis, **kwargs)
+    def percentile(self, a, q, axis=None):
+        return self._xp.percentile(a, q, axis=axis)
+
+    def histogram2d(self, x, y, *, bins=10):
+        return self.xp.histogram2d(x, y, bins=bins)
+
+    def histogramdd(self, x, *, bins=10):
+        return self.xp.histogramdd(x, bins=bins)
 
     def asarray(self, *args, **kwargs):
         device = kwargs.pop("device", None)

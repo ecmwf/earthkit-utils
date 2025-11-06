@@ -60,7 +60,7 @@ class UnknownPatchedNamespace:
                 c0 = c[-i] + c0 * x
             return c0
 
-    def percentile(self, a, q, axis=None, **kwargs):
+    def percentile(self, a, q, axis=None):
         """Compute percentiles by calling the quantile function."""
         if axis is None:
             axis = 0
@@ -78,7 +78,7 @@ class UnknownPatchedNamespace:
 
         return (1 - weight) * a_low + weight * a_high
 
-    def histogram2d(self, x, y, *args, **kwargs):
+    def histogram2d(self, x, y, *, bins=10):
         """Compute a 2D histogram.
 
         Parameters
@@ -88,19 +88,37 @@ class UnknownPatchedNamespace:
         y: array-like
             An array containing the y coordinates of the points to be histogrammed.
         """
-        if hasattr(self.xp, "histogram2d"):
-            return self.xp.histogram2d(x, y, *args, **kwargs)
-        else:
-            # TODO: fix - this is not array-api compliant
-            return self.xp.histogramdd(self.xp.stack([x, y]).T, *args, **kwargs)
+        return self.xp.histogramdd(self.xp.stack([x, y]).T, bins=bins)
 
-    # TODO: figure out what this is for
-    def seterr(self, *args, **kwargs):
-        """Set how floating-point errors are handled.
+    def histogramdd(self, x, *, bins=10):
+        x = self.xp.asarray(x)
+        N, D = x.shape
 
-        Just a placeholder for the numpy function.
-        """
-        return dict()
+        if isinstance(bins, int):
+            bins = [bins] * D
+        elif len(bins) != D:
+            raise ValueError("bins must have length equal to number of dimensions")
+
+        mins = self.xp.min(x, axis=0)
+        maxs = self.xp.max(x, axis=0)
+
+        edges = [self.xp.linspace(mins[d], maxs[d], bins[d] + 1) for d in range(D)]
+
+        idx = []
+        for d in range(D):
+            bin_width = edges[d][1] - edges[d][0]
+            i = self.xp.floor((x[:, d] - edges[d][0]) / bin_width).astype(int)
+            i = self.xp.clip(i, 0, bins[d] - 1)
+            idx.append(i)
+
+        idx = self.xp.stack(idx, axis=1)
+
+        # TODO: do we need to handle device here?
+        H = self.xp.zeros(bins, dtype=float)
+        for i in range(N):
+            H[tuple(idx[i])] += 1
+
+        return H, edges
 
     def size(self, x):
         """Return the size of an array."""

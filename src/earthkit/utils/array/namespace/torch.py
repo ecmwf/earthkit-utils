@@ -37,8 +37,8 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
         r[self.xp.isnan(x)] = self.xp.nan
         return r
 
-    def percentile(self, a, q, axis=None, **kwargs):
-        return self._xp.quantile(a, q / 100, dim=axis, **kwargs)
+    def percentile(self, a, q, axis=None):
+        return self._xp.quantile(a, q / 100, dim=axis)
 
     def size(self, x):
         """Return the size of an array."""
@@ -49,6 +49,9 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
         """Return the shape of an array."""
         x = self.xp.asarray(x)
         return tuple(x.shape)
+
+    def histogramdd(self, x, *, bins=10):
+        return self.xp.histogramdd(x, bins=bins)
 
     def to_device(self, x, device, **kwargs):
         return x.to(device, **kwargs)
