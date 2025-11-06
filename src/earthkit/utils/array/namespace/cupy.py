@@ -12,10 +12,13 @@ from .unknown import UnknownPatchedNamespace
 
 class PatchedCupyNamespace(UnknownPatchedNamespace):
 
-    def __init__(self, xp=None):
+    def __init__(self):
+        super().__init__(None)
+
+    def _set_xp(self):
         import array_api_compat.cupy as cp
 
-        super().__init__(cp)
+        self._xp = cp
 
     @property
     def _earthkit_array_namespace_name(self):
@@ -34,10 +37,10 @@ class PatchedCupyNamespace(UnknownPatchedNamespace):
                 dev_id = int(idx) if idx else 0
             else:
                 dev_id = device
-            with self._xp.cuda.Device(dev_id):
-                self._xp.asarray(*args, **kwargs)
+            with self.xp.cuda.Device(dev_id):
+                self.xp.asarray(*args, **kwargs)
         else:
-            self._xp.asarray(*args, **kwargs)
+            self.xp.asarray(*args, **kwargs)
 
     def to_device(self, x, device, **kwargs):
         return self.asarray(x, device=device, **kwargs)

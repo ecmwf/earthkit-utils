@@ -3,16 +3,26 @@ class UnknownPatchedNamespace:
     def __init__(self, xp):
         self._xp = xp
 
+    @property
+    def xp(self):
+        if self._xp is None:
+            self._set_xp()
+        return self._xp
+
+    def _set_xp(self):
+        # This method should write self.__xp to the appropriate array namespace
+        raise NotImplementedError("Subclasses must implement set_xp()")
+
     def __getattr__(self, name):
-        return getattr(self._xp, name)  # Delegate to underlying namespace
+        return getattr(self.xp, name)  # Delegate to underlying namespace
 
     # TODO: come up with a better way to compare namespaces
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        return self._earthkit_array_namespace_name == other._earthkit_array_namespace_name
 
     @property
     def _earthkit_array_namespace_name(self):
-        return None
+        return self.xp.__name__
 
     def polyval(self, x, c):
         """Evaluation of a polynomial using Horner's scheme.
@@ -42,8 +52,8 @@ class UnknownPatchedNamespace:
         --------
         Based on the ``numpy.polynomal.polynomial.polyval`` function.
         """
-        if hasattr(self._xp, "polyval"):
-            return self._xp.polyval(x, c)
+        if hasattr(self.xp, "polyval"):
+            return self.xp.polyval(x, c)
         else:
             c0 = c[-1] + x * 0
             for i in range(2, len(c) + 1):
@@ -52,11 +62,11 @@ class UnknownPatchedNamespace:
 
     def percentile(self, a, q, **kwargs):
         """Compute percentiles by calling the quantile function."""
-        if hasattr(self._xp, "percentile"):
-            return self._xp.percentile(a, q, **kwargs)
+        if hasattr(self.xp, "percentile"):
+            return self.xp.percentile(a, q, **kwargs)
         else:
             # TODO: fix - this is not array-api compliant
-            return self._xp.quantile(a, q / 100, **kwargs)
+            return self.xp.quantile(a, q / 100, **kwargs)
 
     def histogram2d(self, x, y, *args, **kwargs):
         """Compute a 2D histogram.
@@ -68,11 +78,11 @@ class UnknownPatchedNamespace:
         y: array-like
             An array containing the y coordinates of the points to be histogrammed.
         """
-        if hasattr(self._xp, "histogram2d"):
-            return self._xp.histogram2d(x, y, *args, **kwargs)
+        if hasattr(self.xp, "histogram2d"):
+            return self.xp.histogram2d(x, y, *args, **kwargs)
         else:
             # TODO: fix - this is not array-api compliant
-            return self._xp.histogramdd(self._xp.stack([x, y]).T, *args, **kwargs)
+            return self.xp.histogramdd(self.xp.stack([x, y]).T, *args, **kwargs)
 
     # TODO: figure out what this is for
     def seterr(self, *args, **kwargs):
@@ -84,12 +94,12 @@ class UnknownPatchedNamespace:
 
     def size(self, x):
         """Return the size of an array."""
-        x = self._xp.asarray(x)
+        x = self.xp.asarray(x)
         return x.size
 
     def shape(self, x):
         """Return the shape of an array."""
-        x = self._xp.asarray(x)
+        x = self.xp.asarray(x)
         return x.shape
 
     def to_device(self, x, device, **kwargs):

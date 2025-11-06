@@ -13,10 +13,13 @@ from .unknown import UnknownPatchedNamespace
 
 class PatchedTorchNamespace(UnknownPatchedNamespace):
 
-    def __init__(self, xp=None):
+    def __init__(self):
+        super().__init__(None)
+
+    def _set_xp(self):
         import array_api_compat.torch as torch
 
-        super().__init__(torch)
+        self._xp = torch
 
     @property
     def _earthkit_array_namespace_name(self):
@@ -28,20 +31,20 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
         The problem is that torch.sign returns 0 for NaNs, but the array API
         standard requires NaNs to be propagated.
         """
-        x = self._xp.asarray(x)
-        r = self._xp.sign(x, *args, **kwargs)
-        r = self._xp.asarray(r)
-        r[self._xp.isnan(x)] = self._xp.nan
+        x = self.xp.asarray(x)
+        r = self.xp.sign(x, *args, **kwargs)
+        r = self.xp.asarray(r)
+        r[self.xp.isnan(x)] = self.xp.nan
         return r
 
     def size(self, x):
         """Return the size of an array."""
-        x = self._xp.asarray(x)
+        x = self.xp.asarray(x)
         return x.numel()
 
     def shape(self, x):
         """Return the shape of an array."""
-        x = self._xp.asarray(x)
+        x = self.xp.asarray(x)
         return tuple(x.shape)
 
     def to_device(self, x, device, **kwargs):

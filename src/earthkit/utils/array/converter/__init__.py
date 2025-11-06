@@ -3,3 +3,10 @@ from .jax import FromJaxConverter
 from .numpy import FromNumpyConverter
 from .torch import FromTorchConverter
 from .unknown import FromUnknownConverter
+
+CONVERTERS = {
+    "numpy": FromNumpyConverter,
+    "cupy": FromCupyConverter,
+    "torch": FromTorchConverter,
+    "jax": FromJaxConverter,
+}

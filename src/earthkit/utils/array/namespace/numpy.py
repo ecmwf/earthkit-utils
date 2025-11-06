@@ -12,10 +12,13 @@ from .unknown import UnknownPatchedNamespace
 
 class PatchedNumpyNamespace(UnknownPatchedNamespace):
 
-    def __init__(self, xp=None):
+    def __init__(self):
+        super().__init__(None)
+
+    def _set_xp(self):
         import array_api_compat.numpy as np
 
-        super().__init__(np)
+        self._xp = np
 
     @property
     def _earthkit_array_namespace_name(self):

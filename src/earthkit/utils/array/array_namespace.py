@@ -3,23 +3,13 @@ import typing as T
 
 import array_api_compat
 
-from .namespace import PatchedCupyNamespace
-from .namespace import PatchedNumpyNamespace
-from .namespace import PatchedTorchNamespace
+from .namespace import DEFAULT_NAMESPACE
+from .namespace import NAMESPACES
 from .namespace import UnknownPatchedNamespace
 
 
 def _is_module_loaded(module_name: str) -> bool:
     return module_name in sys.modules
-
-
-# TODO: avoid using testing internals
-
-namespaces = {
-    "numpy": PatchedNumpyNamespace,
-    "cupy": PatchedCupyNamespace,
-    "torch": PatchedTorchNamespace,
-}
 
 
 def _get_array_name(xp):
@@ -64,10 +54,13 @@ def array_namespace(*args: T.Any) -> T.Any:
     """
     arrays = [a for a in args if hasattr(a, "shape")]
     if not arrays:
-        return PatchedNumpyNamespace()
+        return DEFAULT_NAMESPACE
     else:
         xp = array_api_compat.array_namespace(*arrays)
-        return namespaces.get(_get_array_name(xp), UnknownPatchedNamespace)(xp)
+        namespace = NAMESPACES.get(_get_array_name(xp))
+        if namespace is None:
+            namespace = UnknownPatchedNamespace(xp)
+        return namespace
 
 
 # This is experimental and may not be needed in the future.

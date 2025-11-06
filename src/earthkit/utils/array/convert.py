@@ -2,39 +2,30 @@ import array_api_compat
 
 from .array_namespace import _get_array_name
 from .array_namespace import array_namespace
-from .array_namespace import namespaces
-from .converter import FromCupyConverter
-from .converter import FromJaxConverter
-from .converter import FromNumpyConverter
-from .converter import FromTorchConverter
+from .converter import CONVERTERS
 from .converter import FromUnknownConverter
-from .namespace import PatchedCupyNamespace
-from .namespace import PatchedNumpyNamespace
+from .namespace import NAMESPACES
 from .namespace import UnknownPatchedNamespace
-
-converters = {
-    "numpy": FromNumpyConverter,
-    "cupy": FromCupyConverter,
-    "torch": FromTorchConverter,
-    "jax": FromJaxConverter,
-}
 
 
 def _get_converter(source_array_backend):
     if isinstance(source_array_backend, UnknownPatchedNamespace):
-        return converters.get(_get_array_name(source_array_backend), FromUnknownConverter)
+        return CONVERTERS.get(_get_array_name(source_array_backend), FromUnknownConverter)
     elif isinstance(source_array_backend, str):
-        return converters[source_array_backend]
+        return CONVERTERS[source_array_backend]
     else:
         raise ValueError(f"Unknown array backend: {source_array_backend}")
 
 
 def _get_namespace(array_backend):
     if isinstance(array_backend, str):
-        return namespaces[array_backend]()
+        return NAMESPACES[array_backend]
     else:
         xp = array_api_compat.array_namespace(array_backend.asarray(0))
-        return namespaces.get(_get_array_name(array_backend), UnknownPatchedNamespace)(xp)
+        namespace = NAMESPACES.get(_get_array_name(array_backend))
+        if namespace is None:
+            namespace = UnknownPatchedNamespace(xp)
+        return namespace
 
 
 def convert(array, *, device=None, array_backend=None, **kwargs):
@@ -67,10 +58,10 @@ def convert(array, *, device=None, array_backend=None, **kwargs):
 
     if array_backend is None:
         if device == "cpu":
-            array_backend = PatchedNumpyNamespace()
+            array_backend = NAMESPACES["numpy"]
             device = None
         elif source_name == "numpy":  # and device != "cpu" -> handled above
-            array_backend = PatchedCupyNamespace()
+            array_backend = NAMESPACES["cupy"]
 
     if array_backend is not None:
         target_xp = _get_namespace(array_backend)
