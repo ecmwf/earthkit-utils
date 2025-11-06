@@ -43,19 +43,19 @@ class FromUnknownConverter:
         return self._default_convert(self.xp_target, array, **kwargs)
 
     def to_numpy(self, array, **kwargs):
-        from earthkit.utils.array.namespace import NAMESPACES
+        from earthkit.utils.array.namespace import _NUMPY_NAMESPACE
 
-        return self._default_convert(NAMESPACES["numpy"], array, **kwargs)
+        return self._default_convert(_NUMPY_NAMESPACE, array, **kwargs)
 
     def to_torch(self, array, **kwargs):
-        from earthkit.utils.array.namespace import NAMESPACES
+        from earthkit.utils.array.namespace import _TORCH_NAMESPACE
 
-        return self._default_convert(NAMESPACES["torch"], array, **kwargs)
+        return self._default_convert(_TORCH_NAMESPACE, array, **kwargs)
 
     def to_cupy(self, array, **kwargs):
-        from earthkit.utils.array.namespace import NAMESPACES
+        from earthkit.utils.array.namespace import _CUPY_NAMESPACE
 
-        return self._default_convert(NAMESPACES["cupy"], array, **kwargs)
+        return self._default_convert(_CUPY_NAMESPACE, array, **kwargs)
 
     def to_jax(self, array, **kwargs):
         return self._default_convert(self.xp_target, array, **kwargs)
