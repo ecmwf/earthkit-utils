@@ -32,6 +32,9 @@ class PatchedCupyNamespace(UnknownPatchedNamespace):
     def percentile(self, a, q, axis=None):
         return self._xp.percentile(a, q, axis=axis)
 
+    def quantile(self, a, q, axis=None):
+        return self._xp.quantile(a, q, axis=axis)
+
     def histogram2d(self, x, y, *, bins=10):
         return self.xp.histogram2d(x, y, bins=bins)
 

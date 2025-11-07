@@ -78,6 +78,9 @@ class UnknownPatchedNamespace:
 
         return (1 - weight) * a_low + weight * a_high
 
+    def quantile(self, a, q, axis=None):
+        return self.percentile(a, q, axis=axis)
+
     def histogram2d(self, x, y, *, bins=10):
         """Compute a 2D histogram.
 

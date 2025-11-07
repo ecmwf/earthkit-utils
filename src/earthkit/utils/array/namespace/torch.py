@@ -40,6 +40,9 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
     def percentile(self, a, q, axis=None):
         return self._xp.quantile(a, q / 100, dim=axis)
 
+    def quantile(self, a, q, axis=None):
+        return self._xp.quantile(a, q, dim=axis)
+
     def size(self, x):
         """Return the size of an array."""
         x = self.xp.asarray(x)
