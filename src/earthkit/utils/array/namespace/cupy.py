@@ -47,9 +47,9 @@ class PatchedCupyNamespace(UnknownPatchedNamespace):
             else:
                 dev_id = device
             with self.xp.cuda.Device(dev_id):
-                self.xp.asarray(*args, **kwargs)
+                return self.xp.asarray(*args, **kwargs)
         else:
-            self.xp.asarray(*args, **kwargs)
+            return self.xp.asarray(*args, **kwargs)
 
     def to_device(self, x, device, **kwargs):
         return self.asarray(x, device=device, **kwargs)
