@@ -1,4 +1,3 @@
-import sys
 import typing as T
 
 import array_api_compat
@@ -6,10 +5,6 @@ import array_api_compat
 from .namespace import _DEFAULT_NAMESPACE
 from .namespace import _NAMESPACES
 from .namespace import UnknownPatchedNamespace
-
-
-def _is_module_loaded(module_name: str) -> bool:
-    return module_name in sys.modules
 
 
 def _get_array_name(xp):
@@ -61,48 +56,3 @@ def array_namespace(*args: T.Any) -> T.Any:
         if namespace is None:
             namespace = UnknownPatchedNamespace(xp)
         return namespace
-
-
-# This is experimental and may not be needed in the future.
-def array_namespace_xarray(data_object: T.Any) -> T.Any:
-    """Attempt to infer the array namespace from the data object.
-
-    Parameters
-    ----------
-    data_object : T.Any
-        The data object from which to infer the array namespace.
-
-    Returns
-    -------
-        The inferred array namespace.
-
-    Raises
-    ------
-    TypeError
-        If the array namespace cannot be inferred from the data object.
-    """
-
-    if not _is_module_loaded("xarray"):
-        raise TypeError("xarray is not installed, cannot infer array namespace from data object.")
-
-    import xarray as xr
-
-    if isinstance(data_object, xr.DataArray):
-        print(f"data_object: {type(data_object.data)}")
-        return array_namespace(data_object.data)
-    elif isinstance(data_object, xr.Dataset):
-        data_vars = list(data_object.data_vars)
-        if data_vars:
-            first = array_namespace(data_object[data_vars[0]].data)
-            if all(array_namespace(data_object[var].data) is first for var in data_vars[1:]):
-                return first
-            else:
-                raise TypeError(
-                    "Data object contains variables with different array namespaces, "
-                    "cannot infer a single xp for computation."
-                )
-        return None
-
-    raise TypeError(
-        "data_object must be an xarray.DataArray or xarray.Dataset, " f"got {type(data_object)} instead."
-    )
