@@ -52,34 +52,31 @@ class UnknownPatchedNamespace:
         --------
         Based on the ``numpy.polynomal.polynomial.polyval`` function.
         """
-        if hasattr(self.xp, "polyval"):
-            return self.xp.polyval(x, c)
-        else:
-            c0 = c[-1] + x * 0
-            for i in range(2, len(c) + 1):
-                c0 = c[-i] + c0 * x
-            return c0
+        c0 = c[-1] + x * 0
+        for i in range(2, len(c) + 1):
+            c0 = c[-i] + c0 * x
+        return c0
 
     def percentile(self, a, q, axis=None):
         """Compute percentiles by calling the quantile function."""
         if axis is None:
             axis = 0
-            a = self.xp.reshape(a, -1)
+            a = self.reshape(a, (-1,))
 
-        a = self.xp.sort(a, axis=axis)
-        n = self.xp.shape(a)[axis]
+        a = self.sort(a, axis=axis)
+        n = self.shape(a)[axis]
         rank = (q / 100) * (n - 1)
-        low = int(self.xp.floor(rank))
-        high = int(self.xp.ceil(rank))
+        low = int(self.floor(rank))
+        high = int(self.ceil(rank))
         weight = rank - low
 
-        a_low = self.xp.take(a, low, axis=axis)
-        a_high = self.xp.take(a, high, axis=axis)
+        a_low = self.take(a, low, axis=axis)
+        a_high = self.take(a, high, axis=axis)
 
         return (1 - weight) * a_low + weight * a_high
 
     def quantile(self, a, q, axis=None):
-        return self.percentile(a, q, axis=axis)
+        return self.percentile(a, q * 100, axis=axis)
 
     def histogram2d(self, x, y, *, bins=10):
         """Compute a 2D histogram.
@@ -94,7 +91,6 @@ class UnknownPatchedNamespace:
         return self.xp.histogramdd(self.xp.stack([x, y]).T, bins=bins)
 
     def histogramdd(self, x, *, bins=10):
-        x = self.xp.asarray(x)
         N, D = x.shape
 
         if isinstance(bins, int):
@@ -161,7 +157,6 @@ class UnknownPatchedNamespace:
         return x.dtype
 
     def isclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
-        x, y = self.xp.asarray(x), self.xp.asarray(y)
         result = self.xp.abs(x - y) <= atol + rtol * self.xp.abs(y)
         if equal_nan:
             nan_mask = self.xp.isnan(x) & self.xp.isnan(y)

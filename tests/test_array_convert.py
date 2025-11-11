@@ -11,88 +11,188 @@
 
 import pytest
 
+from earthkit.utils.array import array_namespace
 from earthkit.utils.array import convert
-from earthkit.utils.array.testing.backend import get_backend
-from earthkit.utils.array.testing.backends import _CUPY_BACKEND as _CUPY
-from earthkit.utils.array.testing.backends import _NUMPY_BACKEND as _NUMPY
-from earthkit.utils.array.testing.backends import _TORCH_BACKEND as _TORCH
+from earthkit.utils.array.namespace import _CUPY_NAMESPACE
+from earthkit.utils.array.namespace import _JAX_NAMESPACE
+from earthkit.utils.array.namespace import _NUMPY_NAMESPACE
+from earthkit.utils.array.namespace import _TORCH_NAMESPACE
 from earthkit.utils.array.testing.testing import NO_CUPY
+from earthkit.utils.array.testing.testing import NO_JAX
 from earthkit.utils.array.testing.testing import NO_TORCH
 
 
 def test_array_convert_numpy_to_numpy():
-    x = _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_np = convert(x, array_backend="numpy")
-    assert get_backend(x_np) is _NUMPY
-    assert _NUMPY.allclose(x, x_np)
+    xp = _NUMPY_NAMESPACE
+    x = xp.asarray([1.0, 2.0, 3.0])
+    res = convert(x, array_namespace="numpy")
+    assert array_namespace(res) is _NUMPY_NAMESPACE
+
+    import numpy as np
+
+    res = convert(x, array_namespace=np)
+    assert array_namespace(res) is _NUMPY_NAMESPACE
+
+    res = convert(x, array_namespace="numpy", device="cpu")
+    assert array_namespace(res) is _NUMPY_NAMESPACE
+    assert xp.device(res) == "cpu"
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
+@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
 def test_array_convert_torch_to_torch():
-    x = _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_torch = convert(x, array_backend="torch")
-    assert get_backend(x_torch) is _TORCH
-    assert _TORCH.allclose(x, x_torch)
+    xp = _TORCH_NAMESPACE
+    x = xp.asarray([1.0, 2.0, 3.0])
+    res = convert(x, array_namespace="torch")
+    assert array_namespace(res) is _TORCH_NAMESPACE
+
+    import torch
+
+    res = convert(x, array_namespace=torch)
+    assert array_namespace(res) is _TORCH_NAMESPACE
+
+    res = convert(x, array_namespace="torch", device="cpu")
+    assert array_namespace(res) is _TORCH_NAMESPACE
+    assert xp.device(res) == torch.device("cpu")
+
+    if torch.backends.mps.is_available():
+        res = convert(x, array_namespace="torch", device="mps:0")
+        assert array_namespace(res) is _TORCH_NAMESPACE
+        assert xp.device(res) == torch.device("mps:0")
+
+    if torch.cuda.is_available():
+        res = convert(x, array_namespace="torch", device="cuda:0")
+        assert array_namespace(res) is _TORCH_NAMESPACE
+        assert xp.device(res) == torch.device("cuda:0")
 
 
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
 def test_array_convert_cupy_to_cupy():
-    x = _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_cp = convert(x, array_backend="cupy")
-    assert get_backend(x_cp) is _CUPY
-    assert _CUPY.allclose(x, x_cp)
+    xp = _CUPY_NAMESPACE
+    x = xp.asarray([1.0, 2.0, 3.0])
+    res = convert(x, array_namespace="cupy")
+    assert array_namespace(res) is _CUPY_NAMESPACE
+
+    import cupy as cp
+
+    res = convert(x, array_namespace=cp)
+    assert array_namespace(res) is _CUPY_NAMESPACE
+
+    res = convert(x, array_namespace="cupy", device="cuda:0")
+    assert array_namespace(res) is _CUPY_NAMESPACE
+    # assert xp.device(res) == "cuda:0" # Not implemented yet
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
+@pytest.mark.skipif(NO_JAX, reason="No jax installed")
+def test_array_convert_jax_to_jax():
+    xp = _JAX_NAMESPACE
+    x = xp.asarray([1.0, 2.0, 3.0])
+    res = convert(x, array_namespace="jax")
+    assert array_namespace(res) is _JAX_NAMESPACE
+
+    import jax.numpy as jnp
+
+    res = convert(x, array_namespace=jnp)
+    assert array_namespace(res) is _JAX_NAMESPACE
+
+    # TODO: check other devices
+
+
+@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
 def test_array_convert_numpy_to_torch():
-    x = _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_torch = convert(x, array_backend="torch")
-    assert get_backend(x_torch) is _TORCH
-    assert _TORCH.allclose(x_torch, _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32"))
+    import torch
+
+    xp = _NUMPY_NAMESPACE
+    x = xp.asarray([1.0, 2.0, 3.0], dtype="float32")
+    res = convert(x, array_namespace="torch")
+    assert array_namespace(res) is _TORCH_NAMESPACE
+    assert xp.device(res) == torch.device("cpu")
+
+    if torch.backends.mps.is_available():
+        res = convert(x, array_namespace="torch", device="mps:0")
+        assert array_namespace(res) is _TORCH_NAMESPACE
+        assert xp.device(res) == torch.device("mps:0")
+
+    if torch.cuda.is_available():
+        res = convert(x, array_namespace="torch", device="cuda:0")
+        assert array_namespace(res) is _TORCH_NAMESPACE
+        assert xp.device(res) == torch.device("cuda:0")
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
+@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
 def test_array_convert_torch_to_numpy():
-    x = _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32")
-    assert get_backend(x) is _TORCH
-    x_np = convert(x, array_backend="numpy")
-    assert get_backend(x_np) is _NUMPY
-    assert _NUMPY.allclose(x_np, _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32"))
+    import torch
+
+    xp = _TORCH_NAMESPACE
+
+    x = xp.asarray([1.0, 2.0, 3.0])
+    res = convert(x, array_namespace="numpy")
+    assert array_namespace(res) is _NUMPY_NAMESPACE
+
+    if torch.backends.mps.is_available():
+        x = xp.asarray([1.0, 2.0, 3.0], dtype=torch.float32, device="mps:0")
+        res = convert(x, array_namespace="numpy")
+        assert array_namespace(res) is _NUMPY_NAMESPACE
+
+    if torch.cuda.is_available():
+        x = xp.asarray([1.0, 2.0, 3.0], device="cuda:0")
+        res = convert(x, array_namespace="numpy")
+        assert array_namespace(res) is _NUMPY_NAMESPACE
 
 
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
 def test_array_convert_numpy_to_cupy():
-    x = _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    x_cp = convert(x, array_backend="cupy")
-    assert get_backend(x_cp) is _CUPY
-    assert _CUPY.allclose(x_cp, _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32"))
+    xp = _NUMPY_NAMESPACE
+    x = xp.asarray([1.0, 2.0, 3.0])
+    x_np = convert(x, array_backend="cupy")
+    assert array_namespace(x_np) is _CUPY_NAMESPACE
 
 
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
 def test_array_convert_cupy_to_numpy():
-    x = _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    assert get_backend(x) is _CUPY
+    xp = _CUPY_NAMESPACE
+    x = xp.asarray([1.0, 2.0, 3.0])
     x_np = convert(x, array_backend="numpy")
-    assert get_backend(x_np) is _NUMPY
-    assert _NUMPY.allclose(x_np, _NUMPY.asarray([1.0, 2.0, 3.0], dtype="float32"))
+    assert array_namespace(x_np) is _NUMPY_NAMESPACE
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
+@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
 def test_array_convert_torch_to_cupy():
-    x = _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32")
-    assert get_backend(x) is _TORCH
+    xp = _TORCH_NAMESPACE
+    import torch
+
+    x = xp.asarray([1.0, 2.0, 3.0])
     x_cp = convert(x, array_backend="cupy")
-    assert get_backend(x_cp) is _CUPY
-    assert _CUPY.allclose(x_cp, _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32"))
+    assert array_namespace(x_cp) is _CUPY_NAMESPACE
+
+    if torch.backends.mps.is_available():
+        x = xp.asarray([1.0, 2.0, 3.0], dtype=torch.float32, device="mps:0")
+        res = convert(x, array_namespace="cupy")
+        assert array_namespace(res) is _CUPY_NAMESPACE
+
+    if torch.cuda.is_available():
+        x = xp.asarray([1.0, 2.0, 3.0], device="cuda:0")
+        res = convert(x, array_namespace="cupy")
+        assert array_namespace(res) is _CUPY_NAMESPACE
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No pytorch installed")
+@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
 def test_array_convert_cupy_to_torch():
-    x = _CUPY.asarray([1.0, 2.0, 3.0], dtype="float32")
-    assert get_backend(x) is _CUPY
-    x_torch = convert(x, array_backend="torch")
-    assert get_backend(x_torch) is _TORCH
-    x_torch_cpu = convert(x_torch, device="cpu", array_backend="torch")
-    assert _TORCH.allclose(x_torch_cpu, _TORCH.asarray([1.0, 2.0, 3.0], dtype="float32"))
+    import torch
+
+    xp = _CUPY_NAMESPACE
+    x = xp.asarray([1.0, 2.0, 3.0], dtype="float32")
+    res = convert(x, array_namespace="torch")
+    assert array_namespace(res) is _TORCH_NAMESPACE
+    assert xp.device(res) == torch.device("cpu")
+
+    if torch.backends.mps.is_available():
+        res = convert(x, array_namespace="torch", device="mps:0")
+        assert array_namespace(res) is _TORCH_NAMESPACE
+        assert xp.device(res) == torch.device("mps:0")
+
+    if torch.cuda.is_available():
+        res = convert(x, array_namespace="torch", device="cuda:0")
+        assert array_namespace(res) is _TORCH_NAMESPACE
+        assert xp.device(res) == torch.device("cuda:0")

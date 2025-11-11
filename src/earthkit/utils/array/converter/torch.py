@@ -7,7 +7,7 @@ class FromTorchConverter(FromUnknownConverter):
         super().__init__(xp_target)
 
     def to_numpy(self, array, **kwargs):
-        return array.numpy()
+        return array.cpu().numpy()
 
     def to_cupy(self, array, **kwargs):
         # TODO: add device handling

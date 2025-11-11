@@ -21,18 +21,26 @@ def _get_array_name(xp):
         return None
 
 
+def _get_namespace_from_array(*arrays):
+    xp = array_api_compat.array_namespace(*arrays)
+    namespace = _NAMESPACES.get(_get_array_name(xp))
+    if namespace is None:
+        namespace = UnknownPatchedNamespace(xp)
+    return namespace
+
+
 def array_namespace(*args: T.Any) -> T.Any:
     """Return the array namespace of the arguments.
 
     Parameters
     ----------
     *args: tuple
-        Scalar or array-like arguments.
+        Scalar, string or array-like arguments.
 
     Returns
     -------
     xp: module
-        The array-api-compat namespace of the arguments. The namespace
+        The patched array namespace of the arguments. The namespace
         returned from array_api_compat.array_namespace(*args) is patched with
         extra/modified methods. When only a scalar is passed, the numpy namespace
         is returned.
@@ -47,12 +55,26 @@ def array_namespace(*args: T.Any) -> T.Any:
     Some other methods may be reimplemented for a given namespace to ensure correct
     behaviour. E.g. sign() for torch.
     """
-    arrays = [a for a in args if hasattr(a, "shape")]
+
+    arrays = [a for a in args if array_api_compat.is_array_api_obj(a)]
     if not arrays:
-        return _DEFAULT_NAMESPACE
+        # TODO: decide if we want to support this or not
+        # i.e. array_namespace("numpy")
+        # array_namespace(np)
+        if len(args) == 1:
+            arg = args[0]
+            if isinstance(arg, str):
+                xp = _NAMESPACES[arg]
+            else:
+                if hasattr(arg, "asarray"):
+                    xp = _get_namespace_from_array(arg.asarray(0))
+                elif hasattr(arg, "array"):
+                    xp = _get_namespace_from_array(arg.array(0))
+                else:
+                    xp = _DEFAULT_NAMESPACE
+        else:
+            xp = _DEFAULT_NAMESPACE
     else:
-        xp = array_api_compat.array_namespace(*arrays)
-        namespace = _NAMESPACES.get(_get_array_name(xp))
-        if namespace is None:
-            namespace = UnknownPatchedNamespace(xp)
-        return namespace
+        xp = _get_namespace_from_array(*arrays)
+
+    return xp

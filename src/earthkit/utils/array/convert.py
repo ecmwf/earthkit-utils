@@ -1,86 +1,67 @@
-import array_api_compat
-
 from .array_namespace import _get_array_name
-from .array_namespace import array_namespace
+from .array_namespace import array_namespace as array_namespace_func
 from .converter import _CONVERTERS
 from .converter import FromUnknownConverter
 from .namespace import _CUPY_NAMESPACE
 from .namespace import _DEFAULT_NAMESPACE
-from .namespace import _NAMESPACES
 from .namespace import UnknownPatchedNamespace
 
 
-def _get_converter(source_array_backend):
-    if isinstance(source_array_backend, UnknownPatchedNamespace):
-        return _CONVERTERS.get(_get_array_name(source_array_backend), FromUnknownConverter)
-    elif isinstance(source_array_backend, str):
-        return _CONVERTERS[source_array_backend]
+def _get_converter(source_array_namespace):
+    if isinstance(source_array_namespace, UnknownPatchedNamespace):
+        return _CONVERTERS.get(_get_array_name(source_array_namespace), FromUnknownConverter)
+    elif isinstance(source_array_namespace, str):
+        return _CONVERTERS[source_array_namespace]
     else:
-        raise ValueError(f"Unknown array backend: {source_array_backend}")
+        raise ValueError(f"Unknown array backend: {source_array_namespace._earthkit_array_namespace_name}")
 
 
-def _get_namespace(array_backend):
-    if isinstance(array_backend, str):
-        return _NAMESPACES[array_backend]
-    else:
-        if hasattr(array_backend, "asarray"):
-            xp = array_api_compat.array_namespace(array_backend.asarray(0))
-        elif hasattr(array_backend, "array"):
-            xp = array_api_compat.array_namespace(array_backend.array(0))
-        else:
-            raise ValueError(f"Cannot determine array namespace from {array_backend}")
-        namespace = _NAMESPACES.get(_get_array_name(array_backend))
-        if namespace is None:
-            namespace = UnknownPatchedNamespace(xp)
-        return namespace
-
-
-def convert(array, *, device=None, array_backend=None, **kwargs):
+def convert(array, *, device=None, array_namespace=None, **kwargs):
     """
-    Return a copy/view of array moved to device.
+    Return a copy/view of a converted array.
 
     Parameters
     ----------
     array : array
-        The array to be moved to the specified device.
-    device : backend-specific device spec or str
+        The array to convert.
+    device : array namespace-specific device spec or str
         The device to which the array should be moved. For example,
         "cpu", "cuda:0", etc.
-    array_backend : str or ArrayBackend
-        The backend to use for the conversion. If None, the following logic
+    array_namespace : str or array namespace
+        The array namespace to use for the conversion. If None, the following logic
         is applied:
-        - if the device is "cpu", it will use the numpy backend
-        - otherwise it will use the backend of the array ``v``, but if that
+        - if the device is "cpu", it will use numpy
+        - otherwise it will use the namespace of the array ``v``, but if that
           backend is numpy, it will use the cupy backend.
-    *args, **kwargs : forwarded to the underlying backend call
+    **kwargs : forwarded to the underlying call
     """
 
     # TODO: dtype conversion support also?
 
-    if array_backend is None and device is None:
+    if array_namespace is None and device is None:
         return array
 
-    source_xp = array_namespace(array)
+    source_xp = array_namespace_func(array)
     source_name = _get_array_name(source_xp)
 
-    if array_backend is None:
+    if array_namespace is None:
         if device == "cpu":
-            array_backend = _DEFAULT_NAMESPACE
+            array_namespace = _DEFAULT_NAMESPACE
             device = None
         elif source_name == "numpy":  # and device != "cpu" -> handled above
-            array_backend = _CUPY_NAMESPACE
+            array_namespace = _CUPY_NAMESPACE
 
-    if array_backend is not None:
-        target_xp = _get_namespace(array_backend)
+    if array_namespace is not None:
+        target_xp = array_namespace_func(array_namespace)
         converter = _get_converter(source_xp)
         converter_instance = converter(target_xp)
         target_name = _get_array_name(target_xp)
-        # TODO: decide if we want to pass device here, or later
-        # currently, do it later
+        # TODO: decide if we want to pass device here, or later.
+        # Currently, do it later
         array = converter_instance.to(array, target_name)
 
     if device is not None:
-        xp = array_namespace(array)
+        xp = array_namespace_func(array)
         array = xp.to_device(array, device=device, **kwargs)
 
     return array
