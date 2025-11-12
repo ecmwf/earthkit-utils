@@ -17,3 +17,6 @@ _TORCH_NAMESPACE = _NAMESPACES["torch"]
 _JAX_NAMESPACE = _NAMESPACES["jax"]
 
 _DEFAULT_NAMESPACE = _NUMPY_NAMESPACE
+
+# for backwards compatibility
+_NAMESPACES["pytorch"] = _TORCH_NAMESPACE

@@ -17,3 +17,6 @@ _TORCH_CONVERTER = _CONVERTERS["torch"]
 _JAX_CONVERTER = _CONVERTERS["jax"]
 
 _DEFAULT_CONVERTER = _NUMPY_CONVERTER
+
+# for backwards compatibility
+_CONVERTERS["pytorch"] = _TORCH_CONVERTER
