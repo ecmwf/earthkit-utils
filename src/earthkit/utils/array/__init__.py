@@ -7,7 +7,5 @@
 # nor does it submit to any jurisdiction.
 #
 
-from earthkit.utils.array import testing
-
 from .array_namespace import array_namespace
 from .convert import convert
