@@ -3,7 +3,7 @@ from .array_namespace import array_namespace as array_namespace_func
 from .converter import _CONVERTERS
 from .converter import FromUnknownConverter
 from .namespace import _CUPY_NAMESPACE
-from .namespace import _DEFAULT_NAMESPACE
+from .namespace import _NUMPY_NAMESPACE
 from .namespace import UnknownPatchedNamespace
 
 
@@ -45,11 +45,12 @@ def convert(array, *, device=None, array_namespace=None, **kwargs):
     source_name = _get_array_name(source_xp)
 
     if array_namespace is None:
-        if device == "cpu":
-            array_namespace = _DEFAULT_NAMESPACE
-            device = None
-        elif source_name == "numpy":  # and device != "cpu" -> handled above
+        if device == "cpu" and source_name == "cupy":
+            array_namespace = _NUMPY_NAMESPACE
+        elif device != "cpu" and source_name == "numpy":
             array_namespace = _CUPY_NAMESPACE
+        else:
+            array_namespace = source_xp
 
     if array_namespace is not None:
         target_xp = array_namespace_func(array_namespace)

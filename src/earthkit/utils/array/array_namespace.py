@@ -18,7 +18,7 @@ def _get_array_name(xp):
     elif "torch" in name:
         return "torch"
     else:
-        return None
+        return name
 
 
 def _get_namespace_from_array(*arrays):
