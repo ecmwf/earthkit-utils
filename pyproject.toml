@@ -49,6 +49,7 @@ optional-dependencies.test = [
   "nbformat",
   "pytest",
   "pytest-cov",
+  "pytest-reraise",
   "xarray",
 ]
 urls.Documentation = "https://earthkit-utils.readthedocs.io/"
