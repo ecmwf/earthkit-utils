@@ -66,3 +66,27 @@ def convert(array, *, device=None, array_namespace=None, **kwargs):
         array = xp.to_device(array, device=device, **kwargs)
 
     return array
+
+
+def convert_dtype(dtype, array_namespace):
+    target_xp = array_namespace_func(array_namespace)
+    if type(dtype) is str:
+        return target_xp.__array_namespace_info__().dtypes()[dtype]
+    else:
+        import numpy as np
+
+        source_array_namespace_name = type(dtype).__module__.split(".")[0]
+        # NB: this is very hacky and should be changed
+        if source_array_namespace_name == "builtins":
+            source_xp = _NUMPY_NAMESPACE
+            dtype = np.dtype(dtype)
+        else:
+            source_xp = array_namespace_func(source_array_namespace_name)
+
+        target_dtypes = target_xp.__array_namespace_info__().dtypes()
+        source_dtypes = source_xp.__array_namespace_info__().dtypes()
+        overlapping_dtypes = np.intersect1d(list(target_dtypes.keys()), list(source_dtypes.keys()))
+        source_dtypes_overlapping_subset = np.vectorize(source_dtypes.get)(overlapping_dtypes)
+        target_dtypes_overlapping_subset = np.vectorize(target_dtypes.get)(overlapping_dtypes)
+        mapping = dict(zip(source_dtypes_overlapping_subset, target_dtypes_overlapping_subset))
+        return mapping[dtype]
