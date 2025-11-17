@@ -16,10 +16,6 @@ class UnknownPatchedNamespace:
     def xp(self):
         return self._xp
 
-    def _set_xp(self):
-        # This method should write self.__xp to the appropriate array namespace
-        raise NotImplementedError("Subclasses must implement set_xp()")
-
     def __getattr__(self, name):
         return getattr(self.xp, name)  # Delegate to underlying namespace
 
