@@ -11,40 +11,23 @@ from earthkit.utils.decorators import thread_safe_cached_property
 from .unknown import UnknownPatchedNamespace
 
 
-class PatchedNumpyNamespace(UnknownPatchedNamespace):
+class PatchedJaxNamespace(UnknownPatchedNamespace):
 
     def __init__(self):
         super().__init__(None)
 
     @thread_safe_cached_property
     def xp(self):
-        import array_api_compat.numpy as np
+        import jax.numpy as jnp
 
-        return np
+        return jnp
 
     @property
     def _earthkit_array_namespace_name(self):
-        return "numpy"
-
-    def polyval(self, *args, **kwargs):
-        from numpy.polynomial.polynomial import polyval
-
-        return polyval(*args, **kwargs)
+        return "jax"
 
     def percentile(self, a, q, axis=None):
         return self.xp.percentile(a, q, axis=axis)
 
     def quantile(self, a, q, axis=None):
         return self.xp.quantile(a, q, axis=axis)
-
-    def histogram2d(self, x, y, *, bins=10):
-        return self.xp.histogram2d(x, y, bins=bins)
-
-    def histogramdd(self, x, *, bins=10):
-        return self.xp.histogramdd(x, bins=bins)
-
-    def isclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
-        return self.xp.isclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan)
-
-    def allclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
-        return self.xp.allclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan)

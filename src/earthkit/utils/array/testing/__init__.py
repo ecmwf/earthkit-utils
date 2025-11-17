@@ -5,10 +5,5 @@
 # In applying this licence, ECMWF does not waive the privileges and immunities
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
-#
 
-import sys
-
-
-def is_module_loaded(module_name: str) -> bool:
-    return module_name in sys.modules
+from .testing import NAMESPACE_DEVICES

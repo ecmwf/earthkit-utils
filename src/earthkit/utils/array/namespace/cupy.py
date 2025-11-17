@@ -5,17 +5,22 @@
 # In applying this licence, ECMWF does not waive the privileges and immunities
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
-#
 
-from .namespace import PatchedNamespace
+from earthkit.utils.decorators import thread_safe_cached_property
+
+from .unknown import UnknownPatchedNamespace
 
 
-class PatchedCupyNamespace(PatchedNamespace):
+class PatchedCupyNamespace(UnknownPatchedNamespace):
 
     def __init__(self):
+        super().__init__(None)
+
+    @thread_safe_cached_property
+    def xp(self):
         import array_api_compat.cupy as cp
 
-        super().__init__(cp)
+        return cp
 
     @property
     def _earthkit_array_namespace_name(self):
@@ -26,6 +31,18 @@ class PatchedCupyNamespace(PatchedNamespace):
 
         return polyval(*args, **kwargs)
 
+    def percentile(self, a, q, axis=None):
+        return self.xp.percentile(a, q, axis=axis)
+
+    def quantile(self, a, q, axis=None):
+        return self.xp.quantile(a, q, axis=axis)
+
+    def histogram2d(self, x, y, *, bins=10):
+        return self.xp.histogram2d(x, y, bins=bins)
+
+    def histogramdd(self, x, *, bins=10):
+        return self.xp.histogramdd(x, bins=bins)
+
     def asarray(self, *args, **kwargs):
         device = kwargs.pop("device", None)
         if device is not None:
@@ -34,7 +51,15 @@ class PatchedCupyNamespace(PatchedNamespace):
                 dev_id = int(idx) if idx else 0
             else:
                 dev_id = device
-            with self._xp.cuda.Device(dev_id):
-                self._xp.asarray(*args, **kwargs)
+            with self.xp.cuda.Device(dev_id):
+                return self.xp.asarray(*args, **kwargs)
         else:
-            self._xp.asarray(*args, **kwargs)
+            return self.xp.asarray(*args, **kwargs)
+
+    def to_device(self, x, device, **kwargs):
+        return self.asarray(x, device=device, **kwargs)
+
+    def devices(self):
+        from cupy.cuda.runtime import getDeviceCount
+
+        return [f"cuda:{i}" for i in range(getDeviceCount())]

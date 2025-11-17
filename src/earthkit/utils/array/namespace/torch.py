@@ -5,18 +5,22 @@
 # In applying this licence, ECMWF does not waive the privileges and immunities
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
-#
+
+from earthkit.utils.decorators import thread_safe_cached_property
+
+from .unknown import UnknownPatchedNamespace
 
 
-from .namespace import PatchedNamespace
-
-
-class PatchedTorchNamespace(PatchedNamespace):
+class PatchedTorchNamespace(UnknownPatchedNamespace):
 
     def __init__(self):
+        super().__init__(None)
+
+    @thread_safe_cached_property
+    def xp(self):
         import array_api_compat.torch as torch
 
-        super().__init__(torch)
+        return torch
 
     @property
     def _earthkit_array_namespace_name(self):
@@ -28,18 +32,26 @@ class PatchedTorchNamespace(PatchedNamespace):
         The problem is that torch.sign returns 0 for NaNs, but the array API
         standard requires NaNs to be propagated.
         """
-        x = self._xp.asarray(x)
-        r = self._xp.sign(x, *args, **kwargs)
-        r = self._xp.asarray(r)
-        r[self._xp.isnan(x)] = self._xp.nan
+        r = self.xp.sign(x, *args, **kwargs)
+        r[self.xp.isnan(x)] = self.xp.nan
         return r
+
+    def percentile(self, a, q, axis=None):
+        return self.xp.quantile(a, q / 100, dim=axis)
+
+    def quantile(self, a, q, axis=None):
+        return self.xp.quantile(a, q, dim=axis)
 
     def size(self, x):
         """Return the size of an array."""
-        x = self._xp.asarray(x)
         return x.numel()
 
     def shape(self, x):
         """Return the shape of an array."""
-        x = self._xp.asarray(x)
         return tuple(x.shape)
+
+    def histogramdd(self, x, *, bins=10):
+        return self.xp.histogramdd(x, bins=bins)
+
+    def to_device(self, x, device, **kwargs):
+        return x.to(device, **kwargs)
