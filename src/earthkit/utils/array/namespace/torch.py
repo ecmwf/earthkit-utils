@@ -6,6 +6,8 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from earthkit.utils.decorators import thread_safe_cached_property
+
 from .unknown import UnknownPatchedNamespace
 
 
@@ -14,10 +16,11 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
     def __init__(self):
         super().__init__(None)
 
-    def _set_xp(self):
+    @thread_safe_cached_property
+    def xp(self):
         import array_api_compat.torch as torch
 
-        self._xp = torch
+        return torch
 
     @property
     def _earthkit_array_namespace_name(self):
@@ -36,10 +39,10 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
         return r
 
     def percentile(self, a, q, axis=None):
-        return self._xp.quantile(a, q / 100, dim=axis)
+        return self.xp.quantile(a, q / 100, dim=axis)
 
     def quantile(self, a, q, axis=None):
-        return self._xp.quantile(a, q, dim=axis)
+        return self.xp.quantile(a, q, dim=axis)
 
     def size(self, x):
         """Return the size of an array."""

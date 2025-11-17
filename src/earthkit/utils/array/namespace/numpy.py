@@ -6,6 +6,8 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from earthkit.utils.decorators import thread_safe_cached_property
+
 from .unknown import UnknownPatchedNamespace
 
 
@@ -14,10 +16,11 @@ class PatchedNumpyNamespace(UnknownPatchedNamespace):
     def __init__(self):
         super().__init__(None)
 
-    def _set_xp(self):
+    @thread_safe_cached_property
+    def xp(self):
         import array_api_compat.numpy as np
 
-        self._xp = np
+        return np
 
     @property
     def _earthkit_array_namespace_name(self):
@@ -29,10 +32,10 @@ class PatchedNumpyNamespace(UnknownPatchedNamespace):
         return polyval(*args, **kwargs)
 
     def percentile(self, a, q, axis=None):
-        return self._xp.percentile(a, q, axis=axis)
+        return self.xp.percentile(a, q, axis=axis)
 
     def quantile(self, a, q, axis=None):
-        return self._xp.quantile(a, q, axis=axis)
+        return self.xp.quantile(a, q, axis=axis)
 
     def histogram2d(self, x, y, *, bins=10):
         return self.xp.histogram2d(x, y, bins=bins)

@@ -6,6 +6,8 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from earthkit.utils.decorators import thread_safe_cached_property
+
 from .unknown import UnknownPatchedNamespace
 
 
@@ -14,10 +16,11 @@ class PatchedJaxNamespace(UnknownPatchedNamespace):
     def __init__(self):
         super().__init__(None)
 
-    def _set_xp(self):
+    @thread_safe_cached_property
+    def xp(self):
         import jax.numpy as jnp
 
-        self._xp = jnp
+        return jnp
 
     @property
     def _earthkit_array_namespace_name(self):

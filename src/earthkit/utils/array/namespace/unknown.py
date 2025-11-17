@@ -14,8 +14,6 @@ class UnknownPatchedNamespace:
 
     @property
     def xp(self):
-        if self._xp is None:
-            self._set_xp()
         return self._xp
 
     def _set_xp(self):
