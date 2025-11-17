@@ -55,19 +55,3 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
 
     def to_device(self, x, device, **kwargs):
         return x.to(device, **kwargs)
-
-    def devices(self):
-        import torch
-
-        devices = []
-        if torch.cpu.is_available():
-            for i in range(torch.cpu.device_count()):
-                devices.append(f"cpu:{i}")
-        if torch.cuda.is_available():
-            for i in range(torch.cuda.device_count()):
-                devices.append(f"cuda:{i}")
-        if torch.backends.mps.is_available():
-            for i in range(torch.mps.device_count()):
-                devices.append(f"mps:{i}")
-
-        return devices

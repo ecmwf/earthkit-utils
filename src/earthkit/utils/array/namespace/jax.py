@@ -31,8 +31,3 @@ class PatchedJaxNamespace(UnknownPatchedNamespace):
 
     def quantile(self, a, q, axis=None):
         return self.xp.quantile(a, q, axis=axis)
-
-    def devices(self):
-        import jax
-
-        return jax.devices()

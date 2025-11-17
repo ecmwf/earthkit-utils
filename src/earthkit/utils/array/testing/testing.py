@@ -49,7 +49,7 @@ def _get_namespace_devices(names):
     namespaces = []
     for name in names:
         xp = _NAMESPACES[name]
-        xp_devices = xp.devices()
+        xp_devices = xp.__array_namespace_info__().devices()
         n_devices = len(xp_devices)
         namespaces += [xp] * n_devices
         devices += xp_devices

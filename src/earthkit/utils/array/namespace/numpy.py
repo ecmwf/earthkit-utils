@@ -43,12 +43,6 @@ class PatchedNumpyNamespace(UnknownPatchedNamespace):
     def histogramdd(self, x, *, bins=10):
         return self.xp.histogramdd(x, bins=bins)
 
-    def devices(self):
-        from numpy import __array_namespace_info__
-
-        info = __array_namespace_info__()
-        return info.devices()
-
     def isclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
         return self.xp.isclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan)
 

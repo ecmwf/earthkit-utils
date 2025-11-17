@@ -131,7 +131,7 @@ def test_patched_namespace_numpy():
     assert xp.dtype(arr) is not None
     assert xp.shape(arr) == (3,)
     assert xp.size(arr) == 3
-    assert xp.device(arr) in xp.devices()
+    assert xp.device(arr) in xp.__array_namespace_info__().devices()
 
     # TODO: test histogramdd and histogram2d
 
@@ -161,7 +161,7 @@ def test_patched_namespace_torch():
     assert xp.dtype(arr) is not None
     assert xp.shape(arr) == (3,)
     assert xp.size(arr) == 3
-    # assert xp.device(arr) in xp.devices() # string vs torch.device
+    assert xp.device(arr) in xp.__array_namespace_info__().devices()
 
     # TODO: test histogramdd and histogram2d
 
@@ -191,7 +191,7 @@ def test_patched_namespace_cupy():
     assert xp.dtype(arr) is not None
     assert xp.shape(arr) == (3,)
     assert xp.size(arr) == 3
-    assert xp.device(arr) in xp.devices()
+    assert xp.device(arr) in xp.__array_namespace_info__().devices()
 
     # TODO: test histogramdd and histogram2d
 
@@ -223,7 +223,7 @@ def test_patched_namespace_jax():
     assert xp.dtype(arr) is not None
     assert xp.shape(arr) == (3,)
     assert xp.size(arr) == 3
-    assert xp.device(arr) in xp.devices()
+    assert xp.device(arr) in xp.__array_namespace_info__().devices()
 
     # TODO: test histogramdd and histogram2d
 

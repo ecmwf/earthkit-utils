@@ -195,11 +195,11 @@ def test_array_convert_jax_to_jax():
     res = convert(x, array_namespace=jnp)
     assert array_namespace(res) is _JAX_NAMESPACE
 
-    devices = xp.devices()
+    devices = xp.__array_namespace_info__().devices()
 
-    cpu_devices = list(filter(lambda x: x.platform == "cpu", devices))
-    gpu_devices = list(filter(lambda x: x.platform == "gpu", devices))
-    tpu_devices = list(filter(lambda x: x.platform == "tpu", devices))
+    cpu_devices = list(filter(lambda x: x is not None and x.platform == "cpu", devices))
+    gpu_devices = list(filter(lambda x: x is not None and x.platform == "gpu", devices))
+    tpu_devices = list(filter(lambda x: x is not None and x.platform == "tpu", devices))
 
     if len(cpu_devices) != 0:
         cpu_device = cpu_devices[0]
