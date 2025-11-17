@@ -32,9 +32,7 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
         The problem is that torch.sign returns 0 for NaNs, but the array API
         standard requires NaNs to be propagated.
         """
-        x = self.xp.asarray(x)
         r = self.xp.sign(x, *args, **kwargs)
-        r = self.xp.asarray(r)
         r[self.xp.isnan(x)] = self.xp.nan
         return r
 
@@ -46,12 +44,10 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
 
     def size(self, x):
         """Return the size of an array."""
-        x = self.xp.asarray(x)
         return x.numel()
 
     def shape(self, x):
         """Return the shape of an array."""
-        x = self.xp.asarray(x)
         return tuple(x.shape)
 
     def histogramdd(self, x, *, bins=10):
