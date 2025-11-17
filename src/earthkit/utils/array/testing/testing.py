@@ -50,6 +50,8 @@ def _get_namespace_devices(names):
     for name in names:
         xp = _NAMESPACES[name]
         xp_devices = xp.__array_namespace_info__().devices()
+        if name == "torch":
+            xp_devices = [x for x in xp_devices if x.type != "meta"]
         n_devices = len(xp_devices)
         namespaces += [xp] * n_devices
         devices += xp_devices
