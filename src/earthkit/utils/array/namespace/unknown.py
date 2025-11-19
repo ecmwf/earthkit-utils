@@ -168,3 +168,13 @@ class UnknownPatchedNamespace:
 
     def allclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
         return self.xp.all(self.isclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan))
+
+    def deg2rad(self, x):
+        from earthkit.utils.constants import radian
+
+        return x * radian
+
+    def rad2deg(self, x):
+        from earthkit.utils.constants import degree
+
+        return x * degree
