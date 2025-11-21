@@ -31,3 +31,9 @@ class PatchedJaxNamespace(UnknownPatchedNamespace):
 
     def quantile(self, a, q, axis=None):
         return self.xp.quantile(a, q, axis=axis)
+
+    def rad2deg(self, x):
+        return self.xp.rad2deg(x)
+
+    def deg2rad(self, x):
+        return self.xp.deg2rad(x)

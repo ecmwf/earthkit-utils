@@ -48,3 +48,9 @@ class PatchedNumpyNamespace(UnknownPatchedNamespace):
 
     def allclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
         return self.xp.allclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+    def rad2deg(self, x):
+        return self.xp.rad2deg(x)
+
+    def deg2rad(self, x):
+        return self.xp.deg2rad(x)
