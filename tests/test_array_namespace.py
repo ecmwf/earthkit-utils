@@ -163,6 +163,9 @@ def test_patched_namespace_torch():
     assert xp.size(arr) == 3
     assert xp.device(arr) in xp.__array_namespace_info__().devices()
 
+    assert xp.allclose(xp.rad2deg(arr), generic_xp.rad2deg(arr))
+    assert xp.allclose(xp.deg2rad(arr), generic_xp.deg2rad(arr))
+
     # TODO: test histogramdd and histogram2d
 
 
@@ -192,6 +195,9 @@ def test_patched_namespace_cupy():
     assert xp.shape(arr) == (3,)
     assert xp.size(arr) == 3
     assert xp.device(arr) in xp.__array_namespace_info__().devices()
+
+    assert xp.allclose(xp.rad2deg(arr), generic_xp.rad2deg(arr))
+    assert xp.allclose(xp.deg2rad(arr), generic_xp.deg2rad(arr))
 
     # TODO: test histogramdd and histogram2d
 
@@ -224,6 +230,9 @@ def test_patched_namespace_jax():
     assert xp.shape(arr) == (3,)
     assert xp.size(arr) == 3
     assert xp.device(arr) in xp.__array_namespace_info__().devices()
+
+    assert xp.allclose(xp.rad2deg(arr), generic_xp.rad2deg(arr))
+    assert xp.allclose(xp.deg2rad(arr), generic_xp.deg2rad(arr))
 
     # TODO: test histogramdd and histogram2d
 

@@ -59,7 +59,8 @@ class PatchedCupyNamespace(UnknownPatchedNamespace):
     def to_device(self, x, device, **kwargs):
         return self.asarray(x, device=device, **kwargs)
 
-    def devices(self):
-        from cupy.cuda.runtime import getDeviceCount
+    def rad2deg(self, x):
+        return self.xp.rad2deg(x)
 
-        return [f"cuda:{i}" for i in range(getDeviceCount())]
+    def deg2rad(self, x):
+        return self.xp.deg2rad(x)

@@ -55,3 +55,9 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
 
     def to_device(self, x, device, **kwargs):
         return x.to(device, **kwargs)
+
+    def rad2deg(self, x):
+        return self.xp.rad2deg(x)
+
+    def deg2rad(self, x):
+        return self.xp.deg2rad(x)
