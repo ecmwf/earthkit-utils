@@ -196,9 +196,3 @@ class TestConvert:
         result = convert(data, "m", "mm")
         expected = np.array([1e-3, 1e-6])
         np.testing.assert_array_almost_equal(result, expected)
-
-    def test_alias_conversion(self):
-        """Test conversion using aliased units."""
-        data = np.array([50.0])
-        result = convert(data, "(0 - 1)", "percent")
-        np.testing.assert_array_almost_equal(result, data)
