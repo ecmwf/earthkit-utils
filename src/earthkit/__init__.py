@@ -26,7 +26,24 @@ discovered = {
     for _, name, ispkg in pkgutil.iter_modules(__path__)
     if ispkg and not name.startswith("_") and name not in EXCLUDE
 }
-# reproducible ordering
+
+CANDIDATES = [
+    "climate",
+    "data",
+    "geo",
+    "hydro",
+    "meteo",
+    "plots",
+    "regrid",
+    "time",
+    "transforms",
+    "utils",
+    "workflows",
+]
+for name in CANDIDATES:
+    if name not in discovered and importlib.util.find_spec(f"{__name__}.{name}") is not None:
+        discovered.add(name)
+
 __all__ = tuple(sorted(discovered))
 
 
