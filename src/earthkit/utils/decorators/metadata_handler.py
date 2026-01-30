@@ -13,7 +13,7 @@ from functools import wraps
 def metadata_handler(
     **kwargs
 ) -> T.Callable:
-    """This is a placeholder decorator for handling automatic input data formatting.
+    """This is a placeholder decorator for handling metadata of input and output data objects.
     
     The real decorator is located in earthkit-data, this is only used if earthkit-data is not installed.
 

@@ -13,7 +13,7 @@ from functools import wraps
 def format_handler(
     **kwargs
 ) -> T.Callable:
-    """This is a placeholder decorator for handling automatic input data formatting.
+    """This is a placeholder decorator for handling the format of input data objects.
     
     The real decorator is located in earthkit-data, this is only used if earthkit-data is not installed.
 
