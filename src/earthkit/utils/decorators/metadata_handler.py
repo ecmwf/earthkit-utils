@@ -10,7 +10,7 @@ import typing as T
 from functools import wraps
 
 
-def format_handler(
+def metadata_handler(
     **kwargs
 ) -> T.Callable:
     """This is a placeholder decorator for handling automatic input data formatting.
@@ -24,7 +24,7 @@ def format_handler(
     """
     def decorator(function: T.Callable) -> T.Callable:
         @wraps(function)
-        def wrapper(*args, _auto_inputs_transform=True, **kwargs):
+        def wrapper(*args, _auto_metadata_handler=True, **kwargs):
             return function(*args, **kwargs)
         return wrapper
 
