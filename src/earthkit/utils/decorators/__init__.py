@@ -10,11 +10,13 @@
 from .thread_handlers import thread_safe_cached_property
 
 try:
-    from earthkit.data.decorators import format_handler
+    from earthkit.data.decorators import format_handler, metadata_handler
 except ImportError:
     from .format_handler import format_handler
+    from .metadata_handler import metadata_handler
 
 __all__ = [
     "thread_safe_cached_property",
     "format_handler",
+    "metadata_handler",
 ]
