@@ -120,7 +120,7 @@ def format_handler(
                                 LOG.debug(f"Transformation failed for key {key} to type {target_type}: {e}")
                                 continue
                             break
-            
+
             # TODO: check if this is needed anymore
             # # Expand Wrapper objects
             # for k, v in list(kwargs.items()):
