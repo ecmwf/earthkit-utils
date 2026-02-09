@@ -107,7 +107,6 @@ def test_format_handler_multiple_args_kwargs(in_data, param):
     # assert isinstance(out_param2, str)
 
 
-
 def test_format_handler_convert_types():
     """Only convert data if it is an xarray.DataArray or xarray.Dataset."""
 
