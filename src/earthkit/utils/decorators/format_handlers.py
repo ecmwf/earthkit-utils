@@ -107,7 +107,7 @@ def format_handler(
                 types_allowed = _ensure_iterable(mapping[key])
                 if type(value) not in types_allowed:
                     if transform is None:
-                        LOG.error(
+                        LOG.warning(
                             "input object type does not match the expected function type(s) and "
                             "earthkit.data is not available for transformation. Proceeding without "
                             "transformation."

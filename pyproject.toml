@@ -50,6 +50,7 @@ optional-dependencies.test = [
   "pytest-cov",
   "pytest-reraise",
   "xarray",
+  "earthkit-data",
 ]
 urls.Documentation = "https://earthkit-utils.readthedocs.io/"
 urls.Homepage = "https://github.com/ecmwf/earthkit-utils/"
