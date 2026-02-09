@@ -96,7 +96,8 @@ def format_handler(
             try:
                 from earthkit.data.translators import transform
             except ImportError as e:
-                LOG.debug(
+                print(
+                # LOG.debug(
                     "earthkit.data is required for the format_handler decorator to perform data "
                     f"transformations, error: {e}"
                 )
