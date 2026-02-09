@@ -107,6 +107,19 @@ def test_format_handler_multiple_args_kwargs(in_data, param):
     # assert isinstance(out_param2, str)
 
 
+
+def test_format_handler_convert_types():
+    """Only convert data if it is an xarray.DataArray or xarray.Dataset."""
+
+    @format_handler(convert_types={"data": (xr.DataArray, xr.Dataset)})
+    def _xarray_handler(data: xr.DataArray):
+        return data
+
+    assert isinstance(_xarray_handler(TEST_DATAARRAY), xr.DataArray)
+    assert isinstance(_xarray_handler(TEST_DATASET), xr.DataArray)
+    assert isinstance(_xarray_handler(TEST_NUMPY), np.ndarray)
+
+
 @pytest.mark.parametrize(
     "in_data",
     [
