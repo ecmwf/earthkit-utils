@@ -1,2 +1,4 @@
 numpy
 pytest-reraise
+xarray
+earthkit-data @ git+https://github.com/ecmwf/earthkit-data@develop
