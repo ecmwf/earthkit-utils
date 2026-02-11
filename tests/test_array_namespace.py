@@ -121,7 +121,7 @@ def test_patched_namespace_numpy():
 
     # test percentile and quantile
     res = xp.asarray([2])
-    q = xp.asarray([50])
+    q = xp.asarray(50)
     assert xp.allclose(xp.percentile(arr, q), res)
     assert generic_xp.allclose(generic_xp.percentile(arr, q), res)
     assert xp.allclose(xp.quantile(arr, q / 100), res)
