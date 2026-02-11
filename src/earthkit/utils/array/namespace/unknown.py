@@ -143,14 +143,18 @@ class UnknownPatchedNamespace:
         # but in practice not all backends implement it yet
         # therefore we provide this function
         # in order to be able to patch it if needed
-        return x.to_device(device, **kwargs)
+        import array_api_compat
+
+        return array_api_compat.to_device(x, device, **kwargs)
 
     def device(self, x):
         # array.device is part of array api spec
         # but in practice not all backends implement it yet
         # therefore we provide this function
         # in order to be able to patch it if needed
-        return x.device
+        import array_api_compat
+
+        return array_api_compat.device(x)
 
     def dtype(self, x):
         # array.device is part of array api spec

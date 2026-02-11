@@ -54,17 +54,3 @@ class PatchedNumpyNamespace(UnknownPatchedNamespace):
 
     def deg2rad(self, x):
         return self.xp.deg2rad(x)
-
-    def to_device(self, x, device, **kwargs):
-        if hasattr(x, "to_device"):
-            return x.to_device(device, **kwargs)
-        import array_api_compat
-
-        return array_api_compat.to_device(x, device, **kwargs)
-
-    def device(self, x):
-        if hasattr(x, "device"):
-            return x.device
-        import array_api_compat
-
-        return array_api_compat.device(x)
