@@ -5,59 +5,59 @@
 # In applying this licence, ECMWF does not waive the privileges and immunities
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
-#
 
-from functools import partial
+from earthkit.utils.decorators import thread_safe_cached_property
 
-import array_api_compat.torch as _xp
-from array_api_compat.torch import *  # noqa: F403
-
-from earthkit.utils.array.compute import histogram2d
-from earthkit.utils.array.compute import percentile
-from earthkit.utils.array.compute import polyval
-from earthkit.utils.array.compute import seterr
-
-# make these methods available on the namespace
-histogram2d = partial(histogram2d, _xp)
-percentile = partial(percentile, _xp)
-polyval = partial(polyval, _xp)
-seterr = partial(seterr, _xp)
+from .unknown import UnknownPatchedNamespace
 
 
-def sign(x, *args, **kwargs):
-    """Reimplement the sign function to handle NaNs.
+class PatchedTorchNamespace(UnknownPatchedNamespace):
 
-    The problem is that torch.sign returns 0 for NaNs, but the array API
-    standard requires NaNs to be propagated.
-    """
-    x = _xp.asarray(x)
-    r = _xp.sign(x, *args, **kwargs)
-    r = _xp.asarray(r)
-    r[_xp.isnan(x)] = _xp.nan
-    return r
+    def __init__(self):
+        super().__init__(None)
 
+    @thread_safe_cached_property
+    def xp(self):
+        import array_api_compat.torch as torch
 
-# This is needed to ensure the tensor can be used in Xarray
-if not hasattr(_xp.Tensor, "__array_function__"):
+        return torch
 
-    def __array_function__(self, func, types, args, kwargs):
-        raise NotImplementedError("PyTorch does not support __array_function__")
+    @property
+    def _earthkit_array_namespace_name(self):
+        return "torch"
 
-    _xp.Tensor.__array_function__ = __array_function__
+    def sign(self, x, *args, **kwargs):
+        """Reimplement the sign function to handle NaNs.
 
-# if not hasattr(_xp.Tensor, "__array_ufunc__"):
+        The problem is that torch.sign returns 0 for NaNs, but the array API
+        standard requires NaNs to be propagated.
+        """
+        r = self.xp.sign(x, *args, **kwargs)
+        r[self.xp.isnan(x)] = self.xp.nan
+        return r
 
-#     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-#         raise NotImplementedError("PyTorch does not support __array_ufunc__")
+    def percentile(self, a, q, axis=None):
+        return self.xp.quantile(a, q / 100, dim=axis)
 
-#     _xp.Tensor.__array_ufunc__ = __array_ufunc__
+    def quantile(self, a, q, axis=None):
+        return self.xp.quantile(a, q, dim=axis)
 
-# if not hasattr(_xp.Tensor, "__array_namespace__"):
+    def size(self, x):
+        """Return the size of an array."""
+        return x.numel()
 
-#     def __array_namespace__(self):
-#         # import torch
+    def shape(self, x):
+        """Return the shape of an array."""
+        return tuple(x.shape)
 
-#         # return torch
-#         return _xp
+    def histogramdd(self, x, *, bins=10):
+        return self.xp.histogramdd(x, bins=bins)
 
-#     _xp.Tensor.__array_namespace__ = __array_namespace__
+    def to_device(self, x, device, **kwargs):
+        return x.to(device, **kwargs)
+
+    def rad2deg(self, x):
+        return self.xp.rad2deg(x)
+
+    def deg2rad(self, x):
+        return self.xp.deg2rad(x)

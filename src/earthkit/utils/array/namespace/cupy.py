@@ -5,17 +5,62 @@
 # In applying this licence, ECMWF does not waive the privileges and immunities
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
-#
 
-from functools import partial
+from earthkit.utils.decorators import thread_safe_cached_property
 
-import array_api_compat.cupy as _xp
-from array_api_compat.cupy import *  # noqa: F403
+from .unknown import UnknownPatchedNamespace
 
-# make polyval available on the namespace
-from cupy.polynomial.polynomial import polyval  # noqa: F401
 
-from earthkit.utils.array.compute import seterr
+class PatchedCupyNamespace(UnknownPatchedNamespace):
 
-# make these methods available on the namespace
-seterr = partial(seterr, _xp)
+    def __init__(self):
+        super().__init__(None)
+
+    @thread_safe_cached_property
+    def xp(self):
+        import array_api_compat.cupy as cp
+
+        return cp
+
+    @property
+    def _earthkit_array_namespace_name(self):
+        return "cupy"
+
+    def polyval(self, *args, **kwargs):
+        from cupy.polynomial.polynomial import polyval
+
+        return polyval(*args, **kwargs)
+
+    def percentile(self, a, q, axis=None):
+        return self.xp.percentile(a, q, axis=axis)
+
+    def quantile(self, a, q, axis=None):
+        return self.xp.quantile(a, q, axis=axis)
+
+    def histogram2d(self, x, y, *, bins=10):
+        return self.xp.histogram2d(x, y, bins=bins)
+
+    def histogramdd(self, x, *, bins=10):
+        return self.xp.histogramdd(x, bins=bins)
+
+    def asarray(self, *args, **kwargs):
+        device = kwargs.pop("device", None)
+        if device is not None:
+            if isinstance(device, str) and device.startswith("cuda"):
+                _, _, idx = device.partition(":")
+                dev_id = int(idx) if idx else 0
+            else:
+                dev_id = device
+            with self.xp.cuda.Device(dev_id):
+                return self.xp.asarray(*args, **kwargs)
+        else:
+            return self.xp.asarray(*args, **kwargs)
+
+    def to_device(self, x, device, **kwargs):
+        return self.asarray(x, device=device, **kwargs)
+
+    def rad2deg(self, x):
+        return self.xp.rad2deg(x)
+
+    def deg2rad(self, x):
+        return self.xp.deg2rad(x)
