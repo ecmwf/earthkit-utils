@@ -55,7 +55,7 @@ def test_docstring_injection(doc):
 
 
 def test_custom_message():
-    @experimental(message="Beta feature.")
+    @experimental(msg="Beta feature.")
     def func():
         pass
 
@@ -63,7 +63,13 @@ def test_custom_message():
     assert _DEFAULT_MESSAGE not in func.__doc__
 
 
-def test_runtime_warning_emitted():
+@pytest.mark.parametrize("env_value", [None, "1", "true", "True", "TRUE", "yes", "on", "something"])
+def test_runtime_warning_emitted(monkeypatch, env_value):
+    if env_value is not None:
+        monkeypatch.setenv("EARTHKIT_EXPERIMENTAL_WARNINGS", env_value)
+    else:
+        monkeypatch.delenv("EARTHKIT_EXPERIMENTAL_WARNINGS", raising=False)
+
     @experimental
     def func():
         return 42

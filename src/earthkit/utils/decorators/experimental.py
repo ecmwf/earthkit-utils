@@ -37,10 +37,13 @@ def _env_warnings_enabled():
 def experimental(
     obj=None,
     *,
-    message=_DEFAULT_MESSAGE,
+    msg=_DEFAULT_MESSAGE,
     warn_runtime=True,
 ):
     """Mark a function as experimental.
+
+    This signals to users that the decorated function is considered experimental
+    and may change or be removed without notice.
 
     Prepends a Sphinx ``.. warning::`` directive to the function's
     docstring and, when *warn_runtime* is ``True``, emits an
@@ -54,7 +57,7 @@ def experimental(
         decorated function. When used with arguments
         (``@experimental(...)``), *obj* is ``None`` and a decorator is
         returned.
-    message : str, optional
+    msg : str, optional
         Text inserted into the Sphinx ``.. warning::`` directive.
     warn_runtime : bool, optional
         If ``True`` (default), emit an :class:`ExperimentalWarning` on
@@ -75,7 +78,7 @@ def experimental(
     ...     return 42
     ...
     """
-    warning_block = f".. warning::\n   {message}\n"
+    warning_block = f".. warning::\n   {msg}\n"
 
     def decorate(target):
         doc = (target.__doc__ or "").strip()
