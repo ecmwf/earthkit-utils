@@ -63,40 +63,7 @@ def test_custom_message():
     assert _DEFAULT_MESSAGE not in func.__doc__
 
 
-@pytest.mark.parametrize("env_value", [None, "1", "true", "True", "TRUE", "yes", "on", "something"])
-def test_runtime_warning_emitted(monkeypatch, env_value):
-    if env_value is not None:
-        monkeypatch.setenv("EARTHKIT_EXPERIMENTAL_WARNINGS", env_value)
-    else:
-        monkeypatch.delenv("EARTHKIT_EXPERIMENTAL_WARNINGS", raising=False)
-
-    @experimental
-    def func():
-        return 42
-
-    with pytest.warns(ExperimentalWarning, match="func"):
-        assert func() == 42
-
-
-@pytest.mark.parametrize("env_value", ["", "0", "false", "False", "FALSE", "no", "off", " 0 "])
-def test_env_var_silences_warning(monkeypatch, env_value):
-    monkeypatch.setenv("EARTHKIT_EXPERIMENTAL_WARNINGS", env_value)
-
-    @experimental
-    def func():
-        return 1
-
-    with warnings.catch_warnings(record=True) as record:
-        warnings.simplefilter("always")
-        func()
-
-    experimental_warnings = [w for w in record if issubclass(w.category, ExperimentalWarning)]
-    assert len(experimental_warnings) == 0
-
-
 def test_env_var_default_warns(monkeypatch):
-    monkeypatch.delenv("EARTHKIT_EXPERIMENTAL_WARNINGS", raising=False)
-
     @experimental
     def func():
         return 1
@@ -144,8 +111,6 @@ def test_warn_runtime_false_returns_original_parens():
 
 
 def test_warn_once_same_call_site(monkeypatch):
-    monkeypatch.delenv("EARTHKIT_EXPERIMENTAL_WARNINGS", raising=False)
-
     @experimental
     def func():
         return 1
@@ -161,7 +126,6 @@ def test_warn_once_same_call_site(monkeypatch):
 
 def test_warn_twice_two_call_sites(monkeypatch):
     """Two call sites -> two warnings (line number is part of the key)."""
-    monkeypatch.delenv("EARTHKIT_EXPERIMENTAL_WARNINGS", raising=False)
 
     @experimental
     def func():
@@ -174,6 +138,19 @@ def test_warn_twice_two_call_sites(monkeypatch):
 
     experimental_warnings = [w for w in record if issubclass(w.category, ExperimentalWarning)]
     assert len(experimental_warnings) == 2
+
+
+def test_warn_filter_by_message(monkeypatch):
+    @experimental
+    def func():
+        return 1
+
+    with warnings.catch_warnings(record=True) as record:
+        warnings.filterwarnings("ignore", message="^earthkit experimental:")
+        func()
+
+    experimental_warnings = [w for w in record if issubclass(w.category, ExperimentalWarning)]
+    assert len(experimental_warnings) == 0
 
 
 def test_metadata_preserved():

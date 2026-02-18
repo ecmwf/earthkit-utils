@@ -6,38 +6,31 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import os
 import warnings
 from functools import wraps
 
 __all__ = ["ExperimentalWarning", "experimental"]
 
-_ENV_VAR = "EARTHKIT_EXPERIMENTAL_WARNINGS"
+# This prefix enables silencing via PYTHONWARNINGS message filters, e.g.
+#   PYTHONWARNINGS='ignore:^earthkit experimental:'
+# Category‑based filters are brittle for non‑stdlib warnings and can fail
+# easily (see https://github.com/python/cpython/issues/66733).
+# A short, stable prefix ensures reliable re.match‑based filtering.
+# In‑code filtering remains preferred:
+#   warnings.filterwarnings("ignore", category=ExperimentalWarning)
+_WARNING_PREFIX = "earthkit experimental:"
 
-_DEFAULT_MESSAGE = "**Experimental API**: may change or be removed without notice."
+_DEFAULT_DOCS_MESSAGE = "**Experimental API**: may change or be removed without notice."
 
 
 class ExperimentalWarning(UserWarning):
     """Warning category for experimental API usage."""
 
 
-def _env_warnings_enabled():
-    """Return ``True`` unless the env var explicitly disables warnings."""
-    value = os.environ.get(_ENV_VAR)
-    if value is None:
-        return True
-    normalized = value.strip().lower()
-    if normalized in {"", "0", "false", "no", "off"}:
-        return False
-    if normalized in {"1", "true", "yes", "on"}:
-        return True
-    return True
-
-
 def experimental(
     obj=None,
     *,
-    msg=_DEFAULT_MESSAGE,
+    msg=_DEFAULT_DOCS_MESSAGE,
     warn_runtime=True,
 ):
     """Mark a function as experimental.
@@ -66,9 +59,15 @@ def experimental(
 
     Notes
     -----
-    Runtime warnings can be silenced by setting
-    ``EARTHKIT_EXPERIMENTAL_WARNINGS=0`` (or ``false``), or via
-    ``warnings.filterwarnings("ignore", category=ExperimentalWarning)``.
+    To silence runtime warnings, use any of Python's standard mechanisms::
+
+        import warnings
+        from earthkit.utils.decorators.experimental import ExperimentalWarning
+        warnings.filterwarnings("ignore", category=ExperimentalWarning)
+
+    Or via the environment variable ``PYTHONWARNINGS``::
+
+        export PYTHONWARNINGS="ignore:earthkit experimental:"
 
     Examples
     --------
@@ -89,13 +88,11 @@ def experimental(
 
         @wraps(target)
         def wrapper(*args, **kwargs):
-            if _env_warnings_enabled():
-                warnings.warn(
-                    f"'{target.__qualname__}' is experimental and may "
-                    "change or be removed without notice.",
-                    category=ExperimentalWarning,
-                    stacklevel=2,
-                )
+            warnings.warn(
+                f"{_WARNING_PREFIX} {target.__qualname__} " "may change or be removed without notice.",
+                category=ExperimentalWarning,
+                stacklevel=2,
+            )
             return target(*args, **kwargs)
 
         return wrapper
