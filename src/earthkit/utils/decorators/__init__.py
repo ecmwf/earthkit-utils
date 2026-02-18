@@ -6,10 +6,14 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from .experimental import ExperimentalWarning
+from .experimental import experimental
 from .format_handlers import format_handler
 from .thread_handlers import thread_safe_cached_property
 
 __all__ = [
+    "ExperimentalWarning",
+    "experimental",
     "thread_safe_cached_property",
     "format_handler",
 ]
