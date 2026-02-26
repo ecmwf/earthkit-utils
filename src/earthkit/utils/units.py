@@ -15,7 +15,11 @@ ureg = UnitRegistry()
 Q_ = ureg.Quantity
 
 
-UNIT_STR_ALIASES = {"(0 - 1)": "percent"}
+UNIT_STR_ALIASES = {
+    # "(0 - 1)" denotes a fractional value between 0 and 1, i.e. a pure, dimensionless ratio.
+    # Using "percent" here would introduce an unintended factor-of-100 in conversions.
+    "(0 - 1)": "dimensionless",
+}
 
 
 def _pintify(unit_str):
