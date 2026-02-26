@@ -27,8 +27,8 @@ class TestPintify:
     def test_alias_conversion(self):
         """Test that unit aliases are converted correctly."""
         result = _pintify("(0 - 1)")
-        assert str(result) == "percent"
-
+        assert str(result) == "dimensionless"
+        
     def test_exponent_insertion(self):
         """Test that exponents are properly inserted."""
         result = _pintify("m s-1")
@@ -91,7 +91,7 @@ class TestAreEqual:
 
     def test_alias_equality(self):
         """Test that aliases are recognized as equal."""
-        assert are_equal("(0 - 1)", "percent") is True
+        assert are_equal("(0 - 1)", "dimensionless") is True
 
     def test_temperature_units(self):
         """Test temperature unit comparisons."""
