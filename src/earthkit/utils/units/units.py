@@ -156,11 +156,11 @@ class PintUnits(Units):
         return self._units
 
     @staticmethod
-    def _to_pint(self, units) -> pint.Unit:
+    def _to_pint(units: str) -> pint.Unit:
         return ureg(units).units
 
     def __getstate__(self) -> dict:
         return {"units": str(self)}
 
     def __setstate__(self, state: dict) -> None:
-        self._units = PintUnits._to_pint(self, state["units"])
+        self._units = PintUnits._to_pint(state["units"])
