@@ -12,7 +12,7 @@ import threading
 class thread_safe_cached_property:
     """A thread-safe cached property decorator.
 
-    It was implemented because a the functools.cached_property is not thread-safe
+    It was implemented because the functools.cached_property is not thread-safe
     from Python 3.12 onwards.
 
     Parameters
