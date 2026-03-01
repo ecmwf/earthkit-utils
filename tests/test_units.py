@@ -21,12 +21,14 @@ from earthkit.utils.units import Units
         ("m s-1", "meter / second", True),
         ("m s^-1", "meter / second", True),
         ("m/s2", "meter / second ** 2", True),
+        ("kg m**-2", "kilogram / meter ** 2", True),
+        ("kilogram / meter ** 2", "kilogram / meter ** 2", True),
         ("invalid", "invalid", False),
     ],
 )
 def test_units_to_str(input_units, expected_value, pint_object):
     r = Units.from_any(input_units)
-    assert str(r) == expected_value
+    assert str(r) == expected_value, f"{str(r)}"
     if pint_object:
         assert r.to_pint() is not None
     else:
@@ -37,9 +39,12 @@ def test_units_to_str(input_units, expected_value, pint_object):
     "units,pint_object",
     [
         (["m/s", "m s-1", "m s**-1"], True),
+        (["m/s2", "meter / second ** 2"], True),
         (["degC", "celsius"], True),
         (["K", "kelvin"], True),
         (["(0 - 1)", "percent", "%"], True),
+        (["kg m**-2", "kilogram / meter ** 2"], True),
+        (["kilogram / meter ** 2", "kilogram / meter ** 2"], True),
         (["invalid", "invalid"], False),
     ],
 )
