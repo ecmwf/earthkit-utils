@@ -47,8 +47,9 @@ def _prepare_str(units: str = None) -> str:
     if units in UNIT_STR_ALIASES:
         units = UNIT_STR_ALIASES[units]
 
-    # Replace spaces with dots
-    units = units.replace(" ", ".")
+    # Replace spaces between unit chunks with dots (e.g. "m s-1" -> "m.s-1")
+    # Only replace spaces followed by a letter to avoid turning "** 2" into "**.2"
+    units = re.sub(r"(?<=[a-zA-Z0-9])\s+(?=[a-zA-Z])", ".", units)
 
     # Insert ^ between characters and numbers (including negative numbers)
     units = UNITS_PATTERN.sub(r"\1^\2", units)
