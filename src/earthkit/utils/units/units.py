@@ -18,7 +18,8 @@ from pint import UnitRegistry
 ureg = UnitRegistry()
 Q_ = ureg.Quantity
 
-UNITS_PATTERN = re.compile(r"([a-zA-Z])(-?\d+)")
+UNITS_PATTERN_1 = re.compile(r"(?<=[a-zA-Z0-9])\s+(?=[a-zA-Z])")
+UNITS_PATTERN_2 = re.compile(r"([a-zA-Z])(-?\d+)")
 UNIT_STR_ALIASES = {"(0 - 1)": "percent"}
 
 
@@ -47,11 +48,12 @@ def _prepare_str(units: str = None) -> str:
     if units in UNIT_STR_ALIASES:
         units = UNIT_STR_ALIASES[units]
 
-    # Replace spaces with dots
-    units = units.replace(" ", ".")
+    # Replace spaces between unit chunks with dots (e.g. "m s-1" -> "m.s-1")
+    # Only replace spaces followed by a letter to avoid turning "** 2" into "**.2"
+    units = UNITS_PATTERN_1.sub(".", units)
 
     # Insert ^ between characters and numbers (including negative numbers)
-    units = UNITS_PATTERN.sub(r"\1^\2", units)
+    units = UNITS_PATTERN_2.sub(r"\1^\2", units)
 
     return units
 
