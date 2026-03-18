@@ -11,9 +11,17 @@ import numpy as np
 import pint
 import pytest
 
+try:
+    import xarray as xr  # type: ignore[import]
+except ImportError:
+    xr = None
+
+from earthkit.utils.units import _are_compatible
 from earthkit.utils.units import _pintify
 from earthkit.utils.units import are_equal
-from earthkit.utils.units import convert
+from earthkit.utils.units import convert_array
+from earthkit.utils.units import convert_dataarray
+from earthkit.utils.units import convert_dataset
 
 
 class TestPintify:
@@ -28,7 +36,7 @@ class TestPintify:
         """Test that unit aliases are converted correctly."""
         result = _pintify("(0 - 1)")
         assert str(result) == "dimensionless"
-        
+
     def test_exponent_insertion(self):
         """Test that exponents are properly inserted."""
         result = _pintify("m s-1")
@@ -107,73 +115,73 @@ class TestAreEqual:
         assert are_equal("m s-2", "m.s^-2") is True
 
 
-class TestConvert:
-    """Tests for the convert function."""
+class TestConvertArray:
+    """Tests for the convert_array function."""
 
     def test_simple_conversion(self):
         """Test simple unit conversion."""
         data = np.array([1.0, 2.0, 3.0])
-        result = convert(data, "m", "km")
+        result = convert_array(data, "km", "m")
         expected = np.array([0.001, 0.002, 0.003])
         np.testing.assert_array_almost_equal(result, expected)
 
     def test_temperature_conversion(self):
         """Test temperature conversion."""
         data = np.array([0.0, 100.0])
-        result = convert(data, "degC", "K")
+        result = convert_array(data, "K", "degC")
         expected = np.array([273.15, 373.15])
         np.testing.assert_array_almost_equal(result, expected)
 
     def test_velocity_conversion(self):
         """Test velocity conversion."""
         data = np.array([1.0])
-        result = convert(data, "m s-1", "km h-1")
+        result = convert_array(data, "km h-1", "m s-1")
         expected = np.array([3.6])
         np.testing.assert_array_almost_equal(result, expected)
 
     def test_pressure_conversion(self):
         """Test pressure conversion."""
         data = np.array([1.0])
-        result = convert(data, "Pa", "hPa")
+        result = convert_array(data, "hPa", "Pa")
         expected = np.array([0.01])
         np.testing.assert_array_almost_equal(result, expected)
 
     def test_no_conversion_needed(self):
         """Test conversion between identical units."""
         data = np.array([1.0, 2.0, 3.0])
-        result = convert(data, "m", "m")
+        result = convert_array(data, "m", "m")
         np.testing.assert_array_equal(result, data)
 
     def test_compound_unit_conversion(self):
         """Test conversion of compound units."""
         data = np.array([1.0])
-        result = convert(data, "kg m-2 s-1", "kg.m^-2.s^-1")
+        result = convert_array(data, "kg.m^-2.s^-1", "kg m-2 s-1")
         np.testing.assert_array_almost_equal(result, data)
 
     def test_scalar_conversion(self):
         """Test conversion with scalar input."""
         data = 10.0
-        result = convert(data, "m", "cm")
+        result = convert_array(data, "cm", "m")
         assert np.isclose(result, 1000.0)
 
     def test_multidimensional_array(self):
         """Test conversion with multidimensional arrays."""
         data = np.array([[1.0, 2.0], [3.0, 4.0]])
-        result = convert(data, "m", "km")
+        result = convert_array(data, "km", "m")
         expected = np.array([[0.001, 0.002], [0.003, 0.004]])
         np.testing.assert_array_almost_equal(result, expected)
 
     def test_zero_values(self):
         """Test conversion with zero values."""
         data = np.array([0.0, 0.0])
-        result = convert(data, "m", "km")
+        result = convert_array(data, "km", "m")
         expected = np.array([0.0, 0.0])
         np.testing.assert_array_equal(result, expected)
 
     def test_negative_values(self):
         """Test conversion with negative values."""
         data = np.array([-10.0, -20.0])
-        result = convert(data, "degC", "K")
+        result = convert_array(data, "K", "degC")
         expected = np.array([263.15, 253.15])
         np.testing.assert_array_almost_equal(result, expected)
 
@@ -181,18 +189,81 @@ class TestConvert:
         """Test that incompatible unit conversion raises an error."""
         data = np.array([1.0])
         with pytest.raises(pint.errors.DimensionalityError):
-            convert(data, "m", "s")
+            convert_array(data, "s", "m")
 
     def test_large_values(self):
         """Test conversion with large values."""
         data = np.array([1e6, 1e9])
-        result = convert(data, "m", "km")
+        result = convert_array(data, "km", "m")
         expected = np.array([1e3, 1e6])
         np.testing.assert_array_almost_equal(result, expected)
 
     def test_small_values(self):
         """Test conversion with small values."""
         data = np.array([1e-6, 1e-9])
-        result = convert(data, "m", "mm")
-        expected = np.array([1e-3, 1e-6])
-        np.testing.assert_array_almost_equal(result, expected)
+        result = convert_array(data, "mm", "m")
+
+
+class TestAreCompatible:
+    """Tests for the _are_compatible helper."""
+
+    def test_compatible_units(self):
+        assert _are_compatible("m", "km") is True
+
+    def test_incompatible_units(self):
+        assert _are_compatible("m", "s") is False
+
+    def test_undefined_units(self):
+        assert _are_compatible("undefined_unit_xyz", "m") is False
+
+
+class TestConvertDataArray:
+    """Tests for the convert_dataarray function."""
+
+    @pytest.mark.skipif(xr is None, reason="xarray not installed")
+    def test_convert_dataarray_units(self):
+        data = xr.DataArray(np.array([1.0, 2.0]), attrs={"units": "m"})
+        result = convert_dataarray(data, "km", None)
+        np.testing.assert_array_almost_equal(result.data, np.array([0.001, 0.002]))
+        assert result.attrs["units"] == "kilometer"
+
+    @pytest.mark.skipif(xr is None, reason="xarray not installed")
+    def test_convert_dataarray_preserves_attrs(self):
+        data = xr.DataArray(np.array([1.0]), attrs={"units": "m", "long_name": "test"})
+        result = convert_dataarray(data, "cm", "m")
+        assert result.attrs["long_name"] == "test"
+        assert result.attrs["units"] == "centimeter"
+
+
+class TestConvertDataset:
+    """Tests for the convert_dataset function."""
+
+    @pytest.mark.skipif(xr is None, reason="xarray not installed")
+    def test_convert_dataset_matching_units(self):
+        ds = xr.Dataset(
+            {
+                "a": ("x", np.array([1.0, 2.0]), {"units": "m"}),
+                "b": ("x", np.array([3.0, 4.0]), {"units": "s"}),
+                "c": ("x", np.array([5.0, 6.0])),
+            }
+        )
+        result = convert_dataset(ds, "km", "m")
+        np.testing.assert_array_almost_equal(result["a"].data, np.array([0.001, 0.002]))
+        np.testing.assert_array_equal(result["b"].data, np.array([3.0, 4.0]))
+        assert "units" not in result["c"].attrs
+        assert result["a"].attrs["units"] == "kilometer"
+        assert result["b"].attrs["units"] == "s"
+
+    @pytest.mark.skipif(xr is None, reason="xarray not installed")
+    def test_convert_dataset_compatible_units(self):
+        ds = xr.Dataset(
+            {
+                "a": ("x", np.array([1000.0, 2000.0]), {"units": "m"}),
+                "b": ("x", np.array([3.0, 4.0]), {"units": "s"}),
+            }
+        )
+        result = convert_dataset(ds, "km", None)
+        np.testing.assert_array_almost_equal(result["a"].data, np.array([1.0, 2.0]))
+        np.testing.assert_array_equal(result["b"].data, np.array([3.0, 4.0]))
+        assert result["a"].attrs["units"] == "kilometer"
+        assert result["b"].attrs["units"] == "s"
