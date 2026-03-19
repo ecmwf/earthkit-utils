@@ -1,12 +1,7 @@
-name: earthkit-utils
 channels:
 - conda-forge
 - nodefaults
 dependencies:
-- pip
-- make
-- pre-commit
-- pytest
-- pytest-cov
+# Hard dependencies
 - array-api-compat
 - pint
