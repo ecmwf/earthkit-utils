@@ -6,12 +6,12 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 #
+import builtins
 import sys
 from typing import Tuple
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-import builtins
 import numpy as np
 import pytest
 import xarray as xr
@@ -379,7 +379,9 @@ class TestDispatchDecorator:
         mock_xarray_module = MagicMock()
         mock_xarray_module.with_all_defaults = MagicMock(return_value="xarray_dispatched")
 
-        with patch("earthkit.utils.decorators.dispatchers.import_module", return_value=mock_xarray_module) as import_mod:
+        with patch(
+            "earthkit.utils.decorators.dispatchers.import_module", return_value=mock_xarray_module
+        ) as import_mod:
             result = with_all_defaults(TEST_XARRAY_DATAARRAY)
 
         assert result == "xarray_dispatched"
