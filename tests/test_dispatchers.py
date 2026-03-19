@@ -11,6 +11,7 @@ from typing import Tuple
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
+import builtins
 import numpy as np
 import pytest
 import xarray as xr
@@ -537,18 +538,18 @@ class TestXarrayUfunc:
         def add_one(x):
             return x + 1
 
-        with patch.dict("sys.modules", {"xarray": None}):
-            with patch("earthkit.utils.decorators.dispatchers.import_module") as mock_import:
-                mock_import.side_effect = ImportError("xarray not found")
+        # Simulate ImportError when xarray is imported inside xarray_ufunc
+        with patch.dict(sys.modules, {"xarray": None}, clear=False):
+            original_import = builtins.__import__
 
+            def _mock_import(name, *args, **kwargs):
+                if name == "xarray":
+                    raise ImportError("xarray not found")
+                return original_import(name, *args, **kwargs)
+
+            with patch.object(builtins, "__import__", side_effect=_mock_import):
                 with pytest.raises(RuntimeError, match="xarray dependency is required"):
-                    # Force reimport to trigger the ImportError
-                    import importlib
-
-                    import earthkit.utils.decorators.dispatchers as disp_module
-
-                    importlib.reload(disp_module)
-                    disp_module.xarray_ufunc(add_one, TEST_NUMPY_ARRAY)
+                    xarray_ufunc(add_one, TEST_NUMPY_ARRAY)
 
 
 class TestDispatchIntegration:
