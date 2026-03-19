@@ -16,5 +16,6 @@ except ImportError:  # pragma: no cover
     __version__ = "999"
 
 import earthkit.utils.array as array
+import earthkit.utils.decorators as decorators
 
-__all__ = ["ALL", "__version__", "array"]
+__all__ = ["ALL", "__version__", "array", "decorators"]
