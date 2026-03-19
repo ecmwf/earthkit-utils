@@ -16,7 +16,6 @@ import pytest
 import xarray as xr
 
 from earthkit.data import SimpleFieldList
-
 from earthkit.utils.decorators.dispatchers import ArrayDispatcher
 from earthkit.utils.decorators.dispatchers import FieldListDispatcher
 from earthkit.utils.decorators.dispatchers import XArrayDispatcher
@@ -32,6 +31,7 @@ TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])
 TEST_XARRAY_DATAARRAY = xr.DataArray(TEST_NUMPY_ARRAY, name="test", dims=["x"], coords={"x": [0, 1, 2, 3, 4]})
 TEST_XARRAY_DATASET = xr.Dataset({"test": TEST_XARRAY_DATAARRAY})
 TEST_FIELDLIST = SimpleFieldList(TEST_NUMPY_ARRAY)
+
 
 class TestIsModuleLoaded:
     """Test the is_module_loaded helper function."""
@@ -85,7 +85,7 @@ class TestIsFieldlist:
     def test_fieldlist(self):
         """Test that FieldList is correctly identified."""
         assert _is_fieldlist(TEST_FIELDLIST)
-    
+
     def test_not_fieldlist_when_module_not_loaded(self):
         """Test that objects are not identified as FieldList when module is not loaded."""
         # earthkit.data is likely not loaded in test environment
@@ -141,7 +141,7 @@ class TestXArrayDispatcher:
 
 class TestFieldListDispatcher:
     """Test the FieldListDispatcher class."""
-    
+
     def test_match_with_fieldlist(self):
         """Test that FieldListDispatcher matches FieldList objects."""
         dispatcher = FieldListDispatcher()
