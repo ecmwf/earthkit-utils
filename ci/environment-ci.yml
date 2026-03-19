@@ -1,0 +1,22 @@
+# environment-ci.yml: Additional dependencies to install in the CI environment.
+channels:
+- conda-forge
+- nodefaults
+dependencies:
+# Dependancies for general development
+- pre-commit
+- make
+# Dependancies for documentation
+- myst-parser
+- sphinx-rtd-theme
+- sphinx
+- sphinx-autoapi
+- nbsphinx
+# Dependancies for type checking
+- mypy
+- pandas-stubs
+# Dependancies for units tests
+- pytest
+- pytest-cov
+- xarray
+- earthkit-data

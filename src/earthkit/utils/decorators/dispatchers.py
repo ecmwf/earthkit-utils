@@ -20,7 +20,7 @@ from typing import Any
 from earthkit.utils.array import array_namespace
 
 if TYPE_CHECKING:
-    pass
+    import xarray as xr
 
 
 def is_module_loaded(module_name):
