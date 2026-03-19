@@ -8,6 +8,7 @@
 #
 from __future__ import annotations
 
+import sys
 from abc import ABCMeta
 from abc import abstractmethod
 from functools import wraps
@@ -15,12 +16,11 @@ from importlib import import_module
 from inspect import signature
 from typing import TYPE_CHECKING
 from typing import Any
-import sys
 
 from earthkit.utils.array import array_namespace
 
 if TYPE_CHECKING:
-    import xarray as xr
+    pass
 
 
 def is_module_loaded(module_name):
@@ -194,6 +194,7 @@ def _infer_output_count(func) -> int:
         if args and args[-1] is not Ellipsis:
             return len(args)
     return 1
+
 
 def xarray_ufunc(func, *args, **kwargs):
     try:
