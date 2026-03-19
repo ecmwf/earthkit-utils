@@ -85,7 +85,11 @@ class FieldListDispatcher(DataDispatcher):
 class ArrayDispatcher(DataDispatcher):
     @staticmethod
     def match(obj: Any) -> bool:
-        xp = array_namespace(obj)
+        try:
+            xp = array_namespace(obj)
+        except KeyError:
+            return False
+
         try:
             xp.asarray(obj)
             return True
