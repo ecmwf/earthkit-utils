@@ -17,10 +17,10 @@ from inspect import signature
 from typing import TYPE_CHECKING
 from typing import Any
 
-from earthkit.utils.array import array_namespace
-
 if TYPE_CHECKING:
-    import xarray as xr
+    import xarray as xr  # noqa: F401
+
+    from earthkit.data import FieldList  # noqa: F401
 
 
 def is_module_loaded(module_name):
@@ -89,6 +89,8 @@ class FieldListDispatcher(DataDispatcher):
 class ArrayDispatcher(DataDispatcher):
     @staticmethod
     def match(obj: Any) -> bool:
+        from earthkit.utils.array import array_namespace
+
         xp = array_namespace(obj)
         try:
             xp.asarray(obj)

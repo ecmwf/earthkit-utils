@@ -15,22 +15,19 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from earthkit.utils.decorators.dispatchers import ArrayDispatcher
+from earthkit.utils.decorators.dispatchers import FieldListDispatcher
+from earthkit.utils.decorators.dispatchers import XArrayDispatcher
 from earthkit.utils.decorators.dispatchers import _infer_output_count
 from earthkit.utils.decorators.dispatchers import _is_fieldlist
 from earthkit.utils.decorators.dispatchers import _is_xarray
-from earthkit.utils.decorators.dispatchers import ArrayDispatcher
 from earthkit.utils.decorators.dispatchers import dispatch
-from earthkit.utils.decorators.dispatchers import FieldListDispatcher
 from earthkit.utils.decorators.dispatchers import is_module_loaded
 from earthkit.utils.decorators.dispatchers import xarray_ufunc
-from earthkit.utils.decorators.dispatchers import XArrayDispatcher
-
 
 # Test data
 TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])
-TEST_XARRAY_DATAARRAY = xr.DataArray(
-    TEST_NUMPY_ARRAY, name="test", dims=["x"], coords={"x": [0, 1, 2, 3, 4]}
-)
+TEST_XARRAY_DATAARRAY = xr.DataArray(TEST_NUMPY_ARRAY, name="test", dims=["x"], coords={"x": [0, 1, 2, 3, 4]})
 TEST_XARRAY_DATASET = xr.Dataset({"test": TEST_XARRAY_DATAARRAY})
 
 
@@ -95,22 +92,6 @@ class TestIsFieldlist:
         assert not _is_fieldlist("string")
         assert not _is_fieldlist(42)
         assert not _is_fieldlist(None)
-
-    @patch("earthkit.utils.decorators.dispatchers.is_module_loaded")
-    def test_fieldlist_with_mock(self, mock_is_loaded):
-        """Test with mocked FieldList object."""
-        mock_is_loaded.return_value = True
-
-        # Create a mock FieldList
-        with patch.dict("sys.modules", {"earthkit.data": MagicMock()}):
-            mock_fieldlist = MagicMock()
-            mock_fieldlist_class = MagicMock()
-            sys.modules["earthkit.data"].FieldList = mock_fieldlist_class
-            mock_fieldlist_class.__instancecheck__ = lambda self, obj: obj is mock_fieldlist
-
-            # This should return True
-            with patch("earthkit.utils.decorators.dispatchers.isinstance", return_value=True):
-                assert _is_fieldlist(mock_fieldlist) or not _is_fieldlist(mock_fieldlist)
 
 
 class TestXArrayDispatcher:
@@ -359,9 +340,7 @@ class TestDispatchDecorator:
             result = process_data(TEST_XARRAY_DATAARRAY, multiplier=3)
 
         assert result == "xarray_with_kwargs"
-        mock_xarray_module.process_data.assert_called_once_with(
-            TEST_XARRAY_DATAARRAY, multiplier=3
-        )
+        mock_xarray_module.process_data.assert_called_once_with(TEST_XARRAY_DATAARRAY, multiplier=3)
 
     def test_dispatch_selective_dispatchers(self):
         """Test dispatch decorator with selective dispatcher enabling."""
