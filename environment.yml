@@ -2,6 +2,6 @@ channels:
 - conda-forge
 - nodefaults
 dependencies:
-# Hard dependencies
+# Hard dependencies of ek-utils
 - array-api-compat
 - pint
