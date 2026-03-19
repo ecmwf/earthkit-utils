@@ -10,10 +10,13 @@ from .experimental import ExperimentalWarning
 from .experimental import experimental
 from .format_handlers import format_handler
 from .thread_handlers import thread_safe_cached_property
+from .dispatchers import dispatch, xarray_ufunc
 
 __all__ = [
     "ExperimentalWarning",
     "experimental",
     "thread_safe_cached_property",
     "format_handler",
+    "dispatch",
+    "xarray_ufunc",
 ]
