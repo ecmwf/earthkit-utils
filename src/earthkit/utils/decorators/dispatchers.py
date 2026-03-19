@@ -91,7 +91,10 @@ class ArrayDispatcher(DataDispatcher):
     def match(obj: Any) -> bool:
         from earthkit.utils.array import array_namespace
 
-        xp = array_namespace(obj)
+        try:
+            xp = array_namespace(obj)
+        except KeyError:
+            return False
         try:
             xp.asarray(obj)
             return True

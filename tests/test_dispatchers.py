@@ -15,6 +15,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from earthkit.data import SimpleFieldList
+
 from earthkit.utils.decorators.dispatchers import ArrayDispatcher
 from earthkit.utils.decorators.dispatchers import FieldListDispatcher
 from earthkit.utils.decorators.dispatchers import XArrayDispatcher
@@ -29,7 +31,7 @@ from earthkit.utils.decorators.dispatchers import xarray_ufunc
 TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])
 TEST_XARRAY_DATAARRAY = xr.DataArray(TEST_NUMPY_ARRAY, name="test", dims=["x"], coords={"x": [0, 1, 2, 3, 4]})
 TEST_XARRAY_DATASET = xr.Dataset({"test": TEST_XARRAY_DATAARRAY})
-
+TEST_FIELDLIST = SimpleFieldList(TEST_NUMPY_ARRAY)
 
 class TestIsModuleLoaded:
     """Test the is_module_loaded helper function."""
@@ -80,6 +82,10 @@ class TestIsXarray:
 class TestIsFieldlist:
     """Test the _is_fieldlist helper function."""
 
+    def test_fieldlist(self):
+        """Test that FieldList is correctly identified."""
+        assert _is_fieldlist(TEST_FIELDLIST)
+    
     def test_not_fieldlist_when_module_not_loaded(self):
         """Test that objects are not identified as FieldList when module is not loaded."""
         # earthkit.data is likely not loaded in test environment
@@ -127,7 +133,7 @@ class TestXArrayDispatcher:
         mock_module.test_func = MagicMock(return_value="xarray_result")
 
         with patch("earthkit.utils.decorators.dispatchers.import_module", return_value=mock_module):
-            result = dispatcher.dispatch("test_func", "earthkit.utils", 1, 2, key="value")
+            result = dispatcher.dispatch("test_func", "dummy.module", 1, 2, key="value")
 
         assert result == "xarray_result"
         mock_module.test_func.assert_called_once_with(1, 2, key="value")
@@ -135,6 +141,11 @@ class TestXArrayDispatcher:
 
 class TestFieldListDispatcher:
     """Test the FieldListDispatcher class."""
+    
+    def test_match_with_fieldlist(self):
+        """Test that FieldListDispatcher matches FieldList objects."""
+        dispatcher = FieldListDispatcher()
+        assert dispatcher.match(TEST_FIELDLIST)
 
     def test_no_match_with_regular_objects(self):
         """Test that FieldListDispatcher does not match regular objects."""
@@ -152,7 +163,7 @@ class TestFieldListDispatcher:
         mock_module.test_func = MagicMock(return_value="fieldlist_result")
 
         with patch("earthkit.utils.decorators.dispatchers.import_module", return_value=mock_module):
-            result = dispatcher.dispatch("test_func", "earthkit.utils", 1, 2, key="value")
+            result = dispatcher.dispatch("test_func", "dummy.module", 1, 2, key="value")
 
         assert result == "fieldlist_result"
         mock_module.test_func.assert_called_once_with(1, 2, key="value")
@@ -171,11 +182,13 @@ class TestArrayDispatcher:
         dispatcher = ArrayDispatcher()
         assert dispatcher.match([1, 2, 3])
 
-    # def test_no_match_with_incompatible_types(self):
-    #     """Test that ArrayDispatcher does not match incompatible types."""
-    #     dispatcher = ArrayDispatcher()
-    #     assert not dispatcher.match("string")
-    #     assert not dispatcher.match(None)
+    def test_no_match_with_incompatible_types(self):
+        """Test that ArrayDispatcher does not match incompatible types."""
+        dispatcher = ArrayDispatcher()
+        assert not dispatcher.match("string")
+
+        # This currently fails, but because array_namespace returns a numpy namespace for None
+        # assert not dispatcher.match(None)
 
     def test_dispatch(self):
         """Test the dispatch method of ArrayDispatcher."""
@@ -186,7 +199,7 @@ class TestArrayDispatcher:
         mock_module.test_func = MagicMock(return_value="array_result")
 
         with patch("earthkit.utils.decorators.dispatchers.import_module", return_value=mock_module):
-            result = dispatcher.dispatch("test_func", "earthkit.utils", 1, 2, key="value")
+            result = dispatcher.dispatch("test_func", "dummy.module", 1, 2, key="value")
 
         assert result == "array_result"
         mock_module.test_func.assert_called_once_with(1, 2, key="value")
@@ -255,28 +268,24 @@ class TestDispatchDecorator:
 
         assert result == "xarray_implementation"
 
-    # def test_dispatch_with_match_by_name(self):
-    #     """Test dispatch decorator with match by parameter name."""
+    def test_dispatch_with_match_by_name(self):
+        """Test dispatch decorator with match by parameter name."""
 
-    #     @dispatch
-    #     def process_data(x, data):
-    #         return "base_implementation"
+        # Create a decorator with match="data"
+        from earthkit.utils.decorators.dispatchers import dispatch as dispatch_func
 
-    #     # Create a decorator with match="data"
-    #     from earthkit.utils.decorators.dispatchers import dispatch as dispatch_func
+        @dispatch_func
+        def process_with_name_match(data):
+            return "base_implementation"
 
-    #     @dispatch_func
-    #     def process_with_name_match(x, data):
-    #         return "base_implementation"
+        # Even calling directly should work with the right parameter
+        mock_xarray_module = MagicMock()
+        mock_xarray_module.process_with_name_match = MagicMock(return_value="xarray_implementation")
 
-    #     # Even calling directly should work with the right parameter
-    #     mock_xarray_module = MagicMock()
-    #     mock_xarray_module.process_with_name_match = MagicMock(return_value="xarray_implementation")
+        with patch("earthkit.utils.decorators.dispatchers.import_module", return_value=mock_xarray_module):
+            result = process_with_name_match(TEST_XARRAY_DATAARRAY)
 
-    #     with patch("earthkit.utils.decorators.dispatchers.import_module", return_value=mock_xarray_module):
-    #         result = process_with_name_match(42, TEST_XARRAY_DATAARRAY)
-
-    #     assert result == "xarray_implementation"
+        assert result == "xarray_implementation"
 
     def test_dispatch_with_invalid_match_index(self):
         """Test dispatch decorator with invalid match index."""
