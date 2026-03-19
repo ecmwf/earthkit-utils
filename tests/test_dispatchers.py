@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from earthkit.utils.decorators.dispatchers import ArrayDispatcher
-from earthkit.utils.decorators.dispatchers import FieldListDispatcher
-from earthkit.utils.decorators.dispatchers import XArrayDispatcher
-from earthkit.utils.decorators.dispatchers import _infer_output_count
-from earthkit.utils.decorators.dispatchers import _is_fieldlist
-from earthkit.utils.decorators.dispatchers import _is_xarray
-from earthkit.utils.decorators.dispatchers import dispatch
-from earthkit.utils.decorators.dispatchers import is_module_loaded
-from earthkit.utils.decorators.dispatchers import xarray_ufunc
+from earthkit.utils.decorators import dispatch
+from earthkit.utils.decorators import xarray_ufunc
+from earthkit.utils.decorators.dispatch import ArrayDispatcher
+from earthkit.utils.decorators.dispatch import FieldListDispatcher
+from earthkit.utils.decorators.dispatch import XArrayDispatcher
+from earthkit.utils.decorators.dispatch import _is_fieldlist
+from earthkit.utils.decorators.dispatch import _is_xarray
+from earthkit.utils.decorators.dispatch import is_module_loaded
+from earthkit.utils.decorators.xarray_ufunc import _infer_output_count
 
 # Test data
 TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])
