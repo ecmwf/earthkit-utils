@@ -15,22 +15,19 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from earthkit.utils.decorators.dispatchers import ArrayDispatcher
+from earthkit.utils.decorators.dispatchers import FieldListDispatcher
+from earthkit.utils.decorators.dispatchers import XArrayDispatcher
 from earthkit.utils.decorators.dispatchers import _infer_output_count
 from earthkit.utils.decorators.dispatchers import _is_fieldlist
 from earthkit.utils.decorators.dispatchers import _is_xarray
-from earthkit.utils.decorators.dispatchers import ArrayDispatcher
 from earthkit.utils.decorators.dispatchers import dispatch
-from earthkit.utils.decorators.dispatchers import FieldListDispatcher
 from earthkit.utils.decorators.dispatchers import is_module_loaded
 from earthkit.utils.decorators.dispatchers import xarray_ufunc
-from earthkit.utils.decorators.dispatchers import XArrayDispatcher
-
 
 # Test data
 TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])
-TEST_XARRAY_DATAARRAY = xr.DataArray(
-    TEST_NUMPY_ARRAY, name="test", dims=["x"], coords={"x": [0, 1, 2, 3, 4]}
-)
+TEST_XARRAY_DATAARRAY = xr.DataArray(TEST_NUMPY_ARRAY, name="test", dims=["x"], coords={"x": [0, 1, 2, 3, 4]})
 TEST_XARRAY_DATASET = xr.Dataset({"test": TEST_XARRAY_DATAARRAY})
 
 
@@ -359,9 +356,7 @@ class TestDispatchDecorator:
             result = process_data(TEST_XARRAY_DATAARRAY, multiplier=3)
 
         assert result == "xarray_with_kwargs"
-        mock_xarray_module.process_data.assert_called_once_with(
-            TEST_XARRAY_DATAARRAY, multiplier=3
-        )
+        mock_xarray_module.process_data.assert_called_once_with(TEST_XARRAY_DATAARRAY, multiplier=3)
 
     def test_dispatch_selective_dispatchers(self):
         """Test dispatch decorator with selective dispatcher enabling."""
