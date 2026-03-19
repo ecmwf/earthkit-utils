@@ -361,13 +361,37 @@ class TestDispatchDecorator:
         # Test that we can control which dispatchers are active
         from earthkit.utils.decorators.dispatchers import dispatch as dispatch_func
 
-        @dispatch_func
+        # Enable only the array dispatcher; disable xarray and fieldlist dispatchers
+        @dispatch_func(array=True, xarray=False, fieldlist=False)
         def with_only_array(data):
             return "base"
 
-        # The function should be decorated properly
+        # The functions should be decorated properly
         assert callable(with_all_defaults)
         assert callable(with_only_array)
+
+        # NumPy array input should work for both (array dispatcher enabled)
+        _ = with_all_defaults(TEST_NUMPY_ARRAY)
+        _ = with_only_array(TEST_NUMPY_ARRAY)
+
+        # For xarray input, the default configuration should use the xarray dispatcher
+        mock_xarray_module = MagicMock()
+        mock_xarray_module.with_all_defaults = MagicMock(return_value="xarray_dispatched")
+
+        with patch("earthkit.utils.decorators.dispatchers.import_module", return_value=mock_xarray_module) as import_mod:
+            result = with_all_defaults(TEST_XARRAY_DATAARRAY)
+
+        assert result == "xarray_dispatched"
+        mock_xarray_module.with_all_defaults.assert_called_once_with(TEST_XARRAY_DATAARRAY)
+        import_mod.assert_called_once()
+
+        # With xarray disabled in with_only_array, xarray input should not be dispatched
+        # and should behave like the "no matching dispatcher" case.
+        with patch("earthkit.utils.decorators.dispatchers.import_module") as import_mod_disabled:
+            with pytest.raises(TypeError, match="No matching dispatcher found"):
+                with_only_array(TEST_XARRAY_DATAARRAY)
+
+        import_mod_disabled.assert_not_called()
 
 
 class TestInferOutputCount:
