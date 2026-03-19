@@ -8,15 +8,20 @@
 #
 from __future__ import annotations
 
+import re
 import sys
 from abc import ABCMeta
 from abc import abstractmethod
 from functools import wraps
 from importlib import import_module
 from inspect import signature
+from typing import TYPE_CHECKING
 from typing import Any
 
-from earthkit.utils.array import array_namespace
+if TYPE_CHECKING:
+    import xarray as xr  # noqa: F401
+
+    from earthkit.data import FieldList  # noqa: F401
 
 
 def is_module_loaded(module_name):
@@ -85,11 +90,12 @@ class FieldListDispatcher(DataDispatcher):
 class ArrayDispatcher(DataDispatcher):
     @staticmethod
     def match(obj: Any) -> bool:
+        from earthkit.utils.array import array_namespace
+
         try:
             xp = array_namespace(obj)
         except KeyError:
             return False
-
         try:
             xp.asarray(obj)
             return True
@@ -127,7 +133,7 @@ def dispatch(func=None, match=0, xarray=True, fieldlist=True, array=False):
 
     Parameters
     ----------
-    func: function, optional
+    func: function
         The toplevel function to be decorated. If None, a decorator factory
         is returned that expects the function to decorate.
     match: int or str
@@ -144,7 +150,6 @@ def dispatch(func=None, match=0, xarray=True, fieldlist=True, array=False):
     function
         The decorated function with dispatching capability.
     """
-
     def _make_wrapper(f):
         DISPATCHERS = []
         if xarray:
@@ -154,7 +159,7 @@ def dispatch(func=None, match=0, xarray=True, fieldlist=True, array=False):
         if array:
             DISPATCHERS.append(_DISPATCHERS[2])
 
-        sig = signature(f)
+        sig = signature(func)
 
         params = list(sig.parameters)
         if isinstance(match, int):
@@ -162,29 +167,29 @@ def dispatch(func=None, match=0, xarray=True, fieldlist=True, array=False):
                 param_name = params[match]
             except IndexError as e:
                 raise ValueError(
-                    f"'match' index {match} is invalid for function {f.__name__} with  {len(params)} arguments"
+                    f"'match' index {match} is invalid for function {func.__name__} with  {len(params)} arguments"
                 ) from e
         elif isinstance(match, str):
             if match in params:
                 param_name = match
             else:
                 raise ValueError(
-                    f"'match' parameter name {match} is not in the function signature of {f.__name__}"
+                    f"'match' parameter name {match} is not in the function signature of {func.__name__}"
                 )
         else:
             raise TypeError(f"'match' must be an integer index or a string parameter name, got {type(match)}")
 
-        @wraps(f)
+        @wraps(func)
         def wrapper(*args, **kwargs):
             bound_args = sig.bind(*args, **kwargs)
             bound_args.apply_defaults()
 
             obj_to_check = bound_args.arguments[param_name]
 
-            _module = ".".join(f.__module__.split(".")[:-1])
+            _module = ".".join(func.__module__.split(".")[:-1])
             for dispatcher in DISPATCHERS:
                 if dispatcher.match(obj_to_check):
-                    return dispatcher.dispatch(f.__name__, _module, *args, **kwargs)
+                    return dispatcher.dispatch(func.__name__, _module, *args, **kwargs)
             raise TypeError(f"No matching dispatcher found for the input type: {type(obj_to_check)}")
 
         return wrapper
