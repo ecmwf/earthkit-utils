@@ -8,6 +8,7 @@
 #
 from __future__ import annotations
 
+
 def _infer_output_count(func) -> int:
     try:
         import inspect

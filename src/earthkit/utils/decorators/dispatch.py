@@ -8,7 +8,6 @@
 #
 from __future__ import annotations
 
-import re
 import sys
 from abc import ABCMeta
 from abc import abstractmethod
@@ -150,6 +149,7 @@ def dispatch(func=None, match=0, xarray=True, fieldlist=True, array=False):
     function
         The decorated function with dispatching capability.
     """
+
     def _make_wrapper(f):
         DISPATCHERS = []
         if xarray:
