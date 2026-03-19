@@ -18,4 +18,4 @@ except ImportError:  # pragma: no cover
 import earthkit.utils.array as array
 import earthkit.utils.decorators as decorators
 
-__all__ = ["ALL", "__version__", "array", "decorators"]
+__all__ = ["__version__", "array", "decorators"]
