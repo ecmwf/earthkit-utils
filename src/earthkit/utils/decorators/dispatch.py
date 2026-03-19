@@ -104,7 +104,7 @@ class ArrayDispatcher(DataDispatcher):
 _DISPATCHERS = [XArrayDispatcher(), FieldListDispatcher(), ArrayDispatcher()]
 
 
-def dispatch(func, match=0, xarray=True, fieldlist=True, array=False):
+def dispatch(func=None, match=0, xarray=True, fieldlist=True, array=False):
     """
     Decorator to dispatch function calls based on input data types.
     The dispatch will attempt to route the call to the appropriate
@@ -113,10 +113,23 @@ def dispatch(func, match=0, xarray=True, fieldlist=True, array=False):
     type (e.g., .xarray, .fieldlist, .array) with the same function name as
     the toplevel function.
 
+    This decorator can be used either without arguments:
+
+        @dispatch
+        def func(...):
+            ...
+
+    or with configuration arguments:
+
+        @dispatch(match=1, array=True)
+        def func(...):
+            ...
+
     Parameters
     ----------
-    func: function
-        The toplevel function to be decorated.
+    func: function, optional
+        The toplevel function to be decorated. If None, a decorator factory
+        is returned that expects the function to decorate.
     match: int or str
         The index or name of the argument to check for dispatching. Default is 0 (the first argument).
     xarray: bool
@@ -131,45 +144,57 @@ def dispatch(func, match=0, xarray=True, fieldlist=True, array=False):
     function
         The decorated function with dispatching capability.
     """
-    DISPATCHERS = []
-    if xarray:
-        DISPATCHERS.append(_DISPATCHERS[0])
-    if fieldlist:
-        DISPATCHERS.append(_DISPATCHERS[1])
-    if array:
-        DISPATCHERS.append(_DISPATCHERS[2])
 
-    sig = signature(func)
+    def _make_wrapper(f):
+        DISPATCHERS = []
+        if xarray:
+            DISPATCHERS.append(_DISPATCHERS[0])
+        if fieldlist:
+            DISPATCHERS.append(_DISPATCHERS[1])
+        if array:
+            DISPATCHERS.append(_DISPATCHERS[2])
 
-    params = list(sig.parameters)
-    if isinstance(match, int):
-        try:
-            param_name = params[match]
-        except IndexError as e:
-            raise ValueError(
-                f"'match' index {match} is invalid for function {func.__name__} with  {len(params)} arguments"
-            ) from e
-    elif isinstance(match, str):
-        if match in params:
-            param_name = match
+        sig = signature(f)
+
+        params = list(sig.parameters)
+        if isinstance(match, int):
+            try:
+                param_name = params[match]
+            except IndexError as e:
+                raise ValueError(
+                    f"'match' index {match} is invalid for function {f.__name__} with  {len(params)} arguments"
+                ) from e
+        elif isinstance(match, str):
+            if match in params:
+                param_name = match
+            else:
+                raise ValueError(
+                    f"'match' parameter name {match} is not in the function signature of {f.__name__}"
+                )
         else:
-            raise ValueError(
-                f"'match' parameter name {match} is not in the function signature of {func.__name__}"
-            )
-    else:
-        raise TypeError(f"'match' must be an integer index or a string parameter name, got {type(match)}")
+            raise TypeError(f"'match' must be an integer index or a string parameter name, got {type(match)}")
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        bound_args = sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
 
-        obj_to_check = bound_args.arguments[param_name]
+            obj_to_check = bound_args.arguments[param_name]
 
-        _module = ".".join(func.__module__.split(".")[:-1])
-        for dispatcher in DISPATCHERS:
-            if dispatcher.match(obj_to_check):
-                return dispatcher.dispatch(func.__name__, _module, *args, **kwargs)
-        raise TypeError(f"No matching dispatcher found for the input type: {type(obj_to_check)}")
+            _module = ".".join(f.__module__.split(".")[:-1])
+            for dispatcher in DISPATCHERS:
+                if dispatcher.match(obj_to_check):
+                    return dispatcher.dispatch(f.__name__, _module, *args, **kwargs)
+            raise TypeError(f"No matching dispatcher found for the input type: {type(obj_to_check)}")
 
-    return wrapper
+        return wrapper
+
+    if func is None:
+        # Called as @dispatch(match=..., ...)
+        def decorator(real_func):
+            return _make_wrapper(real_func)
+
+        return decorator
+
+    # Called as @dispatch or dispatch(func, ...)
+    return _make_wrapper(func)
