@@ -292,6 +292,7 @@ class TestDispatchWrapper:
 
     def test_dispatch_with_invalid_match_name(self):
         """Test dispatch wrapper with invalid parameter name."""
+
         def my_func(data):
             return "base"
 
@@ -300,6 +301,7 @@ class TestDispatchWrapper:
 
     def test_dispatch_with_invalid_match_type(self):
         """Test dispatch wrapper with invalid match type."""
+
         def my_func(data):
             return "base"
 
