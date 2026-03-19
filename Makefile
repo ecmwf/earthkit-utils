@@ -1,4 +1,4 @@
-PROJECT := earthkit-data
+PROJECT := earthkit-utils
 CONDA := conda
 CONDAFLAGS :=
 COV_REPORT := html
@@ -11,10 +11,9 @@ default: qa unit-tests type-check
 qa:
 	pre-commit run --all-files
 
+
 unit-tests:
-	python -m pytest -vv -m 'not notebook and not no_cache_init' --cov=. --cov-report=$(COV_REPORT)
-	python -m pytest -v -m "notebook"
-	python -m pytest --forked -vv -m 'no_cache_init'
+	python -m pytest -vv --cov=. --cov-report=$(COV_REPORT) --ignore=tests/legacy-api
 
 type-check:
 	python -m mypy .
