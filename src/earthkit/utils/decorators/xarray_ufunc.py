@@ -14,7 +14,10 @@ def _infer_output_count(func) -> int:
         import inspect
         from typing import get_args
         from typing import get_origin
+    except ImportError:
+        return 1
 
+    try:
         annotation = inspect.signature(func).return_annotation
     except (ValueError, TypeError):
         return 1
