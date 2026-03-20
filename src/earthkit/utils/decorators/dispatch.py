@@ -201,7 +201,7 @@ def dispatch(
                 param_name = params[match]
             except IndexError as e:
                 raise ValueError(
-                    f"'match' index {match} is invalid for function {func.__name__} with  {len(params)} arguments"
+                    f"'match' index {match} is invalid for function {func.__name__} with {len(params)} arguments"
                 ) from e
         elif isinstance(match, str):
             if match in params:
