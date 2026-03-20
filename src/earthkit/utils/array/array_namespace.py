@@ -37,15 +37,13 @@ def _get_namespace_from_array(*arrays):
     return namespace
 
 
-def array_namespace(*args: T.Any, string_lookup: bool = True) -> T.Any:
+def array_namespace(*args: T.Any) -> T.Any:
     """Return the array namespace of the arguments.
 
     Parameters
     ----------
     *args: tuple
         Scalar, string or array-like arguments.
-    string_lookup: bool, optional
-        If True, and a single string argument is passed, it is used to look up the array namespace. The string should be one of "numpy", "torch", "jax" or "cupy". If False, string arguments are treated as objects to identify (and with the current implementation, the default namespace is returned).
 
     Returns
     -------
@@ -73,13 +71,8 @@ def array_namespace(*args: T.Any, string_lookup: bool = True) -> T.Any:
         # array_namespace(np)
         if len(args) == 1:
             arg = args[0]
-            if string_lookup and isinstance(arg, str):
-                try:
-                    xp = _NAMESPACES[arg]
-                except KeyError:
-                    raise KeyError(
-                        f"Unknown array namespace: {arg}, please choose from {list(_NAMESPACES.keys())}"
-                    )
+            if isinstance(arg, str):
+                xp = _NAMESPACES[arg]
             else:
                 if hasattr(arg, "asarray"):
                     xp = _get_namespace_from_array(arg.asarray(0))
