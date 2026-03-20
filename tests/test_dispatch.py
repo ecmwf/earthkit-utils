@@ -564,9 +564,14 @@ class TestDispatchIntegration:
             """This is my function."""
             return data
 
+        # Original function metadata (Python default behavior)
         assert my_function.__name__ == "my_function"
         assert my_function.__doc__ == "This is my function."
 
+        # Wrapped function metadata should be preserved by dispatch
+        wrapped = dispatch(my_function)
+        assert wrapped.__name__ == "my_function"
+        assert wrapped.__doc__ == "This is my function."
     def test_dispatch_with_default_arguments(self):
         """Test dispatch with functions that have default arguments."""
 
