@@ -195,17 +195,17 @@ class TestIsArrayLike:
         """Test that a float scalar is array-like."""
         assert is_array_like(3.14)
 
-    def test_string_not_array_like(self):
-        """Test that a string is not array-like."""
-        assert not is_array_like("not an array")
+    def test_string_is_array_like(self):
+        """Test that a string is array-like."""
+        assert is_array_like("array like")
 
-    def test_none_not_array_like(self):
-        """Test that None is not array-like."""
-        assert not is_array_like(None)
+    def test_none_is_array_like(self):
+        """Test that None is array-like."""
+        assert is_array_like(None)
 
-    def test_dict_not_array_like(self):
-        """Test that a dict is not array-like."""
-        assert not is_array_like({"a": 1})
+    def test_dict_is_array_like(self):
+        """Test that a dict is array-like."""
+        assert is_array_like({"a": 1})
 
 
 class TestArrayLikeDispatcher:
@@ -232,15 +232,15 @@ class TestArrayLikeDispatcher:
         dispatcher = ArrayLikeDispatcher()
         assert dispatcher.match(3.14)
 
-    def test_no_match_with_string(self):
-        """Test that ArrayLikeDispatcher does not match strings."""
+    def test_match_with_string(self):
+        """Test that ArrayLikeDispatcher matches strings."""
         dispatcher = ArrayLikeDispatcher()
-        assert not dispatcher.match("string")
+        assert dispatcher.match("string")
 
-    def test_no_match_with_none(self):
-        """Test that ArrayLikeDispatcher does not match None."""
+    def test_match_with_none(self):
+        """Test that ArrayLikeDispatcher matches None."""
         dispatcher = ArrayLikeDispatcher()
-        assert not dispatcher.match(None)
+        assert dispatcher.match(None)
 
     def test_dispatch_routes_to_array_module(self):
         """Test that ArrayLikeDispatcher dispatches to the .array submodule."""

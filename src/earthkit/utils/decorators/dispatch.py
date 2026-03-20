@@ -65,7 +65,7 @@ def _is_array(obj: Any) -> bool:
 def is_array_like(obj: Any) -> bool:
     """Check if the object is array-like, i.e., if it belongs to a known array namespace or is a scalar or list that can be converted to an array."""
     import numpy as np
-    
+
     try:
         np.asarray(obj)
         return True
