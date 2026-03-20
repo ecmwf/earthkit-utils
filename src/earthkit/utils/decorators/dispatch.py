@@ -228,5 +228,5 @@ def dispatch(
 
         return wrapper
 
-    # Called as @dispatch or dispatch(func, ...)
+    # Called as dispatch(func, ...)
     return _make_wrapper(func)
