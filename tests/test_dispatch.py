@@ -16,11 +16,13 @@ import xarray as xr
 
 from earthkit.data import SimpleFieldList
 from earthkit.utils.decorators.dispatch import ArrayDispatcher
+from earthkit.utils.decorators.dispatch import ArrayLikeDispatcher
 from earthkit.utils.decorators.dispatch import FieldListDispatcher
 from earthkit.utils.decorators.dispatch import XArrayDispatcher
 from earthkit.utils.decorators.dispatch import _is_fieldlist
 from earthkit.utils.decorators.dispatch import _is_xarray
 from earthkit.utils.decorators.dispatch import dispatch
+from earthkit.utils.decorators.dispatch import is_array_like
 from earthkit.utils.decorators.dispatch import is_module_loaded
 
 # Test data
@@ -164,6 +166,170 @@ class TestFieldListDispatcher:
 
         assert result == "fieldlist_result"
         mock_module.test_func.assert_called_once_with(1, 2, key="value")
+
+
+class TestIsArrayLike:
+    """Test the is_array_like helper function."""
+
+    def test_numpy_array(self):
+        """Test that numpy arrays are array-like."""
+        assert is_array_like(TEST_NUMPY_ARRAY)
+
+    def test_list_of_ints(self):
+        """Test that a list of ints is array-like."""
+        assert is_array_like([1, 2, 3])
+
+    def test_list_of_floats(self):
+        """Test that a list of floats is array-like."""
+        assert is_array_like([1.0, 2.0, 3.0])
+
+    def test_nested_list(self):
+        """Test that a nested list is array-like."""
+        assert is_array_like([[1, 2], [3, 4]])
+
+    def test_int_scalar(self):
+        """Test that an integer scalar is array-like."""
+        assert is_array_like(42)
+
+    def test_float_scalar(self):
+        """Test that a float scalar is array-like."""
+        assert is_array_like(3.14)
+
+    def test_string_not_array_like(self):
+        """Test that a string is not array-like."""
+        assert not is_array_like("not an array")
+
+    def test_none_not_array_like(self):
+        """Test that None is not array-like."""
+        assert not is_array_like(None)
+
+    def test_dict_not_array_like(self):
+        """Test that a dict is not array-like."""
+        assert not is_array_like({"a": 1})
+
+
+class TestArrayLikeDispatcher:
+    """Test the ArrayLikeDispatcher class."""
+
+    def test_match_with_numpy_array(self):
+        """Test that ArrayLikeDispatcher matches numpy arrays."""
+        dispatcher = ArrayLikeDispatcher()
+        assert dispatcher.match(TEST_NUMPY_ARRAY)
+
+    def test_match_with_list(self):
+        """Test that ArrayLikeDispatcher matches lists."""
+        dispatcher = ArrayLikeDispatcher()
+        assert dispatcher.match([1, 2, 3])
+        assert dispatcher.match([1.0, 2.0, 3.0])
+
+    def test_match_with_int(self):
+        """Test that ArrayLikeDispatcher matches integer scalars."""
+        dispatcher = ArrayLikeDispatcher()
+        assert dispatcher.match(42)
+
+    def test_match_with_float(self):
+        """Test that ArrayLikeDispatcher matches float scalars."""
+        dispatcher = ArrayLikeDispatcher()
+        assert dispatcher.match(3.14)
+
+    def test_no_match_with_string(self):
+        """Test that ArrayLikeDispatcher does not match strings."""
+        dispatcher = ArrayLikeDispatcher()
+        assert not dispatcher.match("string")
+
+    def test_no_match_with_none(self):
+        """Test that ArrayLikeDispatcher does not match None."""
+        dispatcher = ArrayLikeDispatcher()
+        assert not dispatcher.match(None)
+
+    def test_dispatch_routes_to_array_module(self):
+        """Test that ArrayLikeDispatcher dispatches to the .array submodule."""
+        dispatcher = ArrayLikeDispatcher()
+
+        mock_module = MagicMock()
+        mock_module.test_func = MagicMock(return_value="array_result")
+
+        with patch(
+            "earthkit.utils.decorators.dispatch.import_module", return_value=mock_module
+        ) as mock_import:
+            result = dispatcher.dispatch("test_func", "dummy.module", [1, 2, 3])
+
+        mock_import.assert_called_once_with("dummy.module.array")
+        assert result == "array_result"
+
+
+class TestDispatchWrapperArrayLike:
+    """Test the dispatch wrapper with array_like scenarios."""
+
+    def test_dispatch_list_with_array_like_enabled(self):
+        """Test that a list is dispatched when array_like=True."""
+
+        def process_data(data):
+            dispatched = dispatch(process_data, array_like=True)
+            return dispatched(data)
+
+        mock_module = MagicMock()
+        mock_module.process_data = MagicMock(return_value="array_result")
+
+        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+            result = process_data([1, 2, 3])
+
+        assert result == "array_result"
+
+    def test_dispatch_int_with_array_like_enabled(self):
+        """Test that an int scalar is dispatched when array_like=True."""
+
+        def process_data(data):
+            dispatched = dispatch(process_data, array_like=True)
+            return dispatched(data)
+
+        mock_module = MagicMock()
+        mock_module.process_data = MagicMock(return_value="array_result")
+
+        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+            result = process_data(42)
+
+        assert result == "array_result"
+
+    def test_dispatch_float_with_array_like_enabled(self):
+        """Test that a float scalar is dispatched when array_like=True."""
+
+        def process_data(data):
+            dispatched = dispatch(process_data, array_like=True)
+            return dispatched(data)
+
+        mock_module = MagicMock()
+        mock_module.process_data = MagicMock(return_value="array_result")
+
+        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+            result = process_data(3.14)
+
+        assert result == "array_result"
+
+    def test_dispatch_list_without_array_like_raises(self):
+        """Test that a list raises TypeError when array_like is not enabled."""
+
+        def process_data(data):
+            dispatched = dispatch(process_data)
+            return dispatched(data)
+
+        with pytest.raises(TypeError, match="No dispatcher matched for function"):
+            process_data([1, 2, 3])
+
+    def test_array_implies_array_like(self):
+        """Test that array=True also enables array_like by default."""
+
+        def process_data(data):
+            dispatched = dispatch(process_data, array=True)
+            return dispatched(data)
+
+        mock_module = MagicMock()
+        mock_module.process_data = MagicMock(return_value="array_result")
+
+        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+            result = process_data([1.0, 2.0, 3.0])
+
+        assert result == "array_result"
 
 
 class TestArrayDispatcher:

@@ -64,12 +64,18 @@ def _is_array(obj: Any) -> bool:
 
 def is_array_like(obj: Any) -> bool:
     """Check if the object is array-like, i.e., if it belongs to a known array namespace or is a scalar or list that can be converted to an array."""
-    import array_api_compat
+    from earthkit.utils.array.namespace import array_namespace
 
     try:
-        array_api_compat.asarray(obj)
+        xp = array_namespace(obj, string_lookup=False)
+    except TypeError:
+        return False
+
+    try:
+        xp.asarray(obj)
         return True
-    except (TypeError, ValueError):
+    # TODO: Improve this exception handling
+    except Exception:
         return False
 
 
