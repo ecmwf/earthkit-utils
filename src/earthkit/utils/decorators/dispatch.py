@@ -175,7 +175,7 @@ def dispatch(
         else:
             array_like = False
 
-    def _make_wrapper(f):
+    def _make_wrapper(_func):
         DISPATCHERS = []
         if xarray:
             DISPATCHERS.append(XArrayDispatcher())
@@ -186,7 +186,7 @@ def dispatch(
         if array_like:
             DISPATCHERS.append(ArrayLikeDispatcher())
 
-        sig = signature(func)
+        sig = signature(_func)
 
         params = list(sig.parameters)
         if isinstance(match, int):
@@ -194,26 +194,26 @@ def dispatch(
                 param_name = params[match]
             except IndexError as e:
                 raise ValueError(
-                    f"'match' index {match} is invalid for function {func.__name__} with {len(params)} arguments"
+                    f"'match' index {match} is invalid for function {_func.__name__} with {len(params)} arguments"
                 ) from e
         elif isinstance(match, str):
             if match in params:
                 param_name = match
             else:
                 raise ValueError(
-                    f"'match' parameter name {match} is not in the function signature of {func.__name__}"
+                    f"'match' parameter name {match} is not in the function signature of {_func.__name__}"
                 )
         else:
             raise TypeError(f"'match' must be an integer index or a string parameter name, got {type(match)}")
 
-        @wraps(func)
+        @wraps(_func)
         def wrapper(*args, **kwargs):
             bound_args = sig.bind(*args, **kwargs)
             bound_args.apply_defaults()
 
             obj_to_check = bound_args.arguments[param_name]
 
-            _module = ".".join(func.__module__.split(".")[:-1])
+            _module = ".".join(_func.__module__.split(".")[:-1])
             for dispatcher in DISPATCHERS:
                 try:
                     _matched = dispatcher.match(obj_to_check)
@@ -221,9 +221,9 @@ def dispatch(
                     LOG.debug(f"Dispatcher {dispatcher.__class__.__name__} failed to match due to error: {e}")
                     continue
                 if _matched:
-                    return dispatcher.dispatch(func.__name__, _module, *args, **kwargs)
+                    return dispatcher.dispatch(_func.__name__, _module, *args, **kwargs)
             raise TypeError(
-                f"No dispatcher matched for function {func.__name__} with argument {param_name} of type {type(obj_to_check)}, and no default dispatcher specified."
+                f"No dispatcher matched for function {_func.__name__} with argument {param_name} of type {type(obj_to_check)}, and no default dispatcher specified."
             )
 
         return wrapper
