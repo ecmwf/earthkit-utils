@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+
 def is_module_loaded(module_name):
     return module_name in sys.modules
 
@@ -53,6 +54,24 @@ def _is_fieldlist(obj: Any) -> bool:
         return False
 
     return isinstance(obj, FieldList)
+
+
+def _is_array(obj: Any) -> bool:
+    import array_api_compat
+
+    return array_api_compat.is_array_api_obj(obj)
+
+    # from earthkit.utils.array import array_namespace
+
+    # try:
+    #     xp = array_namespace(obj)
+    # except (KeyError, TypeError):
+    #     return False
+
+    # try:
+    #     return isinstance(obj, type(xp.asarray(obj)))
+    # except Exception:
+    #     return False
 
 
 class DataDispatcher(metaclass=ABCMeta):
@@ -93,17 +112,7 @@ class FieldListDispatcher(DataDispatcher):
 class ArrayDispatcher(DataDispatcher):
     @staticmethod
     def match(obj: Any) -> bool:
-        from earthkit.utils.array import array_namespace
-
-        try:
-            xp = array_namespace(obj)
-        except KeyError:
-            return False
-        try:
-            xp.asarray(obj)
-            return True
-        except Exception:
-            return False
+        return _is_array(obj)
 
     def dispatch(self, func, module, *args, **kwargs):
         module = import_module(module + ".array")
@@ -113,7 +122,9 @@ class ArrayDispatcher(DataDispatcher):
 _DISPATCHERS = [XArrayDispatcher(), FieldListDispatcher(), ArrayDispatcher()]
 
 
-def dispatch(func=None, match=0, xarray=True, fieldlist=True, array=False):
+def dispatch(
+    func=None, match=0, xarray=True, fieldlist=True, array=False, default_dispatcher=ArrayDispatcher()
+):
     """
     Decorator to dispatch function calls based on input data types.
     The dispatch will attempt to route the call to the appropriate
@@ -199,7 +210,11 @@ def dispatch(func=None, match=0, xarray=True, fieldlist=True, array=False):
                     continue
                 if _matched:
                     return dispatcher.dispatch(func.__name__, _module, *args, **kwargs)
-            raise TypeError(f"No matching dispatcher found for the input type: {type(obj_to_check)}")
+            LOG.warning(
+                f"No dispatcher matched for function {func.__name__} with argument {param_name} of type {type(obj_to_check)}. "
+                f"Using default dispatcher {default_dispatcher.__class__.__name__}."
+            )
+            return default_dispatcher.dispatch(func.__name__, _module, *args, **kwargs)
 
         return wrapper
 
