@@ -8,6 +8,7 @@
 #
 from __future__ import annotations
 
+import logging
 import sys
 from abc import ABCMeta
 from abc import abstractmethod
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
 
     from earthkit.data import FieldList  # noqa: F401
 
+LOG = logging.getLogger(__name__)
 
 def is_module_loaded(module_name):
     return module_name in sys.modules
@@ -34,9 +36,10 @@ def _is_xarray(obj: Any) -> bool:
     try:
         import xarray as xr
 
-        return isinstance(obj, (xr.DataArray, xr.Dataset))
-    except (ImportError, RuntimeError, SyntaxError):
+    except ImportError:
         return False
+
+    return isinstance(obj, (xr.DataArray, xr.Dataset))
 
 
 def _is_fieldlist(obj: Any) -> bool:
@@ -46,9 +49,10 @@ def _is_fieldlist(obj: Any) -> bool:
     try:
         from earthkit.data import FieldList
 
-        return isinstance(obj, FieldList)
     except ImportError:
         return False
+
+    return isinstance(obj, FieldList)
 
 
 class DataDispatcher(metaclass=ABCMeta):
@@ -188,7 +192,12 @@ def dispatch(func=None, match=0, xarray=True, fieldlist=True, array=False):
 
             _module = ".".join(func.__module__.split(".")[:-1])
             for dispatcher in DISPATCHERS:
-                if dispatcher.match(obj_to_check):
+                try:
+                    _matched = dispatcher.match(obj_to_check)
+                except Exception as e:
+                    LOG.debug(f"Dispatcher {dispatcher.__class__.__name__} failed to match due to error: {e}")
+                    continue
+                if _matched:
                     return dispatcher.dispatch(func.__name__, _module, *args, **kwargs)
             raise TypeError(f"No matching dispatcher found for the input type: {type(obj_to_check)}")
 
