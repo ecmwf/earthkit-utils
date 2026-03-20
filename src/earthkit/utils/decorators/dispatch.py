@@ -158,6 +158,8 @@ def dispatch(
         Whether to include the FieldList dispatcher. Default is True.
     array: bool
         Whether to include the array dispatcher. Default is False.
+    default_dispatcher: DataDispatcher or None
+        The default dispatcher to use if no dispatchers match. If None, a TypeError is raised when no dispatchers match. Default is ArrayDispatcher().
 
     Returns
     -------
@@ -210,6 +212,10 @@ def dispatch(
                     continue
                 if _matched:
                     return dispatcher.dispatch(func.__name__, _module, *args, **kwargs)
+            if default_dispatcher is None:
+                raise TypeError(
+                    f"No dispatcher matched for function {func.__name__} with argument {param_name} of type {type(obj_to_check)}, and no default dispatcher specified."
+                )
             LOG.warning(
                 f"No dispatcher matched for function {func.__name__} with argument {param_name} of type {type(obj_to_check)}. "
                 f"Using default dispatcher {default_dispatcher.__class__.__name__}."
