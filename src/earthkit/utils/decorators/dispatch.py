@@ -213,7 +213,7 @@ def dispatch(
             obj_to_check = bound_args.arguments[param_name]
 
             module_name = _func.__module__
-            parent_module, sep, _ = module_name.rpartition(".")
+            parent_module, _sep, _ = module_name.rpartition(".")
             _module = parent_module if parent_module else module_name
             for dispatcher in DISPATCHERS:
                 try:
