@@ -86,11 +86,12 @@ class TestIsFieldlist:
         assert _is_fieldlist(TEST_FIELDLIST)
 
     def test_not_fieldlist_when_module_not_loaded(self):
-        """Test that objects are not identified as FieldList when module is not loaded."""
-        # earthkit.data is likely not loaded in test environment
-        assert not _is_fieldlist(TEST_NUMPY_ARRAY)
-        assert not _is_fieldlist(TEST_XARRAY_DATAARRAY)
-        assert not _is_fieldlist([1, 2, 3])
+        """Test that objects are not identified as FieldList when earthkit.data is not loaded."""
+        # Simulate earthkit.data not being loaded by removing it from sys.modules
+        with patch.object(sys, "modules", {"sys": sys.modules["sys"]}):
+            assert not _is_fieldlist(TEST_NUMPY_ARRAY)
+            assert not _is_fieldlist(TEST_XARRAY_DATAARRAY)
+            assert not _is_fieldlist([1, 2, 3])
 
     def test_not_fieldlist_with_regular_objects(self):
         """Test that regular objects are not identified as FieldList."""
