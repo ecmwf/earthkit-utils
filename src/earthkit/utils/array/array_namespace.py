@@ -72,7 +72,12 @@ def array_namespace(*args: T.Any) -> T.Any:
         if len(args) == 1:
             arg = args[0]
             if isinstance(arg, str):
-                xp = _NAMESPACES[arg]
+                try:
+                    xp = _NAMESPACES[arg]
+                except KeyError:
+                    raise KeyError(
+                        f"Unknown array namespace: {arg}, please choose from {list(_NAMESPACES.keys())}"
+                    )
             else:
                 if hasattr(arg, "asarray"):
                     xp = _get_namespace_from_array(arg.asarray(0))
