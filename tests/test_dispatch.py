@@ -572,6 +572,7 @@ class TestDispatchIntegration:
         wrapped = dispatch(my_function)
         assert wrapped.__name__ == "my_function"
         assert wrapped.__doc__ == "This is my function."
+
     def test_dispatch_with_default_arguments(self):
         """Test dispatch with functions that have default arguments."""
 
