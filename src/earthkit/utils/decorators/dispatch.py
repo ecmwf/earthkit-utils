@@ -127,7 +127,7 @@ class ArrayLikeDispatcher(ArrayDispatcher):
 
 def dispatch(
     func: callable,
-    match: int = 0,
+    match: int | str = 0,
     xarray: bool = True,
     fieldlist: bool = True,
     array: bool = False,
@@ -141,17 +141,10 @@ def dispatch(
     type (e.g., .xarray, .fieldlist, .array) with the same function name as
     the toplevel function.
 
-    This decorator can be used either without arguments:
+    This wrapper should be applied inline as:
 
-        @dispatch
         def func(...):
-            ...
-
-    or with configuration arguments:
-
-        @dispatch(match=1, array=True)
-        def func(...):
-            ...
+            return dispatch(func, match=..., xarray=..., fieldlist=..., array=..., array_like=...)(...)
 
     Parameters
     ----------
