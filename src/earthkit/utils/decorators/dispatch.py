@@ -149,8 +149,7 @@ def dispatch(
     Parameters
     ----------
     func: function
-        The toplevel function to be decorated. If None, a decorator factory
-        is returned that expects the function to decorate.
+        The toplevel function to be wrapped.
     match: int or str
         The index or name of the argument to check for dispatching. Default is 0 (the first argument).
     xarray: bool
