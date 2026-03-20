@@ -6,6 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+"""
+Function decorators and wrappers for use in the downstream EarthKit packages.
+"""
+
+
 from .dispatch import dispatch
 from .experimental import ExperimentalWarning
 from .experimental import experimental
