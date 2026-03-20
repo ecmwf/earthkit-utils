@@ -61,17 +61,16 @@ def _is_array(obj: Any) -> bool:
 
     return array_api_compat.is_array_api_obj(obj)
 
-    # from earthkit.utils.array import array_namespace
 
-    # try:
-    #     xp = array_namespace(obj)
-    # except (KeyError, TypeError):
-    #     return False
+def is_array_like(obj: Any) -> bool:
+    """Check if the object is array-like, i.e., if it belongs to a known array namespace or is a scalar or list that can be converted to an array."""
+    import array_api_compat
 
-    # try:
-    #     return isinstance(obj, type(xp.asarray(obj)))
-    # except Exception:
-    #     return False
+    try:
+        array_api_compat.asarray(obj)
+        return True
+    except (TypeError, ValueError):
+        return False
 
 
 class DataDispatcher(metaclass=ABCMeta):
@@ -119,11 +118,19 @@ class ArrayDispatcher(DataDispatcher):
         return getattr(module, func)(*args, **kwargs)
 
 
-_DISPATCHERS = [XArrayDispatcher(), FieldListDispatcher(), ArrayDispatcher()]
+class ArrayLikeDispatcher(ArrayDispatcher):
+    @staticmethod
+    def match(obj: Any) -> bool:
+        return is_array_like(obj)
 
 
 def dispatch(
-    func=None, match=0, xarray=True, fieldlist=True, array=False, default_dispatcher=ArrayDispatcher()
+    func=None,
+    match=0,
+    xarray=True,
+    fieldlist=True,
+    array=False,
+    array_like: None | bool = None,
 ):
     """
     Decorator to dispatch function calls based on input data types.
@@ -158,8 +165,9 @@ def dispatch(
         Whether to include the FieldList dispatcher. Default is True.
     array: bool
         Whether to include the array dispatcher. Default is False.
-    default_dispatcher: DataDispatcher or None
-        The default dispatcher to use if no dispatchers match. If None, a TypeError is raised when no dispatchers match. Default is ArrayDispatcher().
+    array_like: bool or None
+        Whether to include the array-like dispatcher.
+        If None (default), it will be set to the same value as `array`.
 
     Returns
     -------
@@ -167,14 +175,22 @@ def dispatch(
         The decorated function with dispatching capability.
     """
 
+    if array_like is None:
+        if array is True:
+            array_like = True
+        else:
+            array_like = False
+
     def _make_wrapper(f):
         DISPATCHERS = []
         if xarray:
-            DISPATCHERS.append(_DISPATCHERS[0])
+            DISPATCHERS.append(XArrayDispatcher())
         if fieldlist:
-            DISPATCHERS.append(_DISPATCHERS[1])
+            DISPATCHERS.append(FieldListDispatcher())
         if array:
-            DISPATCHERS.append(_DISPATCHERS[2])
+            DISPATCHERS.append(ArrayDispatcher())
+        if array_like:
+            DISPATCHERS.append(ArrayLikeDispatcher())
 
         sig = signature(func)
 
@@ -212,15 +228,9 @@ def dispatch(
                     continue
                 if _matched:
                     return dispatcher.dispatch(func.__name__, _module, *args, **kwargs)
-            if default_dispatcher is None:
-                raise TypeError(
-                    f"No dispatcher matched for function {func.__name__} with argument {param_name} of type {type(obj_to_check)}, and no default dispatcher specified."
-                )
-            LOG.warning(
-                f"No dispatcher matched for function {func.__name__} with argument {param_name} of type {type(obj_to_check)}. "
-                f"Using default dispatcher {default_dispatcher.__class__.__name__}."
+            raise TypeError(
+                f"No dispatcher matched for function {func.__name__} with argument {param_name} of type {type(obj_to_check)}, and no default dispatcher specified."
             )
-            return default_dispatcher.dispatch(func.__name__, _module, *args, **kwargs)
 
         return wrapper
 
