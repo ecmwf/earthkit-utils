@@ -125,11 +125,11 @@ class ArrayLikeDispatcher(ArrayDispatcher):
 
 
 def dispatch(
-    func=None,
-    match=0,
-    xarray=True,
-    fieldlist=True,
-    array=False,
+    func: callable,
+    match: int = 0,
+    xarray: bool = True,
+    fieldlist: bool = True,
+    array: bool = False,
     array_like: None | bool = None,
 ):
     """
@@ -233,13 +233,6 @@ def dispatch(
             )
 
         return wrapper
-
-    if func is None:
-        # Called as @dispatch(match=..., ...)
-        def decorator(real_func):
-            return _make_wrapper(real_func)
-
-        return decorator
 
     # Called as @dispatch or dispatch(func, ...)
     return _make_wrapper(func)
