@@ -341,18 +341,10 @@ class TestArrayDispatcher:
         dispatcher = ArrayDispatcher()
         assert dispatcher.match(TEST_NUMPY_ARRAY)
 
-    # def test_match_with_list(self):
-    #     """Test that ArrayDispatcher matches list that can be converted to array."""
-    #     dispatcher = ArrayDispatcher()
-    #     assert dispatcher.match([1, 2, 3])
-
     def test_no_match_with_incompatible_types(self):
         """Test that ArrayDispatcher does not match incompatible types."""
         dispatcher = ArrayDispatcher()
         assert not dispatcher.match("string")
-
-        # This currently fails, but because array_namespace returns a numpy namespace for None
-        # assert not dispatcher.match(None)
 
     def test_dispatch(self):
         """Test the dispatch method of ArrayDispatcher."""
@@ -504,8 +496,14 @@ class TestDispatchWrapper:
             dispatched = dispatch(with_all_defaults)
             return dispatched(data)
 
+        def with_only_array_and_array_like(data):
+            dispatched = dispatch(with_only_array_and_array_like, array=True, xarray=False, fieldlist=False)
+            return dispatched(data)
+
         def with_only_array(data):
-            dispatched = dispatch(with_only_array, array=True, xarray=False, fieldlist=False)
+            dispatched = dispatch(
+                with_only_array, array=True, xarray=False, fieldlist=False, array_like=False
+            )
             return dispatched(data)
 
         # The functions should be decorated properly
@@ -520,22 +518,27 @@ class TestDispatchWrapper:
             result = with_only_array(TEST_NUMPY_ARRAY)
             assert result == "array_dispatched"
 
-        # TODO: Currently xarray is matched as an array, therefore this test is not valid
-        # # For xarray input, the default configuration should use the xarray dispatcher
-        # mock_xarray_module = MagicMock()
-        # mock_xarray_module.with_all_defaults = MagicMock(return_value="xarray_dispatched")
+        # For xarray input, the default configuration should use the xarray dispatcher
+        mock_xarray_module = MagicMock()
+        mock_xarray_module.with_all_defaults = MagicMock(return_value="xarray_dispatched")
 
-        # with patch(
-        #     "earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module
-        # ):
-        #     result = with_all_defaults(TEST_XARRAY_DATAARRAY)
+        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+            result = with_all_defaults(TEST_XARRAY_DATAARRAY)
 
-        # assert result == "xarray_dispatched"
-        # mock_xarray_module.with_all_defaults.assert_called_once_with(TEST_XARRAY_DATAARRAY)
+        assert result == "xarray_dispatched"
+        mock_xarray_module.with_all_defaults.assert_called_once_with(TEST_XARRAY_DATAARRAY)
 
-        # # With xarray disabled in with_only_array, xarray input should not be dispatched
-        # with pytest.raises(TypeError, match="No dispatcher matched for function"):
-        #     with_only_array(TEST_XARRAY_DATAARRAY)
+        # xarray input is array-like, so should be dispatched
+        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+            with_only_array_and_array_like(TEST_XARRAY_DATAARRAY)
+
+        assert result == "xarray_dispatched"
+        mock_xarray_module.with_all_defaults.assert_called_once_with(TEST_XARRAY_DATAARRAY)
+
+        # With xarray is not a strict array, so should not be dispatched
+        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+            with pytest.raises(TypeError, match="No dispatcher matched for function"):
+                with_only_array(TEST_XARRAY_DATAARRAY)
 
 
 class TestDispatchIntegration:
