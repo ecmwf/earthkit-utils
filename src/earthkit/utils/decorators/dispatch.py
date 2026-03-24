@@ -130,8 +130,8 @@ def dispatch(
     match: int | str = 0,
     xarray: bool = True,
     fieldlist: bool = True,
-    array: bool = False,
-    array_like: None | bool = None,
+    array: bool = True,
+    array_like: bool = False,
 ):
     """
     Decorator to dispatch function calls based on input data types.
@@ -157,22 +157,15 @@ def dispatch(
     fieldlist: bool
         Whether to include the FieldList dispatcher. Default is True.
     array: bool
-        Whether to include the array dispatcher. Default is False.
-    array_like: bool or None
-        Whether to include the array-like dispatcher.
-        If None (default), it will be set to the same value as `array`.
+        Whether to include the array dispatcher. Default is True.
+    array_like: bool
+        Whether to include the array-like dispatcher. Default is False.
 
     Returns
     -------
     function
         The decorated function with dispatching capability.
     """
-
-    if array_like is None:
-        if array is True:
-            array_like = True
-        else:
-            array_like = False
 
     def _make_wrapper(_func):
         DISPATCHERS = []
