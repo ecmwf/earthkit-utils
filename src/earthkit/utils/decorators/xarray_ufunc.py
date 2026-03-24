@@ -10,12 +10,9 @@ from __future__ import annotations
 
 
 def _infer_output_count(func) -> int:
-    try:
-        import inspect
-        from typing import get_args
-        from typing import get_origin
-    except ImportError:
-        return 1
+    import inspect
+    from typing import get_args
+    from typing import get_origin
 
     try:
         annotation = inspect.signature(func).return_annotation
