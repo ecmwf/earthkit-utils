@@ -34,10 +34,7 @@ def _infer_output_count(func) -> int:
 
 
 def xarray_ufunc(func, *args, **kwargs):
-    try:
-        import xarray as xr
-    except ImportError as e:
-        raise RuntimeError("xarray dependency is required") from e
+    import xarray as xr
 
     xarray_ufunc_kwargs = kwargs.pop("xarray_ufunc_kwargs", None) or {}
     merged = {
