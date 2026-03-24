@@ -10,3 +10,4 @@ dependencies:
 - pytest-cov
 - numpy
 - array-api-compat
+- pint

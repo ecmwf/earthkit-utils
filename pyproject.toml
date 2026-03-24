@@ -26,6 +26,7 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "array-api-compat",
+  "pint",
 ]
 optional-dependencies.dev = [
   "numpy",
@@ -44,6 +45,7 @@ optional-dependencies.docs = [
 ]
 
 optional-dependencies.test = [
+  "earthkit-data",
   "nbconvert",
   "nbformat",
   "pytest",
