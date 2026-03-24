@@ -317,21 +317,6 @@ class TestDispatchWrapperArrayLike:
         with pytest.raises(TypeError, match="No dispatcher matched for function"):
             process_data([1, 2, 3])
 
-    def test_array_implies_array_like(self):
-        """Test that array=True also enables array_like by default."""
-
-        def process_data(data):
-            dispatched = dispatch(process_data, array=True)
-            return dispatched(data)
-
-        mock_module = MagicMock()
-        mock_module.process_data = MagicMock(return_value="array_result")
-
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
-            result = process_data([1.0, 2.0, 3.0])
-
-        assert result == "array_result"
-
 
 class TestArrayDispatcher:
     """Test the ArrayDispatcher class."""
@@ -387,9 +372,14 @@ class TestDispatchWrapper:
             dispatched = dispatch(process_data)
             return dispatched(data)
 
-        # By default, array dispatcher is not enabled, so it should raise TypeError
-        with pytest.raises(TypeError, match="No dispatcher matched for function"):
-            process_data(TEST_NUMPY_ARRAY)
+        # Even calling directly should work with the right parameter
+        mock_array_module = MagicMock()
+        mock_array_module.process_data = MagicMock(return_value="array_implementation")
+
+        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_array_module):
+            result = process_data(TEST_NUMPY_ARRAY)
+
+        assert result == "array_implementation"
 
     def test_dispatch_with_array_enabled(self):
         """Test dispatch wrapper with array dispatcher enabled."""
@@ -497,12 +487,19 @@ class TestDispatchWrapper:
             return dispatched(data)
 
         def with_only_array_and_array_like(data):
-            dispatched = dispatch(with_only_array_and_array_like, array=True, xarray=False, fieldlist=False)
+            dispatched = dispatch(
+                with_only_array_and_array_like,
+                array_like=True,
+                xarray=False,
+                fieldlist=False,  # default values array=True,
+            )
             return dispatched(data)
 
         def with_only_array(data):
             dispatched = dispatch(
-                with_only_array, array=True, xarray=False, fieldlist=False, array_like=False
+                with_only_array,
+                xarray=False,
+                fieldlist=False,  # default values array=True, array_like=False
             )
             return dispatched(data)
 
