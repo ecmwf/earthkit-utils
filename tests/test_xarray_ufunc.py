@@ -176,5 +176,5 @@ class TestXarrayUfunc:
                 return original_import(name, *args, **kwargs)
 
             with patch.object(builtins, "__import__", side_effect=_mock_import):
-                with pytest.raises(RuntimeError, match="xarray dependency is required"):
+                with pytest.raises(ImportError):
                     xarray_ufunc(add_one, TEST_NUMPY_ARRAY)
