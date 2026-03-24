@@ -10,12 +10,9 @@ from __future__ import annotations
 
 
 def _infer_output_count(func) -> int:
-    try:
-        import inspect
-        from typing import get_args
-        from typing import get_origin
-    except ImportError:
-        return 1
+    import inspect
+    from typing import get_args
+    from typing import get_origin
 
     try:
         annotation = inspect.signature(func).return_annotation
@@ -36,13 +33,12 @@ def _infer_output_count(func) -> int:
 def xarray_ufunc(func, *args, **kwargs):
     import xarray as xr
 
-    xarray_ufunc_kwargs = kwargs.pop("xarray_ufunc_kwargs", None) or {}
+    xarray_ufunc_kwargs = kwargs.pop("xarray_ufunc_kwargs", {})
     merged = {
         "dask": "parallelized",
         "keep_attrs": True,
     }
-    if xarray_ufunc_kwargs:
-        merged.update(xarray_ufunc_kwargs)
+    merged.update(xarray_ufunc_kwargs)
 
     if "output_dtypes" not in merged:
         output_count = _infer_output_count(func)
