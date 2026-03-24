@@ -36,13 +36,12 @@ def xarray_ufunc(func, *args, **kwargs):
     except ImportError as e:
         raise RuntimeError("xarray dependency is required") from e
 
-    xarray_ufunc_kwargs = kwargs.pop("xarray_ufunc_kwargs", None) or {}
+    xarray_ufunc_kwargs = kwargs.pop("xarray_ufunc_kwargs", {})
     merged = {
         "dask": "parallelized",
         "keep_attrs": True,
     }
-    if xarray_ufunc_kwargs:
-        merged.update(xarray_ufunc_kwargs)
+    merged.update(xarray_ufunc_kwargs)
 
     if "output_dtypes" not in merged:
         output_count = _infer_output_count(func)
