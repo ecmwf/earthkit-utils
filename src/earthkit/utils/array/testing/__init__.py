@@ -6,4 +6,4 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from .testing import NAMESPACE_DEVICES
+from .testing import NAMESPACE_DEVICES as NAMESPACE_DEVICES

@@ -11,8 +11,7 @@ Function decorators and wrappers for use in the downstream EarthKit packages.
 """
 
 from .dispatch import dispatch
-from .experimental import ExperimentalWarning
-from .experimental import experimental
+from .experimental import ExperimentalWarning, experimental
 from .format_handlers import format_handler
 from .thread_handlers import thread_safe_cached_property
 from .xarray_ufunc import xarray_ufunc

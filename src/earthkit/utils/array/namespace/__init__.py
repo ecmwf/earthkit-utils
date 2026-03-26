@@ -10,7 +10,7 @@ from .cupy import PatchedCupyNamespace
 from .jax import PatchedJaxNamespace
 from .numpy import PatchedNumpyNamespace
 from .torch import PatchedTorchNamespace
-from .unknown import UnknownPatchedNamespace
+from .unknown import UnknownPatchedNamespace as UnknownPatchedNamespace
 
 _NAMESPACES = {
     "numpy": PatchedNumpyNamespace(),

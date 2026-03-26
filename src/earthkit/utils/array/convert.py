@@ -8,11 +8,8 @@
 
 from .array_namespace import _get_array_name
 from .array_namespace import array_namespace as array_namespace_func
-from .converter import _CONVERTERS
-from .converter import FromUnknownConverter
-from .namespace import _CUPY_NAMESPACE
-from .namespace import _NUMPY_NAMESPACE
-from .namespace import UnknownPatchedNamespace
+from .converter import _CONVERTERS, FromUnknownConverter
+from .namespace import _CUPY_NAMESPACE, _NUMPY_NAMESPACE, UnknownPatchedNamespace
 
 
 def _get_converter(source_array_namespace):
@@ -43,7 +40,6 @@ def convert(array, *, device=None, array_namespace=None, **kwargs):
           backend is numpy, it will use the cupy backend.
     **kwargs : forwarded to the underlying call
     """
-
     # TODO: dtype conversion support also?
 
     if array_namespace is None and device is None:

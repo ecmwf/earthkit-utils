@@ -10,13 +10,11 @@ from __future__ import annotations
 
 import logging
 import sys
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from functools import wraps
 from importlib import import_module
 from inspect import signature
-from typing import TYPE_CHECKING
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import xarray as xr  # noqa: F401

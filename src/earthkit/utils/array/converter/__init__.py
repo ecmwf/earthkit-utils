@@ -10,7 +10,7 @@ from .cupy import FromCupyConverter
 from .jax import FromJaxConverter
 from .numpy import FromNumpyConverter
 from .torch import FromTorchConverter
-from .unknown import FromUnknownConverter
+from .unknown import FromUnknownConverter as FromUnknownConverter
 
 _CONVERTERS = {
     "numpy": FromNumpyConverter,

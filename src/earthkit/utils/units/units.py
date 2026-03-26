@@ -8,8 +8,7 @@
 
 
 import re
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from typing import Any
 
 import pint

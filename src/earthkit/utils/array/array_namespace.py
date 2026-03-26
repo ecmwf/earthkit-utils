@@ -10,9 +10,7 @@ import typing as T
 
 import array_api_compat
 
-from .namespace import _DEFAULT_NAMESPACE
-from .namespace import _NAMESPACES
-from .namespace import UnknownPatchedNamespace
+from .namespace import _DEFAULT_NAMESPACE, _NAMESPACES, UnknownPatchedNamespace
 
 
 def _get_array_name(xp):
@@ -63,7 +61,6 @@ def array_namespace(*args: T.Any) -> T.Any:
     Some other methods may be reimplemented for a given namespace to ensure correct
     behaviour. E.g. sign() for torch.
     """
-
     arrays = [a for a in args if array_api_compat.is_array_api_obj(a)]
     if not arrays:
         # TODO: decide if we want to support this or not

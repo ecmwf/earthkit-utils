@@ -10,8 +10,7 @@ import warnings
 
 import pytest
 
-from earthkit.utils.decorators import ExperimentalWarning
-from earthkit.utils.decorators import experimental
+from earthkit.utils.decorators import ExperimentalWarning, experimental
 
 _DEFAULT_MESSAGE = "**Experimental API**: may change or be removed without notice."
 
