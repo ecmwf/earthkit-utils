@@ -61,7 +61,9 @@ def _is_array(obj: Any) -> bool:
 
 
 def is_array_like(obj: Any) -> bool:
-    """Check if the object is array-like, i.e., if it belongs to a known array namespace or is a scalar or list that can be converted to an array."""
+    """Check if the object is array-like, i.e., if it belongs to a known array namespace or is a scalar or list
+    that can be converted to an array.
+    """
     import numpy as np
 
     try:
@@ -73,9 +75,7 @@ def is_array_like(obj: Any) -> bool:
 
 
 class DataDispatcher(metaclass=ABCMeta):
-    """
-    A dispatcher class to route function calls based on input data types.
-    """
+    """A dispatcher class to route function calls based on input data types."""
 
     @staticmethod
     @abstractmethod
@@ -213,7 +213,8 @@ def dispatch(
                 if _matched:
                     return dispatcher.dispatch(_func.__name__, _module, *args, **kwargs)
             raise TypeError(
-                f"No dispatcher matched for function {_func.__name__} with argument {param_name} of type {type(obj_to_check)}, and no default dispatcher specified."
+                f"No dispatcher matched for function {_func.__name__} with argument {param_name} "
+                f"of type {type(obj_to_check)}, and no default dispatcher specified."
             )
 
         return wrapper

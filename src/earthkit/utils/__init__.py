@@ -17,4 +17,4 @@ except ImportError:  # pragma: no cover
 
 import earthkit.utils.array as array
 
-__all__ = ["ALL", "__version__", "array"]
+__all__ = ["__version__", "array"]
