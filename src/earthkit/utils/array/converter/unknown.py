@@ -8,7 +8,6 @@
 
 
 class FromUnknownConverter:
-
     def __init__(self, xp_target):
         # TODO: check if we ever will need source also
         # self.xp_source = xp_source

@@ -10,7 +10,6 @@ from .unknown import FromUnknownConverter
 
 
 class FromJaxConverter(FromUnknownConverter):
-
     def __init__(self, xp_target):
         super().__init__(xp_target)
 

@@ -87,9 +87,7 @@ def format_handler(
                     _convert_types = {key: _convert_types for key in convert_kwargs}
 
                 convert_kwargs = [
-                    k
-                    for k in convert_kwargs
-                    if isinstance(kwargs[k], _ensure_tuple(_convert_types.get(k, ())))
+                    k for k in convert_kwargs if isinstance(kwargs[k], _ensure_tuple(_convert_types.get(k, ())))
                 ]
 
             # Transform args/kwargs

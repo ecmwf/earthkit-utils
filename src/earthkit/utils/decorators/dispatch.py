@@ -192,9 +192,7 @@ def dispatch(
             if match in params:
                 param_name = match
             else:
-                raise ValueError(
-                    f"'match' parameter name {match} is not in the function signature of {_func.__name__}"
-                )
+                raise ValueError(f"'match' parameter name {match} is not in the function signature of {_func.__name__}")
         else:
             raise TypeError(f"'match' must be an integer index or a string parameter name, got {type(match)}")
 

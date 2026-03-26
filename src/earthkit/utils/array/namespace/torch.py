@@ -12,7 +12,6 @@ from .unknown import UnknownPatchedNamespace
 
 
 class PatchedTorchNamespace(UnknownPatchedNamespace):
-
     def __init__(self):
         super().__init__(None)
 

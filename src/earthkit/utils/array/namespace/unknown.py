@@ -8,7 +8,6 @@
 
 
 class UnknownPatchedNamespace:
-
     def __init__(self, xp):
         self._xp = xp
 
