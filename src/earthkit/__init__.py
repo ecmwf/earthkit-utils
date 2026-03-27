@@ -12,7 +12,7 @@ import threading
 
 try:
     from earthkit._version import __version__
-except Exception:
+except ImportError:
     __version__ = -1
 
 _lock = threading.RLock()

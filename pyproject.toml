@@ -54,7 +54,7 @@ optional-dependencies.test = [
 ]
 urls.Documentation = "https://earthkit-utils.readthedocs.io/"
 urls.Homepage = "https://github.com/ecmwf/earthkit-utils/"
-urls.Issues = "https://github.com/ecmwf/earthkit-utils.issues"
+urls.Issues = "https://github.com/ecmwf/earthkit-utils/issues"
 urls.Repository = "https://github.com/ecmwf/earthkit-utils/"
 
 [tool.coverage.run]
