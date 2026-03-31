@@ -47,8 +47,6 @@ optional-dependencies.docs = [
 ]
 optional-dependencies.test = [
   "earthkit-data",
-  "nbconvert",
-  "nbformat",
   "pytest",
   "pytest-cov",
   "pytest-reraise",
