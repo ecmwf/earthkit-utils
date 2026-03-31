@@ -13,8 +13,8 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import xarray as xr
-
 from earthkit.data import SimpleFieldList
+
 from earthkit.utils.decorators.dispatch import ArrayDispatcher
 from earthkit.utils.decorators.dispatch import ArrayLikeDispatcher
 from earthkit.utils.decorators.dispatch import FieldListDispatcher
