@@ -370,3 +370,6 @@ test.db
 
 # ruff
 .ruff_cache
+
+# Combined environments
+ci/combined-environment-*.yml
