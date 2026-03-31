@@ -1,11 +1,12 @@
 [build-system]
-requires = [ "setuptools>=61", "setuptools-scm>=8" ]
+requires = [ "setuptools>=77", "setuptools-scm>=8" ]
 
 [project]
 name = "earthkit-utils"
 description = "Utilities for the Earthkit ecosystem"
 readme = "README.md"
-license = { text = "Apache License Version 2.0" }
+license = "Apache-2.0"
+license-files = [ "LICENSE" ]
 authors = [
   { name = "European Centre for Medium-Range Weather Forecasts (ECMWF)", email = "software.support@ecmwf.int" },
 ]
@@ -13,15 +14,16 @@ requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
+  "Topic :: Scientific/Engineering",
 ]
 dynamic = [ "version" ]
 dependencies = [
@@ -43,7 +45,6 @@ optional-dependencies.docs = [
   "sphinx-rtd-theme",
   "sphinx-tabs",
 ]
-
 optional-dependencies.test = [
   "earthkit-data",
   "nbconvert",
@@ -58,9 +59,9 @@ urls.Homepage = "https://github.com/ecmwf/earthkit-utils/"
 urls.Issues = "https://github.com/ecmwf/earthkit-utils/issues"
 urls.Repository = "https://github.com/ecmwf/earthkit-utils/"
 
-[tool.setuptools.packages.find]
-include = [ "earthkit", "earthkit.*" ]
-where = [ "src/" ]
+[tool.setuptools]
+packages.find.include = [ "earthkit", "earthkit.*" ]
+packages.find.where = [ "src/" ]
 
 [tool.setuptools_scm]
 version_file = "src/earthkit/utils/_version.py"
@@ -69,8 +70,8 @@ local_scheme = "no-local-version"
 [tool.isort]
 profile = "black"
 
-[tool.coverage.run]
-branch = "true"
+[tool.coverage]
+run.branch = "true"
 
 [tool.pydocstyle]
 add_ignore = [ "D1", "D200", "D205", "D400", "D401" ]
