@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import sys
 from abc import ABCMeta, abstractmethod
+from collections.abc import Callable
 from functools import wraps
 from importlib import import_module
 from inspect import signature
@@ -124,7 +125,7 @@ class ArrayLikeDispatcher(ArrayDispatcher):
 
 
 def dispatch(
-    func: callable,
+    func: Callable,
     match: int | str = 0,
     xarray: bool = True,
     fieldlist: bool = True,
