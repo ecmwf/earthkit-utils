@@ -6,11 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from .cupy import FromCupyConverter
-from .jax import FromJaxConverter
-from .numpy import FromNumpyConverter
-from .torch import FromTorchConverter
-from .unknown import FromUnknownConverter as FromUnknownConverter
+from earthkit.utils.array.converter.cupy import FromCupyConverter
+from earthkit.utils.array.converter.jax import FromJaxConverter
+from earthkit.utils.array.converter.numpy import FromNumpyConverter
+from earthkit.utils.array.converter.torch import FromTorchConverter
+from earthkit.utils.array.converter.unknown import FromUnknownConverter as FromUnknownConverter
 
 _CONVERTERS = {
     "numpy": FromNumpyConverter,

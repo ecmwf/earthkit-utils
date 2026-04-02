@@ -10,7 +10,7 @@ import typing as T
 
 import array_api_compat
 
-from .namespace import _DEFAULT_NAMESPACE, _NAMESPACES, UnknownPatchedNamespace
+from earthkit.utils.array.namespace import _DEFAULT_NAMESPACE, _NAMESPACES, UnknownPatchedNamespace
 
 
 def _get_array_name(xp):

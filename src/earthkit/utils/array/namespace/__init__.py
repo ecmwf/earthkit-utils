@@ -6,11 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from .cupy import PatchedCupyNamespace
-from .jax import PatchedJaxNamespace
-from .numpy import PatchedNumpyNamespace
-from .torch import PatchedTorchNamespace
-from .unknown import UnknownPatchedNamespace as UnknownPatchedNamespace
+from earthkit.utils.array.namespace.cupy import PatchedCupyNamespace
+from earthkit.utils.array.namespace.jax import PatchedJaxNamespace
+from earthkit.utils.array.namespace.numpy import PatchedNumpyNamespace
+from earthkit.utils.array.namespace.torch import PatchedTorchNamespace
+from earthkit.utils.array.namespace.unknown import UnknownPatchedNamespace as UnknownPatchedNamespace
 
 _NAMESPACES = {
     "numpy": PatchedNumpyNamespace(),

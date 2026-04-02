@@ -6,10 +6,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from .array_namespace import _get_array_name
-from .array_namespace import array_namespace as array_namespace_func
-from .converter import _CONVERTERS, FromUnknownConverter
-from .namespace import _CUPY_NAMESPACE, _NUMPY_NAMESPACE, UnknownPatchedNamespace
+from earthkit.utils.array.array_namespace import _get_array_name
+from earthkit.utils.array.array_namespace import array_namespace as array_namespace_func
+from earthkit.utils.array.converter import _CONVERTERS, FromUnknownConverter
+from earthkit.utils.array.namespace import _CUPY_NAMESPACE, _NUMPY_NAMESPACE, UnknownPatchedNamespace
 
 
 def _get_converter(source_array_namespace):

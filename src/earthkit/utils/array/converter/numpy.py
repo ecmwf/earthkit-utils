@@ -6,7 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from .unknown import FromUnknownConverter
+from earthkit.utils.array.converter.unknown import FromUnknownConverter
 
 
 class FromNumpyConverter(FromUnknownConverter):
