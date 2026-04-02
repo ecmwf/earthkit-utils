@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from earthkit.utils.decorators.xarray_ufunc import _infer_output_count, xarray_ufunc
+from earthkit.utils.decorators._xarray_ufunc import _infer_output_count, xarray_ufunc
 
 # Test data
 TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])
