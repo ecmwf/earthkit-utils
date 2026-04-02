@@ -20,7 +20,6 @@ from typing import Any
 
 if TYPE_CHECKING:
     import xarray as xr  # noqa: F401
-
     from earthkit.data import FieldList  # noqa: F401
 
 LOG = logging.getLogger(__name__)

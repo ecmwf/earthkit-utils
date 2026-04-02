@@ -58,7 +58,7 @@ urls.Issues = "https://github.com/ecmwf/earthkit-utils/issues"
 urls.Repository = "https://github.com/ecmwf/earthkit-utils/"
 
 [tool.setuptools]
-packages.find.include = [ "earthkit", "earthkit.*" ]
+packages.find.include = [ "earthkit.utils" ]
 packages.find.where = [ "src/" ]
 
 [tool.setuptools_scm]
