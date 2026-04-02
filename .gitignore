@@ -373,3 +373,6 @@ test.db
 
 # Combined environments
 ci/combined-environment-*.yml
+
+
+.python-version
