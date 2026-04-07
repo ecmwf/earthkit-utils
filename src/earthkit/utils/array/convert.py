@@ -22,8 +22,7 @@ def _get_converter(source_array_namespace):
 
 
 def convert(array, *, device=None, array_namespace=None, **kwargs):
-    """
-    Return a copy/view of a converted array.
+    """Return a copy/view of a converted array.
 
     Parameters
     ----------
@@ -38,7 +37,9 @@ def convert(array, *, device=None, array_namespace=None, **kwargs):
         - if the device is "cpu", it will use numpy
         - otherwise it will use the namespace of the array ``v``, but if that
           backend is numpy, it will use the cupy backend.
-    **kwargs : forwarded to the underlying call
+    **kwargs :
+        forwarded to the underlying call
+
     """
     # TODO: dtype conversion support also?
 

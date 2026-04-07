@@ -73,18 +73,12 @@ line-length = 120
 preview = true
 lint.ignore = [
   "D1",  # pydocstyle: Missing Docstrings
-  "D107",  # pydocstyle: numpy convention
   "D203",
-  "D205",
   "D212",
   "D213",
   "D401",
-  "D402",
   "D404",
-  "D413",
-  "D415",
-  "D416",
-  "D417"
+  "D413"
 ]
 lint.select = [
   "D",  # pydocstyle

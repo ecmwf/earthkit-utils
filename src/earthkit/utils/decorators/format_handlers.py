@@ -60,6 +60,7 @@ def format_handler(
     -------
     Callable
         Wrapped function.
+
     """
     if convert_types is None:
         convert_types = {}

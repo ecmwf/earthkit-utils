@@ -60,6 +60,7 @@ def array_namespace(*args: T.Any) -> T.Any:
         - histogram2d: compute a 2D histogram (available in numpy)
     Some other methods may be reimplemented for a given namespace to ensure correct
     behaviour. E.g. sign() for torch.
+
     """
     arrays = [a for a in args if array_api_compat.is_array_api_obj(a)]
     if not arrays:

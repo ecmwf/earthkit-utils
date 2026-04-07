@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import sys
 from abc import ABCMeta, abstractmethod
+from collections.abc import Callable
 from functools import wraps
 from importlib import import_module
 from inspect import signature
@@ -60,8 +61,9 @@ def _is_array(obj: Any) -> bool:
 
 
 def is_array_like(obj: Any) -> bool:
-    """
-    Check if the object is array-like, i.e., if it belongs to a known array namespace
+    """Check if the object is array-like.
+
+    True if it belongs to a known array namespace
     or is a scalar or list that can be converted to an array.
     """
     import numpy as np
@@ -124,15 +126,15 @@ class ArrayLikeDispatcher(ArrayDispatcher):
 
 
 def dispatch(
-    func: callable,
+    func: Callable,
     match: int | str = 0,
     xarray: bool = True,
     fieldlist: bool = True,
     array: bool = True,
     array_like: bool = False,
 ):
-    """
-    Decorator to dispatch function calls based on input data types.
+    """Decorator to dispatch function calls based on input data types.
+
     The dispatch will attempt to route the call to the appropriate
     implementation based on the type of the specified argument.
     The implementations are assumed to live in submodules named after the data
@@ -163,6 +165,7 @@ def dispatch(
     -------
     function
         The decorated function with dispatching capability.
+
     """
 
     def _make_wrapper(_func):

@@ -23,8 +23,7 @@ UNIT_STR_ALIASES = {"(0 - 1)": "percent"}
 
 
 def _prepare_str(units: str = None) -> str:
-    """
-    Convert a unit string to a Pint-compatible string.
+    """Convert a unit string to a Pint-compatible string.
 
     For example, it converts "m s-1" to "m.s^-1".
 
@@ -37,6 +36,7 @@ def _prepare_str(units: str = None) -> str:
     -------
     str
         The converted unit string. When `units` is `None`, returns "dimensionless".
+
     """
     if units is None:
         units = "dimensionless"
