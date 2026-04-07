@@ -6,4 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from earthkit.utils.array.testing.testing import NAMESPACE_DEVICES as NAMESPACE_DEVICES
+from earthkit.utils.array.testing.testing import NAMESPACE_DEVICES
+
+__all__ = ["NAMESPACE_DEVICES"]
