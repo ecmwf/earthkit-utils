@@ -13,8 +13,8 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import xarray as xr
-from earthkit.data import SimpleFieldList
 
+from earthkit.data import SimpleFieldList
 from earthkit.utils.decorators.dispatch import ArrayDispatcher
 from earthkit.utils.decorators.dispatch import ArrayLikeDispatcher
 from earthkit.utils.decorators.dispatch import FieldListDispatcher
@@ -250,9 +250,7 @@ class TestArrayLikeDispatcher:
         mock_module = MagicMock()
         mock_module.test_func = MagicMock(return_value="array_result")
 
-        with patch(
-            "earthkit.utils.decorators.dispatch.import_module", return_value=mock_module
-        ) as mock_import:
+        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module) as mock_import:
             result = dispatcher.dispatch("test_func", "dummy.module", [1, 2, 3])
 
         mock_import.assert_called_once_with("dummy.module.array")
