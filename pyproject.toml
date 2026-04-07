@@ -67,8 +67,11 @@ packages.find.where = [ "src/" ]
 version_file = "src/earthkit/utils/_version.py"
 local_scheme = "no-local-version"
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+line-length = 120
+
+lint.select = [ "E", "F", "I" ]
+lint.isort.force-single-line = true
 
 [tool.coverage]
 run.branch = "true"

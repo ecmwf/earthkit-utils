@@ -20,6 +20,7 @@ from typing import Any
 
 if TYPE_CHECKING:
     import xarray as xr  # noqa: F401
+
     from earthkit.data import FieldList  # noqa: F401
 
 LOG = logging.getLogger(__name__)
@@ -62,7 +63,10 @@ def _is_array(obj: Any) -> bool:
 
 
 def is_array_like(obj: Any) -> bool:
-    """Check if the object is array-like, i.e., if it belongs to a known array namespace or is a scalar or list that can be converted to an array."""
+    """
+    Check if the object is array-like, i.e., if it belongs to a known array namespace
+    or is a scalar or list that can be converted to an array.
+    """
     import numpy as np
 
     try:
@@ -191,9 +195,7 @@ def dispatch(
             if match in params:
                 param_name = match
             else:
-                raise ValueError(
-                    f"'match' parameter name {match} is not in the function signature of {_func.__name__}"
-                )
+                raise ValueError(f"'match' parameter name {match} is not in the function signature of {_func.__name__}")
         else:
             raise TypeError(f"'match' must be an integer index or a string parameter name, got {type(match)}")
 
@@ -216,7 +218,9 @@ def dispatch(
                 if _matched:
                     return dispatcher.dispatch(_func.__name__, _module, *args, **kwargs)
             raise TypeError(
-                f"No dispatcher matched for function {_func.__name__} with argument {param_name} of type {type(obj_to_check)}, and no default dispatcher specified."
+                f"No dispatcher matched for function {_func.__name__} "
+                f"with argument {param_name} of type {type(obj_to_check)}, "
+                "and no default dispatcher specified."
             )
 
         return wrapper
