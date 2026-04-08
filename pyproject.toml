@@ -26,7 +26,7 @@ dependencies = [
 description = "Utilities for the Earthkit ecosystem"
 dynamic = ["version"]
 license = "Apache-2.0"
-license-files = [ "LICENSE" ]
+license-files = ["LICENSE"]
 name = "earthkit-utils"
 readme = "README.md"
 requires-python = ">=3.10"
