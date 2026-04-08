@@ -90,7 +90,7 @@ lint.select = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["earthkit", "earthkit.*"]
+include = ["earthkit.utils"]
 where = ["src/"]
 
 [tool.setuptools_scm]
