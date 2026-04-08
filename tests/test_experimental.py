@@ -71,9 +71,9 @@ def test_custom_message():
     ],
 )
 def test_warning_block_indentation(msg):
-    """
-    Every content line under .. warning:: must be indented
-    per docutils spec, unindented lines terminate the directive block.
+    """Every content line under .. warning:: must be indented per docutils spec.
+
+    Unindented lines terminate the directive block.
     """
 
     @experimental(msg=msg)

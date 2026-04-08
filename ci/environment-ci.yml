@@ -3,19 +3,19 @@ channels:
 - conda-forge
 - nodefaults
 dependencies:
-# Dependencies for general development
+  # Dependencies for general development
 - pre-commit
 - make
-# Dependencies for documentation
+  # Dependencies for documentation
 - myst-parser
 - sphinx-rtd-theme
 - sphinx
 - sphinx-autoapi
 - nbsphinx
-# Dependencies for type checking
+  # Dependencies for type checking
 - mypy
 - pandas-stubs
-# Dependencies for units tests
+  # Dependencies for units tests
 - pytest
 - pytest-cov
 - xarray

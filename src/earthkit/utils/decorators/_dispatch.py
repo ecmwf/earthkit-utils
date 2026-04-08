@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import xarray as xr  # noqa: F401
-
     from earthkit.data import FieldList  # noqa: F401
 
 LOG = logging.getLogger(__name__)
@@ -62,8 +61,10 @@ def _is_array(obj: Any) -> bool:
 
 
 def is_array_like(obj: Any) -> bool:
-    """Check if the object is array-like, i.e., if it belongs to a known array namespace or is a scalar or list
-    that can be converted to an array.
+    """Check if the object is array-like.
+
+    True if it belongs to a known array namespace
+    or is a scalar or list that can be converted to an array.
     """
     import numpy as np
 
@@ -132,8 +133,8 @@ def dispatch(
     array: bool = True,
     array_like: bool = False,
 ):
-    """
-    Decorator to dispatch function calls based on input data types.
+    """Decorator to dispatch function calls based on input data types.
+
     The dispatch will attempt to route the call to the appropriate
     implementation based on the type of the specified argument.
     The implementations are assumed to live in submodules named after the data
@@ -164,6 +165,7 @@ def dispatch(
     -------
     function
         The decorated function with dispatching capability.
+
     """
 
     def _make_wrapper(_func):

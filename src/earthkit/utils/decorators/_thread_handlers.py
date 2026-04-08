@@ -24,6 +24,7 @@ class thread_safe_cached_property:
     it gets the underlying property's value and stores it as the hidden ``name`` attribute
     of the instance it was called on. Subsequent calls return the cached value, i.e. the
     hidden ``name`` attribute.
+
     """
 
     def __init__(self, method):
