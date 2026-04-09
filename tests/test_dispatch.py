@@ -7,23 +7,24 @@
 # nor does it submit to any jurisdiction.
 #
 import sys
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 import xarray as xr
-
 from earthkit.data import SimpleFieldList
-from earthkit.utils.decorators.dispatch import ArrayDispatcher
-from earthkit.utils.decorators.dispatch import ArrayLikeDispatcher
-from earthkit.utils.decorators.dispatch import FieldListDispatcher
-from earthkit.utils.decorators.dispatch import XArrayDispatcher
-from earthkit.utils.decorators.dispatch import _is_fieldlist
-from earthkit.utils.decorators.dispatch import _is_xarray
-from earthkit.utils.decorators.dispatch import dispatch
-from earthkit.utils.decorators.dispatch import is_array_like
-from earthkit.utils.decorators.dispatch import is_module_loaded
+
+from earthkit.utils.decorators.dispatch import (
+    ArrayDispatcher,
+    ArrayLikeDispatcher,
+    FieldListDispatcher,
+    XArrayDispatcher,
+    _is_fieldlist,
+    _is_xarray,
+    dispatch,
+    is_array_like,
+    is_module_loaded,
+)
 
 # Test data
 TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])

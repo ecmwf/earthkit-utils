@@ -8,7 +8,6 @@
 
 
 class UnknownPatchedNamespace:
-
     def __init__(self, xp):
         self._xp = xp
 
@@ -54,6 +53,7 @@ class UnknownPatchedNamespace:
         Comments
         --------
         Based on the ``numpy.polynomal.polynomial.polyval`` function.
+
         """
         c0 = c[-1] + x * 0
         for i in range(2, len(c) + 1):
@@ -90,6 +90,10 @@ class UnknownPatchedNamespace:
             An array containing the x coordinates of the points to be histogrammed.
         y: array-like
             An array containing the y coordinates of the points to be histogrammed.
+        bins: int or list of int, optional
+            The number of bins for the histogram in each dimension. If bins is an
+            int, it is used for both dimensions.
+
         """
         return self.xp.histogramdd(self.xp.stack([x, y]).T, bins=bins)
 

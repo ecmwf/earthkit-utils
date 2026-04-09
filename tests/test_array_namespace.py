@@ -13,14 +13,14 @@ import array_api_compat
 import pytest
 
 from earthkit.utils.array import array_namespace
-from earthkit.utils.array.namespace import _CUPY_NAMESPACE
-from earthkit.utils.array.namespace import _JAX_NAMESPACE
-from earthkit.utils.array.namespace import _NUMPY_NAMESPACE
-from earthkit.utils.array.namespace import _TORCH_NAMESPACE
-from earthkit.utils.array.namespace import UnknownPatchedNamespace
-from earthkit.utils.array.testing.testing import NO_CUPY
-from earthkit.utils.array.testing.testing import NO_JAX
-from earthkit.utils.array.testing.testing import NO_TORCH
+from earthkit.utils.array.namespace import (
+    _CUPY_NAMESPACE,
+    _JAX_NAMESPACE,
+    _NUMPY_NAMESPACE,
+    _TORCH_NAMESPACE,
+    UnknownPatchedNamespace,
+)
+from earthkit.utils.array.testing.testing import NO_CUPY, NO_JAX, NO_TORCH
 
 
 def test_array_namespace_numpy():

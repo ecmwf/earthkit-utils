@@ -6,13 +6,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from .array_namespace import _get_array_name
-from .array_namespace import array_namespace as array_namespace_func
-from .converter import _CONVERTERS
-from .converter import FromUnknownConverter
-from .namespace import _CUPY_NAMESPACE
-from .namespace import _NUMPY_NAMESPACE
-from .namespace import UnknownPatchedNamespace
+from earthkit.utils.array.array_namespace import _get_array_name
+from earthkit.utils.array.array_namespace import array_namespace as array_namespace_func
+from earthkit.utils.array.converter import _CONVERTERS, FromUnknownConverter
+from earthkit.utils.array.namespace import _CUPY_NAMESPACE, _NUMPY_NAMESPACE, UnknownPatchedNamespace
 
 
 def _get_converter(source_array_namespace):
@@ -25,8 +22,7 @@ def _get_converter(source_array_namespace):
 
 
 def convert(array, *, device=None, array_namespace=None, **kwargs):
-    """
-    Return a copy/view of a converted array.
+    """Return a copy/view of a converted array.
 
     Parameters
     ----------
@@ -41,9 +37,10 @@ def convert(array, *, device=None, array_namespace=None, **kwargs):
         - if the device is "cpu", it will use numpy
         - otherwise it will use the namespace of the array ``v``, but if that
           backend is numpy, it will use the cupy backend.
-    **kwargs : forwarded to the underlying call
-    """
+    **kwargs :
+        forwarded to the underlying call
 
+    """
     # TODO: dtype conversion support also?
 
     if array_namespace is None and device is None:

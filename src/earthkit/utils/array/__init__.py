@@ -6,5 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from .array_namespace import array_namespace
-from .convert import convert
+from earthkit.utils.array.array_namespace import array_namespace
+from earthkit.utils.array.convert import convert
+
+__all__ = ["array_namespace", "convert"]

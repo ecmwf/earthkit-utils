@@ -10,17 +10,15 @@ from __future__ import annotations
 
 import logging
 import sys
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
+from collections.abc import Callable
 from functools import wraps
 from importlib import import_module
 from inspect import signature
-from typing import TYPE_CHECKING
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import xarray as xr  # noqa: F401
-
     from earthkit.data import FieldList  # noqa: F401
 
 LOG = logging.getLogger(__name__)
@@ -63,8 +61,9 @@ def _is_array(obj: Any) -> bool:
 
 
 def is_array_like(obj: Any) -> bool:
-    """
-    Check if the object is array-like, i.e., if it belongs to a known array namespace
+    """Check if the object is array-like.
+
+    True if it belongs to a known array namespace
     or is a scalar or list that can be converted to an array.
     """
     import numpy as np
@@ -78,9 +77,7 @@ def is_array_like(obj: Any) -> bool:
 
 
 class DataDispatcher(metaclass=ABCMeta):
-    """
-    A dispatcher class to route function calls based on input data types.
-    """
+    """A dispatcher class to route function calls based on input data types."""
 
     @staticmethod
     @abstractmethod
@@ -129,15 +126,15 @@ class ArrayLikeDispatcher(ArrayDispatcher):
 
 
 def dispatch(
-    func: callable,
+    func: Callable,
     match: int | str = 0,
     xarray: bool = True,
     fieldlist: bool = True,
     array: bool = True,
     array_like: bool = False,
 ):
-    """
-    Decorator to dispatch function calls based on input data types.
+    """Decorator to dispatch function calls based on input data types.
+
     The dispatch will attempt to route the call to the appropriate
     implementation based on the type of the specified argument.
     The implementations are assumed to live in submodules named after the data
@@ -168,6 +165,7 @@ def dispatch(
     -------
     function
         The decorated function with dispatching capability.
+
     """
 
     def _make_wrapper(_func):
@@ -218,9 +216,8 @@ def dispatch(
                 if _matched:
                     return dispatcher.dispatch(_func.__name__, _module, *args, **kwargs)
             raise TypeError(
-                f"No dispatcher matched for function {_func.__name__} "
-                f"with argument {param_name} of type {type(obj_to_check)}, "
-                "and no default dispatcher specified."
+                f"No dispatcher matched for function {_func.__name__} with argument {param_name} "
+                f"of type {type(obj_to_check)}, and no default dispatcher specified."
             )
 
         return wrapper

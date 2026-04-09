@@ -6,13 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from earthkit.utils.array.namespace.unknown import UnknownPatchedNamespace
 from earthkit.utils.decorators import thread_safe_cached_property
-
-from .unknown import UnknownPatchedNamespace
 
 
 class PatchedNumpyNamespace(UnknownPatchedNamespace):
-
     def __init__(self):
         super().__init__(None)
 
