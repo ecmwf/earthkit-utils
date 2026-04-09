@@ -8,11 +8,11 @@
 
 """Function decorators and wrappers for use in the downstream EarthKit packages."""
 
-from earthkit.utils.decorators.dispatch import dispatch
-from earthkit.utils.decorators.experimental import ExperimentalWarning, experimental
-from earthkit.utils.decorators.format_handlers import format_handler
-from earthkit.utils.decorators.thread_handlers import thread_safe_cached_property
-from earthkit.utils.decorators.xarray_ufunc import xarray_ufunc
+from earthkit.utils.decorators._dispatch import dispatch
+from earthkit.utils.decorators._experimental import ExperimentalWarning, experimental
+from earthkit.utils.decorators._format_handlers import format_handler
+from earthkit.utils.decorators._thread_handlers import thread_safe_cached_property
+from earthkit.utils.decorators._xarray_ufunc import xarray_ufunc
 
 __all__ = [
     "ExperimentalWarning",
