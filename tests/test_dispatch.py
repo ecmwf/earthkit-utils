@@ -7,23 +7,25 @@
 # nor does it submit to any jurisdiction.
 #
 import sys
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 import xarray as xr
 from earthkit.data import SimpleFieldList
 
-from earthkit.utils.decorators.dispatch import ArrayDispatcher
-from earthkit.utils.decorators.dispatch import ArrayLikeDispatcher
-from earthkit.utils.decorators.dispatch import FieldListDispatcher
-from earthkit.utils.decorators.dispatch import XArrayDispatcher
-from earthkit.utils.decorators.dispatch import _is_fieldlist
-from earthkit.utils.decorators.dispatch import _is_xarray
-from earthkit.utils.decorators.dispatch import dispatch
-from earthkit.utils.decorators.dispatch import is_array_like
-from earthkit.utils.decorators.dispatch import is_module_loaded
+from earthkit.utils.decorators import _dispatch as dispatch_module
+from earthkit.utils.decorators._dispatch import (
+    ArrayDispatcher,
+    ArrayLikeDispatcher,
+    FieldListDispatcher,
+    XArrayDispatcher,
+    _is_fieldlist,
+    _is_xarray,
+    dispatch,
+    is_array_like,
+    is_module_loaded,
+)
 
 # Test data
 TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])
@@ -132,7 +134,7 @@ class TestXArrayDispatcher:
         mock_module = MagicMock()
         mock_module.test_func = MagicMock(return_value="xarray_result")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_module):
             result = dispatcher.dispatch("test_func", "dummy.module", 1, 2, key="value")
 
         assert result == "xarray_result"
@@ -162,7 +164,7 @@ class TestFieldListDispatcher:
         mock_module = MagicMock()
         mock_module.test_func = MagicMock(return_value="fieldlist_result")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_module):
             result = dispatcher.dispatch("test_func", "dummy.module", 1, 2, key="value")
 
         assert result == "fieldlist_result"
@@ -250,9 +252,7 @@ class TestArrayLikeDispatcher:
         mock_module = MagicMock()
         mock_module.test_func = MagicMock(return_value="array_result")
 
-        with patch(
-            "earthkit.utils.decorators.dispatch.import_module", return_value=mock_module
-        ) as mock_import:
+        with patch.object(dispatch_module, "import_module", return_value=mock_module) as mock_import:
             result = dispatcher.dispatch("test_func", "dummy.module", [1, 2, 3])
 
         mock_import.assert_called_once_with("dummy.module.array")
@@ -272,7 +272,7 @@ class TestDispatchWrapperArrayLike:
         mock_module = MagicMock()
         mock_module.process_data = MagicMock(return_value="array_result")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_module):
             result = process_data([1, 2, 3])
 
         assert result == "array_result"
@@ -287,7 +287,7 @@ class TestDispatchWrapperArrayLike:
         mock_module = MagicMock()
         mock_module.process_data = MagicMock(return_value="array_result")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_module):
             result = process_data(42)
 
         assert result == "array_result"
@@ -302,7 +302,7 @@ class TestDispatchWrapperArrayLike:
         mock_module = MagicMock()
         mock_module.process_data = MagicMock(return_value="array_result")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_module):
             result = process_data(3.14)
 
         assert result == "array_result"
@@ -339,7 +339,7 @@ class TestArrayDispatcher:
         mock_module = MagicMock()
         mock_module.test_func = MagicMock(return_value="array_result")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_module):
             result = dispatcher.dispatch("test_func", "dummy.module", 1, 2, key="value")
 
         assert result == "array_result"
@@ -360,7 +360,7 @@ class TestDispatchWrapper:
         mock_xarray_module = MagicMock()
         mock_xarray_module.process_data = MagicMock(return_value="xarray_implementation")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_xarray_module):
             result = process_data(TEST_XARRAY_DATAARRAY)
 
         assert result == "xarray_implementation"
@@ -376,7 +376,7 @@ class TestDispatchWrapper:
         mock_array_module = MagicMock()
         mock_array_module.process_data = MagicMock(return_value="array_implementation")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_array_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_array_module):
             result = process_data(TEST_NUMPY_ARRAY)
 
         assert result == "array_implementation"
@@ -391,7 +391,7 @@ class TestDispatchWrapper:
         mock_array_module = MagicMock()
         mock_array_module.process_data = MagicMock(return_value="array_implementation")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_array_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_array_module):
             result = process_data(TEST_NUMPY_ARRAY)
             assert result == "array_implementation"
 
@@ -405,7 +405,7 @@ class TestDispatchWrapper:
         mock_xarray_module = MagicMock()
         mock_xarray_module.process_data = MagicMock(return_value="xarray_implementation")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_xarray_module):
             result = process_data(TEST_XARRAY_DATAARRAY, other_param=42)
 
         assert result == "xarray_implementation"
@@ -421,7 +421,7 @@ class TestDispatchWrapper:
         mock_xarray_module = MagicMock()
         mock_xarray_module.process_with_name_match = MagicMock(return_value="xarray_implementation")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_xarray_module):
             result = process_with_name_match(TEST_XARRAY_DATAARRAY)
 
         assert result == "xarray_implementation"
@@ -473,7 +473,7 @@ class TestDispatchWrapper:
         mock_xarray_module = MagicMock()
         mock_xarray_module.process_data = MagicMock(return_value="xarray_with_kwargs")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_xarray_module):
             result = process_data(TEST_XARRAY_DATAARRAY, multiplier=3)
 
         assert result == "xarray_with_kwargs"
@@ -511,7 +511,7 @@ class TestDispatchWrapper:
         mock_array_module = MagicMock()
         mock_array_module.with_only_array = MagicMock(return_value="array_dispatched")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_array_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_array_module):
             result = with_only_array(TEST_NUMPY_ARRAY)
             assert result == "array_dispatched"
 
@@ -519,21 +519,21 @@ class TestDispatchWrapper:
         mock_xarray_module = MagicMock()
         mock_xarray_module.with_all_defaults = MagicMock(return_value="xarray_dispatched")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_xarray_module):
             result = with_all_defaults(TEST_XARRAY_DATAARRAY)
 
         assert result == "xarray_dispatched"
         mock_xarray_module.with_all_defaults.assert_called_once_with(TEST_XARRAY_DATAARRAY)
 
         # xarray input is array-like, so should be dispatched
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_xarray_module):
             with_only_array_and_array_like(TEST_XARRAY_DATAARRAY)
 
         assert result == "xarray_dispatched"
         mock_xarray_module.with_all_defaults.assert_called_once_with(TEST_XARRAY_DATAARRAY)
 
         # With xarray is not a strict array, so should not be dispatched
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_xarray_module):
             with pytest.raises(TypeError, match="No dispatcher matched for function"):
                 with_only_array(TEST_XARRAY_DATAARRAY)
 
@@ -552,7 +552,7 @@ class TestDispatchIntegration:
         mock_xarray_module = MagicMock()
         mock_xarray_module.process = MagicMock(return_value="xarray")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_xarray_module):
             result = process(TEST_XARRAY_DATAARRAY)
 
         assert result == "xarray"
@@ -583,7 +583,7 @@ class TestDispatchIntegration:
         mock_xarray_module = MagicMock()
         mock_xarray_module.process_with_defaults = MagicMock(return_value="xarray")
 
-        with patch("earthkit.utils.decorators.dispatch.import_module", return_value=mock_xarray_module):
+        with patch.object(dispatch_module, "import_module", return_value=mock_xarray_module):
             # Call with only required argument
             result = process_with_defaults(TEST_XARRAY_DATAARRAY)
             assert result == "xarray"

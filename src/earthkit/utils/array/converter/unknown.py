@@ -8,7 +8,6 @@
 
 
 class FromUnknownConverter:
-
     def __init__(self, xp_target):
         # TODO: check if we ever will need source also
         # self.xp_source = xp_source
@@ -23,8 +22,7 @@ class FromUnknownConverter:
             return self.to_unknown(array, **kwargs)
 
     def _default_convert(self, xp, array, **kwargs):
-        """ "
-        Default attempt to convert from other backend to this backend.
+        """Default attempt to convert from other backend to this backend.
 
         Process is the following:
         1. Attempts to use dlpack if available.

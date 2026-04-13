@@ -6,17 +6,13 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-"""
-Function decorators and wrappers for use in the downstream EarthKit packages.
-"""
+"""Function decorators and wrappers for use in the downstream EarthKit packages."""
 
-
-from .dispatch import dispatch
-from .experimental import ExperimentalWarning
-from .experimental import experimental
-from .format_handlers import format_handler
-from .thread_handlers import thread_safe_cached_property
-from .xarray_ufunc import xarray_ufunc
+from earthkit.utils.decorators._dispatch import dispatch
+from earthkit.utils.decorators._experimental import ExperimentalWarning, experimental
+from earthkit.utils.decorators._format_handlers import format_handler
+from earthkit.utils.decorators._thread_handlers import thread_safe_cached_property
+from earthkit.utils.decorators._xarray_ufunc import xarray_ufunc
 
 __all__ = [
     "ExperimentalWarning",
