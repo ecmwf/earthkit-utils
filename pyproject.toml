@@ -45,6 +45,11 @@ optional-dependencies.docs = [
   "sphinx-rtd-theme",
   "sphinx-tabs"
 ]
+optional-dependencies.gpu = [
+  "cupy",
+  "jax",
+  "torch"
+]
 optional-dependencies.test = [
   "earthkit-data",
   "pytest",
