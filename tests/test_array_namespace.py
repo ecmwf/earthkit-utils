@@ -20,7 +20,6 @@ from earthkit.utils.array.namespace import (
     _TORCH_NAMESPACE,
     UnknownPatchedNamespace,
 )
-from earthkit.utils.array.testing.testing import NO_CUPY, NO_JAX, NO_TORCH
 
 
 def test_array_namespace_numpy():
@@ -44,7 +43,7 @@ def test_array_namespace_numpy():
     assert xp.allclose(v_hat, v)
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
+@pytest.mark.requires("torch")
 def test_array_namespace_torch():
     xp = array_namespace("torch")
     assert xp._earthkit_array_namespace_name == "torch"
@@ -65,7 +64,8 @@ def test_array_namespace_torch():
     assert xp.allclose(v_hat, v)
 
 
-@pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
+@pytest.mark.cuda
+@pytest.mark.requires("cupy")
 def test_array_namespace_cupy():
     xp = array_namespace("cupy")
     assert xp._earthkit_array_namespace_name == "cupy"
@@ -86,7 +86,7 @@ def test_array_namespace_cupy():
     assert xp.allclose(v_hat, v)
 
 
-@pytest.mark.skipif(NO_JAX, reason="No jax installed")
+@pytest.mark.requires("jax")
 def test_array_namespace_jax():
     xp = array_namespace("jax")
     assert xp._earthkit_array_namespace_name == "jax"
@@ -137,7 +137,7 @@ def test_patched_namespace_numpy():
     # TODO: test histogramdd and histogram2d
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
+@pytest.mark.requires("torch")
 def test_patched_namespace_torch():
     xp = array_namespace("torch")
     generic_xp = UnknownPatchedNamespace(array_api_compat.torch)
@@ -170,7 +170,7 @@ def test_patched_namespace_torch():
     # TODO: test histogramdd and histogram2d
 
 
-@pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
+@pytest.mark.requires("cupy")
 def test_patched_namespace_cupy():
     xp = array_namespace("cupy")
     generic_xp = UnknownPatchedNamespace(array_api_compat.cupy)
@@ -203,7 +203,7 @@ def test_patched_namespace_cupy():
     # TODO: test histogramdd and histogram2d
 
 
-@pytest.mark.skipif(NO_JAX, reason="No jax installed")
+@pytest.mark.requires("jax")
 def test_patched_namespace_jax():
     xp = array_namespace("jax")
     import jax.numpy as jnp
