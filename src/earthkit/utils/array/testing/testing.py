@@ -23,24 +23,28 @@ def _modules_installed(*modules):
     return True
 
 
-NO_TORCH = not _modules_installed("torch")
-NO_CUPY = not _modules_installed("cupy")
-NO_JAX = not _modules_installed("jax")
-NO_XARRAY = not _modules_installed("xarray")
-if not NO_CUPY:
+# Marker CUDA
+# Marker MLX
+
+
+TORCH_INSTALLED = _modules_installed("torch")
+CUPY_INSTALLED = _modules_installed("cupy")
+JAX_INSTALLED = _modules_installed("jax")
+XARRAY_INSTALLED = _modules_installed("xarray")
+if CUPY_INSTALLED:
     try:
         import cupy as cp
 
         a = cp.ones(2)
     except Exception:
-        NO_CUPY = True
+        CUPY_INSTALLED = False
 
 ARRAY_NAMES = ["numpy"]
-if not NO_TORCH:
+if TORCH_INSTALLED:
     ARRAY_NAMES.append("torch")
-if not NO_CUPY:
+if CUPY_INSTALLED:
     ARRAY_NAMES.append("cupy")
-# if not NO_JAX:
+# if JAX_INSTALLED:
 #     ARRAY_NAMES.append("jax")
 
 
