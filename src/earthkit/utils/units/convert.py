@@ -7,7 +7,7 @@
 # nor does it submit to any jurisdiction.
 
 import logging
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias, Union
 
 import pint
 
@@ -16,12 +16,14 @@ from .units import Q_, StrUnits, Units
 LOG = logging.getLogger(__name__)
 
 ArrayLike: TypeAlias = Any
+UnitLike: TypeAlias = Union[str, pint.Unit, Units]
+UnitSpec: TypeAlias = Union[UnitLike, dict[str, UnitLike], None]
 
 if TYPE_CHECKING:
     import xarray  # type: ignore[import]
 
 
-def are_equal(unit_1: str | None, unit_2: str | None) -> bool:
+def are_equal(unit_1: UnitLike | None, unit_2: UnitLike | None) -> bool:
     """
     Check if two units are equivalent.
 
@@ -42,8 +44,8 @@ def are_equal(unit_1: str | None, unit_2: str | None) -> bool:
 
 def convert_array(
     data: ArrayLike,
-    target_units: str | None | dict[str, str] = None,
-    source_units: str | None | dict[str, str] = None,
+    target_units: UnitSpec = None,
+    source_units: UnitSpec = None,
 ) -> ArrayLike:
     """
     Convert data from one set of units to another.
@@ -92,8 +94,8 @@ def convert_array(
 
 def convert_dataarray(
     data: "xarray.DataArray",
-    target_units: str | None | dict[str, str] = None,
-    source_units: str | None | dict[str, str] = None,
+    target_units: UnitSpec = None,
+    source_units: UnitSpec = None,
 ) -> "xarray.DataArray":
     """
     Convert the units of an xarray.DataArray.
@@ -150,12 +152,12 @@ def convert_dataarray(
 
     if target_units_resolved is not None:
         result.attrs = dict(result.attrs)
-        result.attrs["units"] = target_units_resolved
+        result.attrs["units"] = str(target_units_resolved)
 
     return result
 
 
-def _are_compatible(unit_1: str | None, unit_2: str | None) -> bool:
+def are_compatible(unit_1: UnitLike | None, unit_2: UnitLike | None) -> bool:
     """Check if two units are dimensionally compatible."""
     unit_1_parsed = Units.from_any(unit_1)
     unit_2_parsed = Units.from_any(unit_2)
@@ -175,8 +177,8 @@ def _are_compatible(unit_1: str | None, unit_2: str | None) -> bool:
 
 def convert_dataset(
     data: "xarray.Dataset",
-    target_units: str | None | dict[str, str] = None,
-    source_units: str | None | dict[str, str] = None,
+    target_units: UnitSpec = None,
+    source_units: UnitSpec = None,
 ) -> "xarray.Dataset":
     """
     Convert the units of variables in an xarray.Dataset.
@@ -227,7 +229,7 @@ def convert_dataset(
         if target_units_for_var is None:
             continue
 
-        if not _are_compatible(source_units_for_var, target_units_for_var):
+        if not are_compatible(source_units_for_var, target_units_for_var):
             continue
 
         result[name] = convert_dataarray(da, target_units_for_var, source_units_for_var)
@@ -237,8 +239,8 @@ def convert_dataset(
 
 def convert_units(
     data: ArrayLike,
-    target_units: str | None | dict[str, str] = None,
-    source_units: str | None | dict[str, str] = None,
+    target_units: UnitSpec = None,
+    source_units: UnitSpec = None,
 ) -> ArrayLike:
     """
     Convert units for arrays, xarray.DataArray, or xarray.Dataset objects.

@@ -7,6 +7,9 @@
 # nor does it submit to any jurisdiction.
 
 from earthkit.utils.units.convert import (
+    UnitLike,
+    UnitSpec,
+    are_compatible,
     are_equal,
     convert_array,
     convert_dataarray,
@@ -16,7 +19,10 @@ from earthkit.utils.units.convert import (
 from earthkit.utils.units.units import Units
 
 __all__ = [
+    "UnitLike",
+    "UnitSpec",
     "Units",
+    "are_compatible",
     "are_equal",
     "convert_array",
     "convert_dataarray",

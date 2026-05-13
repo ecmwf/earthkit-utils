@@ -10,16 +10,19 @@
 #
 
 import numpy as np
+import pint
 import pytest
 import xarray as xr
 
 from earthkit.utils.units.convert import (
+    are_compatible,
     are_equal,
     convert_array,
     convert_dataarray,
     convert_dataset,
     convert_units,
 )
+from earthkit.utils.units.units import Units, ureg
 
 # ---- are_equal ----
 
@@ -399,3 +402,146 @@ class TestConvertUnits:
         result = convert_units(da, target_units={"dist": "km"})
         assert isinstance(result, xr.DataArray)
         np.testing.assert_allclose(result.values, [1.0])
+
+
+# ---- Unit type variants (str, pint.Unit, Units) ----
+
+
+class TestUnitTypes:
+    """Test that str, pint.Unit, and Units objects are all accepted."""
+
+    # -- are_equal --
+
+    def test_are_equal_pint_units(self):
+        assert are_equal(ureg.meter, ureg.meter)
+
+    def test_are_equal_units_objects(self):
+        assert are_equal(Units.from_any("m"), Units.from_any("m"))
+
+    def test_are_equal_mixed_str_and_pint(self):
+        assert are_equal("m", ureg.meter)
+
+    def test_are_equal_mixed_str_and_units(self):
+        assert are_equal("m/s", Units.from_any("m/s"))
+
+    # -- are_compatible --
+
+    def test_are_compatible_pint_units(self):
+        assert are_compatible(ureg.meter, ureg.kilometer)
+
+    def test_are_compatible_units_objects(self):
+        assert are_compatible(Units.from_any("m"), Units.from_any("km"))
+
+    def test_are_compatible_mixed(self):
+        assert are_compatible("m", ureg.kilometer)
+
+    def test_are_compatible_incompatible_pint(self):
+        assert not are_compatible(ureg.meter, ureg.kelvin)
+
+    # -- convert_array with pint.Unit --
+
+    def test_convert_array_pint_source(self):
+        data = np.array([1000.0])
+        result = convert_array(data, target_units="km", source_units=ureg.meter)
+        np.testing.assert_allclose(result, [1.0])
+
+    def test_convert_array_pint_target(self):
+        data = np.array([1000.0])
+        result = convert_array(data, target_units=ureg.kilometer, source_units="m")
+        np.testing.assert_allclose(result, [1.0])
+
+    def test_convert_array_pint_both(self):
+        data = np.array([1000.0])
+        result = convert_array(data, target_units=ureg.kilometer, source_units=ureg.meter)
+        np.testing.assert_allclose(result, [1.0])
+
+    # -- convert_array with Units objects --
+
+    def test_convert_array_units_source(self):
+        data = np.array([1000.0])
+        result = convert_array(data, target_units="km", source_units=Units.from_any("m"))
+        np.testing.assert_allclose(result, [1.0])
+
+    def test_convert_array_units_target(self):
+        data = np.array([1000.0])
+        result = convert_array(data, target_units=Units.from_any("km"), source_units="m")
+        np.testing.assert_allclose(result, [1.0])
+
+    def test_convert_array_units_both(self):
+        data = np.array([1000.0])
+        result = convert_array(
+            data,
+            target_units=Units.from_any("km"),
+            source_units=Units.from_any("m"),
+        )
+        np.testing.assert_allclose(result, [1.0])
+
+    # -- convert_dataarray with pint.Unit --
+
+    def test_convert_dataarray_pint_target(self):
+        da = xr.DataArray([1000.0], attrs={"units": "m"})
+        result = convert_dataarray(da, target_units=ureg.kilometer)
+        np.testing.assert_allclose(result.values, [1.0])
+
+    def test_convert_dataarray_pint_source(self):
+        da = xr.DataArray([1000.0], attrs={"units": "m"})
+        result = convert_dataarray(da, target_units="km", source_units=ureg.meter)
+        np.testing.assert_allclose(result.values, [1.0])
+
+    # -- convert_dataarray with Units objects --
+
+    def test_convert_dataarray_units_target(self):
+        da = xr.DataArray([1000.0], attrs={"units": "m"})
+        result = convert_dataarray(da, target_units=Units.from_any("km"))
+        np.testing.assert_allclose(result.values, [1.0])
+
+    # -- convert_dataset with pint.Unit --
+
+    def test_convert_dataset_pint_target(self):
+        ds = xr.Dataset({
+            "dist": xr.DataArray([1000.0], attrs={"units": "m"}),
+        })
+        result = convert_dataset(ds, target_units=ureg.kilometer, source_units=ureg.meter)
+        np.testing.assert_allclose(result["dist"].values, [1.0])
+
+    # -- convert_dataset with dict containing pint.Unit values --
+
+    def test_convert_dataset_dict_pint_values(self):
+        ds = xr.Dataset({
+            "dist": xr.DataArray([1000.0], attrs={"units": "m"}),
+            "temp": xr.DataArray([273.15], attrs={"units": "K"}),
+        })
+        result = convert_dataset(
+            ds,
+            target_units={"dist": ureg.kilometer, "temp": ureg.degC},
+        )
+        np.testing.assert_allclose(result["dist"].values, [1.0])
+        np.testing.assert_allclose(result["temp"].values, [0.0])
+
+    # -- convert_dataset with dict containing Units values --
+
+    def test_convert_dataset_dict_units_values(self):
+        ds = xr.Dataset({
+            "dist": xr.DataArray([1000.0], attrs={"units": "m"}),
+        })
+        result = convert_dataset(
+            ds,
+            target_units={"dist": Units.from_any("km")},
+        )
+        np.testing.assert_allclose(result["dist"].values, [1.0])
+
+    # -- convert_units dispatcher with mixed types --
+
+    def test_convert_units_pint_units(self):
+        data = np.array([1000.0])
+        result = convert_units(data, target_units=ureg.kilometer, source_units=ureg.meter)
+        np.testing.assert_allclose(result, [1.0])
+
+    def test_convert_units_units_objects(self):
+        data = np.array([1000.0])
+        result = convert_units(
+            data,
+            target_units=Units.from_any("km"),
+            source_units=Units.from_any("m"),
+        )
+        np.testing.assert_allclose(result, [1.0])
