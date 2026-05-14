@@ -259,6 +259,13 @@ class TestConvertDataset:
         result = convert_dataset(ds, target_units="km", source_units=None)
         assert result is ds
 
+    def test_no_conversion_with_source_filter_returns_original_dataset(self):
+        ds = xr.Dataset({
+            "dist": xr.DataArray([1000.0], attrs={"units": "m"}),
+        })
+        result = convert_dataset(ds, target_units="km", source_units="K")
+        assert result is ds
+
     def test_updates_units_attr_on_converted_vars(self):
         ds = xr.Dataset({
             "dist": xr.DataArray([1000.0], attrs={"units": "m"}),
