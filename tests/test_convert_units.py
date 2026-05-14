@@ -251,7 +251,6 @@ class TestConvertDataset:
         # dist_km should be unchanged because its units are "km" not "m"
         np.testing.assert_array_equal(result["dist_km"].values, [5.0])
 
-
     def test_no_conversion_returns_original_dataset(self):
         ds = xr.Dataset({
             "temp": xr.DataArray([273.15], attrs={"units": "K"}),
