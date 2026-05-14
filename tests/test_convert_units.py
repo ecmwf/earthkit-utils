@@ -258,6 +258,8 @@ class TestConvertDataset:
         })
         result = convert_dataset(ds, target_units="km")
         assert result is ds
+        np.testing.assert_array_equal(result["temp"].values, [273.15])
+        assert result["temp"].attrs["units"] == "K"
 
     def test_no_conversion_with_source_filter_returns_original_dataset(self):
         ds = xr.Dataset({
@@ -265,6 +267,8 @@ class TestConvertDataset:
         })
         result = convert_dataset(ds, target_units="km", source_units="K")
         assert result is ds
+        np.testing.assert_array_equal(result["dist"].values, [1000.0])
+        assert result["dist"].attrs["units"] == "m"
 
     def test_updates_units_attr_on_converted_vars(self):
         ds = xr.Dataset({
