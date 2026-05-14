@@ -256,7 +256,7 @@ class TestConvertDataset:
         ds = xr.Dataset({
             "temp": xr.DataArray([273.15], attrs={"units": "K"}),
         })
-        result = convert_dataset(ds, target_units="km", source_units=None)
+        result = convert_dataset(ds, target_units="km")
         assert result is ds
 
     def test_no_conversion_with_source_filter_returns_original_dataset(self):
