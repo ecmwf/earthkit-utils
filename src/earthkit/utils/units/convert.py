@@ -207,7 +207,7 @@ def convert_dataset(
     if not isinstance(data, xr.Dataset):
         raise TypeError("data must be an xarray.Dataset")
 
-    result = data.copy(deep=False)
+    result = None
 
     for name, da in data.data_vars.items():
         # Get source units for this variable, checking in order:
@@ -232,9 +232,12 @@ def convert_dataset(
         if not are_compatible(source_units_for_var, target_units_for_var):
             continue
 
+        if result is None:
+            result = data.copy(deep=False)
+
         result[name] = convert_dataarray(da, target_units_for_var, source_units_for_var)
 
-    return result
+    return data if result is None else result
 
 
 def convert_units(

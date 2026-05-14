@@ -10,7 +10,6 @@
 #
 
 import numpy as np
-import pint
 import pytest
 import xarray as xr
 
@@ -251,6 +250,14 @@ class TestConvertDataset:
         np.testing.assert_allclose(result["dist_m"].values, [1.0])
         # dist_km should be unchanged because its units are "km" not "m"
         np.testing.assert_array_equal(result["dist_km"].values, [5.0])
+
+
+    def test_no_conversion_returns_original_dataset(self):
+        ds = xr.Dataset({
+            "temp": xr.DataArray([273.15], attrs={"units": "K"}),
+        })
+        result = convert_dataset(ds, target_units="km", source_units=None)
+        assert result is ds
 
     def test_updates_units_attr_on_converted_vars(self):
         ds = xr.Dataset({
