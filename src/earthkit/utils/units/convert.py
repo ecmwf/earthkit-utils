@@ -7,6 +7,7 @@
 # nor does it submit to any jurisdiction.
 
 import logging
+import sys
 from typing import TYPE_CHECKING, Any, TypeAlias, Union
 
 import pint
@@ -21,6 +22,10 @@ UnitSpec: TypeAlias = Union[UnitLike, dict[str, UnitLike], None]
 
 if TYPE_CHECKING:
     import xarray  # type: ignore[import]
+
+
+def is_module_loaded(module_name):
+    return module_name in sys.modules
 
 
 def are_equal(unit_1: UnitLike | None, unit_2: UnitLike | None) -> bool:
@@ -274,12 +279,9 @@ def convert_units(
     array-like or xarray.DataArray or xarray.Dataset
         The converted data.
     """
-    try:
+    if is_module_loaded("xarray"):
         import xarray as xr
-    except ImportError:
-        xr = None
 
-    if xr is not None:
         if isinstance(data, xr.DataArray):
             return convert_dataarray(data, target_units, source_units)
         if isinstance(data, xr.Dataset):
