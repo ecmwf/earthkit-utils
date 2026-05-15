@@ -132,6 +132,8 @@ def convert_dataarray(
         target_units_resolved = target_units.get(data.name)
     else:
         target_units_resolved = target_units
+    if target_units_resolved is None:
+        return data
 
     # Resolve source units
     if isinstance(source_units, dict):
@@ -140,6 +142,9 @@ def convert_dataarray(
         source_units_resolved = source_units
     else:
         source_units_resolved = data.attrs.get("units")
+    if source_units_resolved is None:
+        LOG.warning(f"No source units found for DataArray '{data.name}', cannot convert")
+        return data
 
     converted = convert_array(data.data, target_units_resolved, source_units_resolved)
 
