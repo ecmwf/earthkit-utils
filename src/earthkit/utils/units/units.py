@@ -14,15 +14,15 @@ from typing import Any
 import pint
 from pint import UnitRegistry
 
-ureg = UnitRegistry()
-Q_ = ureg.Quantity
+ureg: UnitRegistry = UnitRegistry()
+Q_: type[pint.Quantity] = ureg.Quantity
 
 UNITS_PATTERN_1 = re.compile(r"(?<=[a-zA-Z0-9])\s+(?=[a-zA-Z])")
 UNITS_PATTERN_2 = re.compile(r"([a-zA-Z])(-?\d+)")
-UNIT_STR_ALIASES = {"(0 - 1)": "percent"}
+UNIT_STR_ALIASES: dict[str, str] = {"(0 - 1)": "percent"}
 
 
-def _prepare_str(units: str = None) -> str:
+def _prepare_str(units: str | None = None) -> str:
     """Convert a unit string to a Pint-compatible string.
 
     For example, it converts "m s-1" to "m.s^-1".
