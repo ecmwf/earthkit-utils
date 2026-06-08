@@ -31,11 +31,13 @@ name = "earthkit-utils"
 readme = "README.md"
 requires-python = ">=3.10"
 optional-dependencies.dev = [
+  "pre-commit",
   "numpy",
   "pytest",
   "pytest-cov"
 ]
 optional-dependencies.docs = [
+  "pre-commit",
   "nbsphinx",
   "numpy",
   "ipykernel",
