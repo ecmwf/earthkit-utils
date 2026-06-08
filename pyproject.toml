@@ -37,10 +37,12 @@ optional-dependencies.dev = [
 ]
 optional-dependencies.docs = [
   "nbsphinx",
+  "furo",
   "pygments>=2.6.1",
   "sphinx>=7.3.7",
   "sphinx-autoapi",
   "sphinx-copybutton",
+  "sphinx-design",
   "sphinx-issues",
   "sphinx-rtd-theme",
   "sphinx-tabs"

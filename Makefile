@@ -1,3 +1,5 @@
+NBSPHINX_EXECUTE := never
+
 setup:
 	pre-commit install
 
@@ -8,3 +10,6 @@ qa:
 
 tests:
 	python -m pytest -vv --cov=. --cov-report=html
+
+docs-build:
+	cd docs && make clean && make html SPHINXOPTS="-D nbsphinx_execute=$(NBSPHINX_EXECUTE)"
