@@ -4,9 +4,6 @@ NBSPHINX_EXECUTE := auto
 
 default: qa unit-tests
 
-setup:
-    pre-commit install
-
 qa:
 	pre-commit run --all-files
 
