@@ -141,6 +141,8 @@ html_css_files = [
 
 html_js_files = [
     "custom.js",
+    "earthkit-packages.js",  # generated from earthkit-packages.yml at build time
+
 ]
 
 html_favicon = "./_static/earthkit-utils-notext.svg"
