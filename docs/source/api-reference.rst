@@ -25,6 +25,7 @@ Submodules
    :maxdepth: 2
    :hidden:
 
+   earthkit.utils <autodocs/earthkit.utils>
    earthkit.utils.array <autodocs/earthkit.utils.array>
    earthkit.utils.decorators <autodocs/earthkit.utils.decorators>
    earthkit.utils.units <autodocs/earthkit.utils.units>

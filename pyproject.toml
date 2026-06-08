@@ -37,7 +37,10 @@ optional-dependencies.dev = [
 ]
 optional-dependencies.docs = [
   "nbsphinx",
+  "numpy",
+  "ipykernel",
   "furo",
+  "nbsphinx",
   "pygments>=2.6.1",
   "sphinx>=7.3.7",
   "sphinx-autoapi",
