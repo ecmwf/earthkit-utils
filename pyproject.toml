@@ -32,12 +32,14 @@ readme = "README.md"
 requires-python = ">=3.10"
 optional-dependencies.dev = [
   "pre-commit",
+  "mypy",
   "numpy",
   "pytest",
   "pytest-cov"
 ]
 optional-dependencies.docs = [
   "pre-commit",
+  "mypy",
   "nbsphinx",
   "numpy",
   "ipykernel",
@@ -54,6 +56,7 @@ optional-dependencies.docs = [
 ]
 optional-dependencies.test = [
   "earthkit-data",
+  "mypy",
   "pytest",
   "pytest-cov",
   "pytest-reraise",
@@ -93,6 +96,10 @@ lint.select = [
   "I",  # isort
   "W"  # pycodestyle warnings
 ]
+
+[tool.mypy]
+exclude = '(^tests/|build/)'
+ignore_missing_imports = true
 
 [tool.setuptools.packages.find]
 include = ["earthkit.utils"]

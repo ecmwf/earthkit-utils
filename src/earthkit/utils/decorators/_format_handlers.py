@@ -155,6 +155,7 @@ def signature_mapping(signature: inspect.Signature, kwarg_types: dict[str, str])
     """
     mapping = {}
     for key, parameter in signature.parameters.items():
+        kwarg_type: T.Any
         if key in kwarg_types:
             # 1. Use explicitly defined type[s]
             kwarg_type = kwarg_types.get(key)
