@@ -73,6 +73,10 @@ branch = "true"
 [tool.isort]
 profile = "black"
 
+[tool.mypy]
+exclude = '(^tests/|build/)'
+ignore_missing_imports = true
+
 [tool.pydocstyle]
 add_ignore = ["D1", "D200", "D205", "D400", "D401"]
 convention = "numpy"
@@ -96,10 +100,6 @@ lint.select = [
   "I",  # isort
   "W"  # pycodestyle warnings
 ]
-
-[tool.mypy]
-exclude = '(^tests/|build/)'
-ignore_missing_imports = true
 
 [tool.setuptools.packages.find]
 include = ["earthkit.utils"]
