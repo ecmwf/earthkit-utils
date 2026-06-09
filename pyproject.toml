@@ -42,6 +42,7 @@ optional-dependencies.docs = [
   "mypy",
   "nbsphinx",
   "numpy",
+  "xarray",
   "ipykernel",
   "furo",
   "nbsphinx",

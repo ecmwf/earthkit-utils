@@ -1,4 +1,4 @@
-Frequently Asked Questions
+Frequently asked questions
 ==========================
 
 How do I convert my xarray units from Celsius to Kelvin?
