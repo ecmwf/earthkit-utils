@@ -81,7 +81,7 @@ extensions = [
 autodoc_inherit_docstrings = True
 autodoc_default_options = {
     "members": True,
-    "imported-members": False,
+    "imported-members": True,
     "undoc-members": False,
     "show-inheritance": False,
 }
@@ -116,7 +116,6 @@ autodocs_hidden_modules = ["version"]
 # clean_autodocs.py feature flags
 # Set to False/None to disable or soften the corresponding processing step.
 autodocs_delete_hidden = True  # delete RST files for private/hidden modules
-autodocs_delete_empty = True   # delete RST files for modules with no docstring and no __all__
 autodocs_replace_automodule = True  # replace automodule directives with autosummary tables
 autodocs_short_display_names = True  # shorten toctree labels to the last module component
 autodocs_top_level_maxdepth = 1  # :maxdepth: on top-level page (None = keep sphinx-apidoc value)
