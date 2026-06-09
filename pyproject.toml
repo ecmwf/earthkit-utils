@@ -40,9 +40,10 @@ optional-dependencies.dev = [
 optional-dependencies.docs = [
   "pre-commit",
   "mypy",
-  "nbsphinx",
   "numpy",
   "xarray",
+  "earthkit-data>=1.0.0rc6",
+  "nbsphinx",
   "ipykernel",
   "furo",
   "nbsphinx",

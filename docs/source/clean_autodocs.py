@@ -31,6 +31,7 @@ MODULE_PREFIX: str = conf.module_prefix  # e.g., 'earthkit.transforms'
 # Feature flags — read from conf.py with backward-compatible defaults
 # ---------------------------------------------------------------------------
 _delete_hidden: bool = getattr(conf, "autodocs_delete_hidden", True)
+_delete_empty: bool = getattr(conf, "autodocs_delete_empty", False)
 _replace_automodule: bool = getattr(conf, "autodocs_replace_automodule", True)
 _short_display_names: bool = getattr(conf, "autodocs_short_display_names", True)
 _top_level_maxdepth: int | None = getattr(conf, "autodocs_top_level_maxdepth", 1)
@@ -88,6 +89,34 @@ def get_short_name(module_name: str) -> str:
     if module_name.startswith(f"{MODULE_PREFIX}."):
         return module_name[len(MODULE_PREFIX) + 1 :]
     return module_name
+
+
+def is_empty_module(module_name: str) -> bool:
+    """Return True if a module has no module docstring and no public API.
+
+    A module is considered empty when both of these are true:
+    - It defines no ``__all__`` (or ``__all__`` is empty after filtering)
+    - It has no module-level docstring
+
+    Such modules produce a page that contains nothing but a heading and are
+    candidates for removal from the API docs.
+
+    Args:
+        module_name: Full module name (e.g., 'earthkit.utils.array.converter.cupy')
+
+    Returns:
+        True if the module would generate an empty documentation page.
+
+    """
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError:
+        return False
+    if module.__doc__:
+        return False
+    if get_module_api(module_name):
+        return False
+    return True
 
 
 def get_module_api(module_name: str) -> list[str]:
@@ -342,7 +371,7 @@ def clean_autodocs() -> None:
     hidden_modules = get_hidden_modules()
     print(f"Hidden modules: {hidden_modules}")
     print(
-        f"Flags: delete_hidden={_delete_hidden}, replace_automodule={_replace_automodule}, "
+        f"Flags: delete_hidden={_delete_hidden}, delete_empty={_delete_empty}, replace_automodule={_replace_automodule}, "
         f"short_display_names={_short_display_names}, top_level_maxdepth={_top_level_maxdepth}, "
         f"rename_titles={_rename_titles}, titlesonly={_titlesonly}"
     )
@@ -350,6 +379,20 @@ def clean_autodocs() -> None:
     if not AUTODOCS_DIR.exists():
         print(f"Autodocs directory not found: {AUTODOCS_DIR}")
         return
+
+    # Detect empty modules and treat them the same as explicitly hidden ones.
+    # This must happen before the main loop so that toctree cleanup can filter
+    # their entries out of parent pages.
+    if _delete_empty:
+        empty_modules = [
+            rst_file.stem
+            for rst_file in AUTODOCS_DIR.glob("*.rst")
+            if not should_hide_module(rst_file.stem, hidden_modules)
+            and is_empty_module(rst_file.stem)
+        ]
+        if empty_modules:
+            print(f"Empty modules (will be deleted): {empty_modules}")
+        hidden_modules = hidden_modules + empty_modules
 
     # Process all RST files
     rst_files = list(AUTODOCS_DIR.glob("*.rst"))
