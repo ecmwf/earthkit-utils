@@ -19,4 +19,3 @@ shared utility components for the EarthKit ecosystem.
   API marking, and thread-safe cached properties.
 - **Constants** (``earthkit.utils.constants``) — numeric conversion factors for
   degrees and radians.
-
