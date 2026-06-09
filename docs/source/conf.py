@@ -26,7 +26,7 @@ rtd_version_type = os.environ.get("READTHEDOCS_VERSION_TYPE", "branch")
 if rtd_version_type in ("branch", "tag"):
     source_branch = rtd_version
 else:
-    source_branch = "develop"
+    source_branch = "main"
 
 src_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))
 sys.path.insert(0, src_path)
@@ -82,7 +82,7 @@ autodoc_inherit_docstrings = True
 autodoc_default_options = {
     "members": True,
     "imported-members": True,
-    "undoc-members": False,
+    "undoc-members": True,
     "show-inheritance": True,
 }
 
