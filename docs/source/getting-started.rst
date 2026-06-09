@@ -19,7 +19,7 @@ A minimal import that confirms the package is available:
 
    import earthkit.utils as eku
 
-   print(eku.__version__)
+   print(eku.constants.radian)  # Example usage of a constant
 
 The library is organised into the ``array``, ``decorators``, and ``units`` subpackages, with additional
 module-level constants under ``earthkit.utils.constants``.
