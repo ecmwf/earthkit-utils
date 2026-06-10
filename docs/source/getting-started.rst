@@ -8,7 +8,7 @@ Install the latest release with pip:
 
 .. code:: bash
 
-   pip install earthkit-utils
+   pip install earthkit-utils>=1.0.0rc0
 
 Import and use
 --------------
