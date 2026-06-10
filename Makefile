@@ -1,4 +1,4 @@
-PROJECT := earthkit-transforms
+PROJECT := earthkit-utils
 COV_REPORT := html
 NBSPHINX_EXECUTE := auto
 
