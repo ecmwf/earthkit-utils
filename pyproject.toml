@@ -44,11 +44,11 @@ optional-dependencies.docs = [
   "xarray",
   "geopandas",
   "earthkit-data>=1.0.0rc6",
-  "nbsphinx",
   "ipykernel",
   "furo",
   "nbsphinx",
   "pygments>=2.6.1",
+  "pyyaml",
   "sphinx>=7.3.7",
   "sphinx-autoapi",
   "sphinx-copybutton",
@@ -56,6 +56,7 @@ optional-dependencies.docs = [
   "sphinx-issues",
   "sphinx-rtd-theme",
   "sphinx-tabs"
+]
 ]
 optional-dependencies.test = [
   "earthkit-data",
