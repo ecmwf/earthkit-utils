@@ -24,8 +24,7 @@ and testing the package. To set up a clean `pip` environment, run the following:
    make clean-pip-env
 
    # Then activate the virtual environment with
-   . venv/bin/activate
-
+   . .venv/bin/activate
 Or if you prefer to use `uv`, then use the following:
 
 ::
