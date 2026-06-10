@@ -32,7 +32,7 @@ Or if you prefer to use `uv`, then use the following:
    make clean-uv-env
 
    # Then activate the virtual environment with
-   uv venv .venv
+   . .venv/bin/activate
 
 Or if you prefer to use `conda`, then use the following:
 
