@@ -60,10 +60,10 @@ With the `ci` extra installed, you can run the CI checks locally with:
 
    make default
 
-If you are interested on one specific aspect of the quality assurance
+If you are interested in one specific aspect of the quality assurance
 tests they can be run independently as:
 
 1. Coding standards test ``make qa``
-2. Unit tests ``make unit-test``
+2. Unit tests ``make unit-tests``
 3. Documentation build ``make docs-build``
 4. Type checking ``make type-check``
