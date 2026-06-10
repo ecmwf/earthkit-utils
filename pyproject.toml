@@ -31,22 +31,35 @@ name = "earthkit-utils"
 readme = "README.md"
 requires-python = ">=3.10"
 optional-dependencies.dev = [
+  "pre-commit",
+  "mypy",
   "numpy",
   "pytest",
   "pytest-cov"
 ]
 optional-dependencies.docs = [
+  "pre-commit",
+  "mypy",
+  "numpy",
+  "xarray",
+  "geopandas",
+  "earthkit-data>=1.0.0rc6",
+  "ipykernel",
+  "furo",
   "nbsphinx",
   "pygments>=2.6.1",
+  "pyyaml",
   "sphinx>=7.3.7",
   "sphinx-autoapi",
   "sphinx-copybutton",
+  "sphinx-design",
   "sphinx-issues",
   "sphinx-rtd-theme",
   "sphinx-tabs"
 ]
 optional-dependencies.test = [
   "earthkit-data",
+  "mypy",
   "pytest",
   "pytest-cov",
   "pytest-reraise",
@@ -62,6 +75,10 @@ branch = "true"
 
 [tool.isort]
 profile = "black"
+
+[tool.mypy]
+exclude = '(^tests/|build/)'
+ignore_missing_imports = true
 
 [tool.pydocstyle]
 add_ignore = ["D1", "D200", "D205", "D400", "D401"]
