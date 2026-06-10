@@ -5,6 +5,9 @@ Version 1.0 Updates
 Version 1.0.0
 =============
 
+.. warning::
+    Please note that this is currently a **Release Candidate** version.
+
 This is the first public release of **earthkit-utils** — a library of small,
 shared utility components for the EarthKit ecosystem.
 
