@@ -45,12 +45,11 @@ Or if you prefer to use `conda`, then use the following:
 
 
 The environment created has the base installation of the package.
-To replicate the environment used in the CI, install the package with the `ci` extra:
+To replicate the environment used in CI, install the package with the relevant extras:
 
 ::
 
-   pip install -e ".[ci]"
-
+   pip install -e ".[dev,test,docs]"
 
 Run the CI checks independently
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
