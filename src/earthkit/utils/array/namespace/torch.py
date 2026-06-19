@@ -59,3 +59,6 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
 
     def deg2rad(self, x):
         return self.xp.deg2rad(x)
+
+    def choice(self, a, size, replace=True):
+        return self.xp.multinomial(a, size, replacement=replace)

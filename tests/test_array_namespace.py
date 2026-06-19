@@ -23,6 +23,15 @@ from earthkit.utils.array.namespace import (
 from earthkit.utils.array.testing.testing import NO_CUPY, NO_JAX, NO_TORCH
 
 
+def _random_choice(xp):
+    random_samples = xp.choice(xp.arange(10, dtype=float), size=5, replace=False)
+    assert random_samples.shape == (5,)
+    assert len(xp.unique(random_samples)) == len(random_samples)
+    random_samples = xp.choice(xp.arange(2, dtype=float), size=5, replace=True)
+    assert random_samples.shape == (5,)
+    assert len(xp.unique(random_samples)) != len(random_samples)
+
+
 def test_array_namespace_numpy():
     xp = array_namespace("numpy")
     assert xp._earthkit_array_namespace_name == "numpy"
@@ -136,6 +145,8 @@ def test_patched_namespace_numpy():
 
     # TODO: test histogramdd and histogram2d
 
+    _random_choice(xp)
+
 
 @pytest.mark.skipif(NO_TORCH, reason="No torch installed")
 def test_patched_namespace_torch():
@@ -169,6 +180,8 @@ def test_patched_namespace_torch():
 
     # TODO: test histogramdd and histogram2d
 
+    _random_choice(xp)
+
 
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
 def test_patched_namespace_cupy():
@@ -201,6 +214,8 @@ def test_patched_namespace_cupy():
     assert xp.allclose(xp.deg2rad(arr), generic_xp.deg2rad(arr))
 
     # TODO: test histogramdd and histogram2d
+
+    _random_choice(xp)
 
 
 @pytest.mark.skipif(NO_JAX, reason="No jax installed")
@@ -236,6 +251,8 @@ def test_patched_namespace_jax():
     assert xp.allclose(xp.deg2rad(arr), generic_xp.deg2rad(arr))
 
     # TODO: test histogramdd and histogram2d
+
+    _random_choice(xp)
 
 
 if __name__ == "__main__":
