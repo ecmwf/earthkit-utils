@@ -23,6 +23,19 @@ from earthkit.utils.array.namespace import (
 from earthkit.utils.array.testing.testing import NO_CUPY, NO_JAX, NO_TORCH
 
 
+def _random_choice(xp, rng1, rng2):
+    random_samples = xp.choice(xp.arange(10, dtype=float), size=5, replace=False)
+    assert random_samples.shape == (5,)
+    assert len(xp.unique(random_samples)) == len(random_samples)
+    random_samples = xp.choice(xp.arange(2, dtype=float), size=5, replace=True)
+    assert random_samples.shape == (5,)
+    assert len(xp.unique(random_samples)) != len(random_samples)
+
+    random_samples1 = xp.choice(xp.arange(10, dtype=float), size=5, replace=False, generator=rng1)
+    random_samples2 = xp.choice(xp.arange(10, dtype=float), size=5, replace=False, generator=rng2)
+    assert xp.allclose(random_samples1, random_samples2)
+
+
 def test_array_namespace_numpy():
     xp = array_namespace("numpy")
     assert xp._earthkit_array_namespace_name == "numpy"
@@ -136,6 +149,8 @@ def test_patched_namespace_numpy():
 
     # TODO: test histogramdd and histogram2d
 
+    _random_choice(xp, rng1=xp.random.default_rng(0), rng2=xp.random.default_rng(0))
+
 
 @pytest.mark.skipif(NO_TORCH, reason="No torch installed")
 def test_patched_namespace_torch():
@@ -169,6 +184,13 @@ def test_patched_namespace_torch():
 
     # TODO: test histogramdd and histogram2d
 
+    g1 = xp.Generator()
+    g1.manual_seed(0)
+    g2 = xp.Generator()
+    g2.manual_seed(0)
+
+    _random_choice(xp, rng1=g1, rng2=g2)
+
 
 @pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
 def test_patched_namespace_cupy():
@@ -201,6 +223,8 @@ def test_patched_namespace_cupy():
     assert xp.allclose(xp.deg2rad(arr), generic_xp.deg2rad(arr))
 
     # TODO: test histogramdd and histogram2d
+
+    _random_choice(xp, rng1=xp.random.default_rng(0), rng2=xp.random.default_rng(0))
 
 
 @pytest.mark.skipif(NO_JAX, reason="No jax installed")
@@ -236,6 +260,10 @@ def test_patched_namespace_jax():
     assert xp.allclose(xp.deg2rad(arr), generic_xp.deg2rad(arr))
 
     # TODO: test histogramdd and histogram2d
+
+    import jax.random
+
+    _random_choice(xp, rng1=jax.random.PRNGKey(0), rng2=jax.random.PRNGKey(0))
 
 
 if __name__ == "__main__":

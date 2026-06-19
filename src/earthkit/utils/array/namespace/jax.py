@@ -35,3 +35,11 @@ class PatchedJaxNamespace(UnknownPatchedNamespace):
 
     def deg2rad(self, x):
         return self.xp.deg2rad(x)
+
+    def choice(self, a, size, replace=True, generator=None):
+        from random import randint
+
+        import jax.random
+
+        generator = jax.random.PRNGKey(randint(0, 10000)) if generator is None else generator
+        return jax.random.choice(generator, a, shape=(size,), replace=replace)
