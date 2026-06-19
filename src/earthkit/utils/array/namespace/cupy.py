@@ -63,6 +63,6 @@ class PatchedCupyNamespace(UnknownPatchedNamespace):
     def deg2rad(self, x):
         return self.xp.deg2rad(x)
 
-    def choice(self, arr, size, replace=True):
-        rng = self.xp.random.default_rng()
-        return rng.choice(arr, size=size, replace=replace)
+    def choice(self, a, size, replace=True, generator=None):
+        rng = self.xp.default_rng() if generator is None else generator
+        return rng.choice(a, size=size, replace=replace)

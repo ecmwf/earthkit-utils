@@ -60,5 +60,9 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
     def deg2rad(self, x):
         return self.xp.deg2rad(x)
 
-    def choice(self, a, size, replace=True):
-        return self.xp.multinomial(a, size, replacement=replace)
+    def choice(self, a, size, replace=True, generator=None):
+        kwargs = {}
+        if not isinstance(a, int):
+            kwargs["device"] = self.device(a)
+        rng = self.xp.Generator(**kwargs) if generator is None else generator
+        return self.xp.multinomial(a, size, replacement=replace, generator=rng)

@@ -53,6 +53,6 @@ class PatchedNumpyNamespace(UnknownPatchedNamespace):
     def deg2rad(self, x):
         return self.xp.deg2rad(x)
 
-    def choice(self, a, size, replace=True):
-        rng = self.xp.random.default_rng()
+    def choice(self, a, size, replace=True, generator=None):
+        rng = self.xp.random.default_rng() if generator is None else generator
         return rng.choice(a, size=size, replace=replace)
