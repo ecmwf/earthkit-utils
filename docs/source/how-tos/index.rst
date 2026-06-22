@@ -1,5 +1,5 @@
 How-tos
-=======
+========
 
 Practical recipes for common tasks with earthkit-utils.
 

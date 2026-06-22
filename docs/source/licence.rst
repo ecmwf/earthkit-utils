@@ -1,5 +1,5 @@
 License
-=======
+========
 
 Copyright 2026 - European Centre for Medium-Range Weather Forecasts (ECMWF).
 
