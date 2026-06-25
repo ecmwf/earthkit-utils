@@ -7,12 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 import datetime
-import json
 import os
 import sys
-import urllib.request
-
-import yaml
 
 on_rtd = os.environ.get("READTHEDOCS") == "True"
 
