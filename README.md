@@ -22,6 +22,22 @@
 
 Utilities for the [earthkit](https://github.com/ecmwf/earthkit) ecosystem.
 
+<p align="center">
+  <!-- <a href="#quick-start">Quick Start</a>
+  • -->
+  <a href="#installation">Installation</a>
+  •
+  <a href="https://earthkit-utils.readthedocs.io">Documentation</a>
+</p>
+
+## Installation
+
+For a default installation, run
+
+```
+pip install earthkit-utils
+```
+
 ## Licence
 
 ```
