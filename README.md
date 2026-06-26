@@ -20,6 +20,9 @@
   </a>
 </p>
 
+> [!IMPORTANT]
+> This software is **Graduated** and subject to ECMWF's guidelines on [Software Maturity](https://github.com/ecmwf/codex/raw/refs/heads/main/Project%20Maturity).
+
 Utilities for the [earthkit](https://github.com/ecmwf/earthkit) ecosystem.
 
 ## Licence
