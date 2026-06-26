@@ -43,7 +43,7 @@ optional-dependencies.docs = [
   "numpy",
   "xarray",
   "geopandas",
-  "earthkit-data>=1",
+  "earthkit-data",
   "ipykernel",
   "furo",
   "nbsphinx",
