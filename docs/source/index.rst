@@ -1,7 +1,7 @@
 Earthkit-utils documentation
 ============================
 
-**earthkit-utils** provides shared helpers for the EarthKit ecosystem,
+**earthkit-utils** provides shared helpers for the Earthkit ecosystem,
 including array namespace detection, unit conversion, and decorator utilities.
 
 .. .. grid:: 1
