@@ -10,7 +10,7 @@
     <img src="https://github.com/ecmwf/codex/raw/refs/heads/main/ESEE/foundation_badge.svg" alt="ECMWF Software EnginE">
   </a>
   <a href="https://github.com/ecmwf/codex/raw/refs/heads/main/Project Maturity">
-    <img src="https://github.com/ecmwf/codex/raw/refs/heads/main/Project Maturity/emerging_badge.svg" alt="Maturity Level">
+    <img src="https://github.com/ecmwf/codex/raw/refs/heads/main/Project Maturity/graduated_badge.svg" alt="Maturity Level">
   </a>
   <a href="https://opensource.org/licenses/apache-2-0">
     <img src="https://img.shields.io/badge/Licence-Apache 2.0-blue.svg" alt="Licence">
@@ -19,9 +19,6 @@
     <img src="https://img.shields.io/github/v/release/ecmwf/earthkit-utils?color=purple&label=Release" alt="Latest Release">
   </a>
 </p>
-
-> [!IMPORTANT]
-> This software is **Emerging** and subject to ECMWF's guidelines on [Software Maturity](https://github.com/ecmwf/codex/raw/refs/heads/main/Project%20Maturity).
 
 Utilities for the [earthkit](https://github.com/ecmwf/earthkit) ecosystem.
 
