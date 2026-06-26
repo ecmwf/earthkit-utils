@@ -1,4 +1,4 @@
-Earthkit-utils documentation
+earthkit-utils documentation
 ============================
 
 **earthkit-utils** provides shared helpers for the Earthkit ecosystem,
