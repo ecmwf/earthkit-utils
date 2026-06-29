@@ -6,13 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from earthkit.utils.array.namespace.unknown import UnknownPatchedNamespace
 from earthkit.utils.decorators import thread_safe_cached_property
-
-from .unknown import UnknownPatchedNamespace
 
 
 class PatchedCupyNamespace(UnknownPatchedNamespace):
-
     def __init__(self):
         super().__init__(None)
 
@@ -64,3 +62,7 @@ class PatchedCupyNamespace(UnknownPatchedNamespace):
 
     def deg2rad(self, x):
         return self.xp.deg2rad(x)
+
+    def choice(self, a, size, replace=True, generator=None):
+        rng = self.xp.default_rng() if generator is None else generator
+        return rng.choice(a, size=size, replace=replace)

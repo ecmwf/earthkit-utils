@@ -10,8 +10,7 @@ import warnings
 
 import pytest
 
-from earthkit.utils.decorators import ExperimentalWarning
-from earthkit.utils.decorators import experimental
+from earthkit.utils.decorators import ExperimentalWarning, experimental
 
 _DEFAULT_MESSAGE = "**Experimental API**: may change or be removed without notice."
 
@@ -72,9 +71,9 @@ def test_custom_message():
     ],
 )
 def test_warning_block_indentation(msg):
-    """
-    Every content line under .. warning:: must be indented
-    per docutils spec, unindented lines terminate the directive block.
+    """Every content line under .. warning:: must be indented per docutils spec.
+
+    Unindented lines terminate the directive block.
     """
 
     @experimental(msg=msg)

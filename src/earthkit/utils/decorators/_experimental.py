@@ -83,6 +83,7 @@ def experimental(
     ... def compute():
     ...     return 42
     ...
+
     """
     # Every line of msg must be indented under the directive or reST silently drops it.
     indented = "\n".join("   " + line for line in msg.splitlines())

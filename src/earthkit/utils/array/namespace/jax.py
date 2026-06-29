@@ -6,13 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from earthkit.utils.array.namespace.unknown import UnknownPatchedNamespace
 from earthkit.utils.decorators import thread_safe_cached_property
-
-from .unknown import UnknownPatchedNamespace
 
 
 class PatchedJaxNamespace(UnknownPatchedNamespace):
-
     def __init__(self):
         super().__init__(None)
 
@@ -37,3 +35,11 @@ class PatchedJaxNamespace(UnknownPatchedNamespace):
 
     def deg2rad(self, x):
         return self.xp.deg2rad(x)
+
+    def choice(self, a, size, replace=True, generator=None):
+        from random import randint
+
+        import jax.random
+
+        generator = jax.random.PRNGKey(randint(0, 10000)) if generator is None else generator
+        return jax.random.choice(generator, a, shape=(size,), replace=replace)

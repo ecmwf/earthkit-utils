@@ -4,6 +4,9 @@ _version.py
 
 # Sphinx automatic generation of API
 docs/_api/
+docs/source/autodocs/
+
+ci/combined-environment-*.yml
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks,vim,visualstudiocode,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,jupyternotebooks,vim,visualstudiocode,pycharm
@@ -373,3 +376,7 @@ test.db
 
 # Combined environments
 ci/combined-environment-*.yml
+
+
+.python-version
+autodocs/

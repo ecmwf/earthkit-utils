@@ -3,4 +3,4 @@ build:
   parallel: 1
   queue: ng
   gpus: 1
-  requirements: tests/downstream-ci-requirements.txt
+  toml_opt_dep_sections: all,tests,ci

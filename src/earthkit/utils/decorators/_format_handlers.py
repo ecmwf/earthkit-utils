@@ -60,6 +60,7 @@ def format_handler(
     -------
     Callable
         Wrapped function.
+
     """
     if convert_types is None:
         convert_types = {}
@@ -87,9 +88,7 @@ def format_handler(
                     _convert_types = {key: _convert_types for key in convert_kwargs}
 
                 convert_kwargs = [
-                    k
-                    for k in convert_kwargs
-                    if isinstance(kwargs[k], _ensure_tuple(_convert_types.get(k, ())))
+                    k for k in convert_kwargs if isinstance(kwargs[k], _ensure_tuple(_convert_types.get(k, ())))
                 ]
 
             # Transform args/kwargs
@@ -156,6 +155,7 @@ def signature_mapping(signature: inspect.Signature, kwarg_types: dict[str, str])
     """
     mapping = {}
     for key, parameter in signature.parameters.items():
+        kwarg_type: T.Any
         if key in kwarg_types:
             # 1. Use explicitly defined type[s]
             kwarg_type = kwarg_types.get(key)

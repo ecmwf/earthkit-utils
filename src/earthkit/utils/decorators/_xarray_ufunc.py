@@ -11,8 +11,7 @@ from __future__ import annotations
 
 def _infer_output_count(func) -> int:
     import inspect
-    from typing import get_args
-    from typing import get_origin
+    from typing import get_args, get_origin
 
     try:
         annotation = inspect.signature(func).return_annotation

@@ -6,11 +6,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from .unknown import FromUnknownConverter
+from earthkit.utils.array.converter.unknown import FromUnknownConverter
 
 
 class FromCupyConverter(FromUnknownConverter):
-
     def __init__(self, xp_target):
         super().__init__(xp_target)
 
