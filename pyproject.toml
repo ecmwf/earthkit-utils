@@ -6,7 +6,7 @@ authors = [
   {name = "European Centre for Medium-Range Weather Forecasts (ECMWF)", email = "software.support@ecmwf.int"}
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
@@ -43,7 +43,7 @@ optional-dependencies.docs = [
   "numpy",
   "xarray",
   "geopandas",
-  "earthkit-data>=1.0.0rc6",
+  "earthkit-data~=1.0",
   "ipykernel",
   "furo",
   "nbsphinx",

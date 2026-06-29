@@ -1,13 +1,7 @@
-Earthkit-utils documentation
+earthkit-utils documentation
 ============================
 
-.. important::
-
-   This software is in **release candidate** stage. It is not yet considered stable and may still undergo
-   significant changes before the final 1.0 release. We welcome feedback and contributions as we approach
-   that milestone.
-
-**earthkit-utils** provides shared helpers for the EarthKit ecosystem,
+**earthkit-utils** provides shared helpers for the Earthkit ecosystem,
 including array namespace detection, unit conversion, and decorator utilities.
 
 .. .. grid:: 1
