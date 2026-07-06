@@ -3,4 +3,4 @@ build:
   parallel: 1
   queue: ng
   gpus: 1
-  toml_opt_dep_sections: all,tests,ci
+  toml_opt_dep_sections: tests,dev,gpu
