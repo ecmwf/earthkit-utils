@@ -1,8 +1,11 @@
-from ._params import FIELD_PARAMS
 from itertools import repeat
 
-def field_ufunc(func, *args, **kwargs):
-    """Apply a function to the values of earthkit.data Field or FieldList objects.
+from earthkit.utils.parameters import FIELD_PARAMS
+
+
+def _field_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
+    """
+    Apply a function to the values of earthkit.data Field or FieldList objects.
 
     Parameters
     ----------
@@ -10,37 +13,35 @@ def field_ufunc(func, *args, **kwargs):
         The function to apply to the values of the Field or FieldList objects.
     *args: tuple
         The Field or FieldList objects to which the function will be applied.
+    fieldlist_ufunc_kwargs: dict, optional
+        A dictionary of keyword arguments to pass to the function when applied to FieldList objects.
+        This can include 'variables', 'param_ids', 'default_variable'
+
+        - 'variables': dict, optional
+            A mapping of input field parameter.variable values to output parameter variable
+            names. The output parameters names must be  defined in FIELD_PARAMS.
+        - 'param_ids': dict, optional
+            A mapping of input metadata.paramId values to output parameter variable names.
+            The output parameters names must be defined in FIELD_PARAMS.
+        - 'default_variable': str, optional
+            The default parameter variable name to use if no mapping is found in
+            'variables' or 'param_ids'. This must be defined in FIELD_PARAMS.
+
+        The algorithm for determining the output parameter variable name is as follows:
+        1. If 'variables' is provided, check if the first input field's parameter.variable
+            is in the mapping. If so, use the corresponding output variable name.
+        2. If 'param_ids' is provided, check if the first input field's metadata.paramId
+            is in the mapping. If so, use the corresponding output variable name.
+        3. If neither mapping yields a result, use 'default_variable' if provided.
+        4. If no output parameter variable name can be determined, raise a ValueError.
+
+        Once the output parameter variable name is determined, the corresponding metadata
+        (parameter.variable and parameter.units) will be looked up in FIELD_PARAMS and set
+        on the resulting Field.
     **kwargs: dict
-        Additional keyword arguments to pass to the function. The following special keyword arguments are recognized:
-        - fieldlist_ufunc_kwargs: dict, optional
-            A dictionary of keyword arguments to pass to the function when applied to FieldList objects.
-            This can include 'variables', 'param_ids', 'default_variable'
-
-            - 'variables': dict, optional
-                A mapping of input field parameter.variable values to output parameter variable
-                names. The output parameters names must be  defined in FIELD_PARAMS.
-            - 'param_ids': dict, optional
-                A mapping of input metadata.paramId values to output parameter variable names.
-                The output parameters names must be defined in FIELD_PARAMS.
-            - 'default_variable': str, optional
-                The default parameter variable name to use if no mapping is found in
-                'variables' or 'param_ids'. This must be defined in FIELD_PARAMS.
-
-            The algorithm for determining the output parameter variable name is as follows:
-            1. If 'variables' is provided, check if the first input field's parameter.variable
-                is in the mapping. If so, use the corresponding output variable name.
-            2. If 'param_ids' is provided, check if the first input field's metadata.paramId
-                is in the mapping. If so, use the corresponding output variable name.
-            3. If neither mapping yields a result, use 'default_variable' if provided.
-            4. If no output parameter variable name can be determined, raise a ValueError.
-
-            Once the output parameter variable name is determined, the corresponding metadata
-            (parameter.variable and parameter.units) will be looked up in FIELD_PARAMS and set
-            on the resulting Field.
+        Additional keyword arguments to pass to the function.
     """
     import earthkit.data as ekd
-
-    fieldlist_ufunc_kwargs = kwargs.pop("fieldlist_ufunc_kwargs", None) or {}
 
     fields = args
     field = fields[0]
@@ -82,12 +83,12 @@ def field_ufunc(func, *args, **kwargs):
     return result
 
 
-def fieldlist_ufunc(func, *args, **kwargs):
+def fieldlist_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
     import earthkit.data as ekd
 
     if args:
         if isinstance(args[0], ekd.Field):
-            return field_ufunc(func, *args, **kwargs)
+            return _field_ufunc(func, *args, fieldlist_ufunc_kwargs, **kwargs)
         elif not (isinstance(args[0], ekd.FieldList)):
             raise TypeError(
                 "fieldlist_ufunc arguments must be Field or FieldList instances. Found unsupported type: "
@@ -104,9 +105,10 @@ def fieldlist_ufunc(func, *args, **kwargs):
     result = []
     for fields in zip(*safe_args):
         result.append(
-            field_ufunc(
+            _field_ufunc(
                 func,
                 *fields,
+                fieldlist_ufunc_kwargs,
                 **kwargs,
             )
         )
