@@ -88,7 +88,7 @@ def fieldlist_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
 
     if args:
         if isinstance(args[0], ekd.Field):
-            return _field_ufunc(func, *args, fieldlist_ufunc_kwargs, **kwargs)
+            return _field_ufunc(func, *args, fieldlist_ufunc_kwargs=fieldlist_ufunc_kwargs, **kwargs)
         elif not (isinstance(args[0], ekd.FieldList)):
             raise TypeError(
                 "fieldlist_ufunc arguments must be Field or FieldList instances. Found unsupported type: "
@@ -108,7 +108,7 @@ def fieldlist_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
             _field_ufunc(
                 func,
                 *fields,
-                fieldlist_ufunc_kwargs,
+                fieldlist_ufunc_kwargs=fieldlist_ufunc_kwargs,
                 **kwargs,
             )
         )
