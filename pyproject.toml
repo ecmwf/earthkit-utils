@@ -61,7 +61,7 @@ optional-dependencies.docs = [
 optional-dependencies.test = [
   "earthkit-data",
   "mypy",
-  "pytest",
+  "pytest>=8",
   "pytest-cov",
   "pytest-reraise",
   "xarray"
