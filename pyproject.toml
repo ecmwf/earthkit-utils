@@ -33,14 +33,14 @@ readme = "README.md"
 requires-python = ">=3.10"
 optional-dependencies.dev = [
   "pre-commit>=3",
-  "mypy",
+  "mypy>=1.18",
   "numpy>=1.24",
   "pytest",
   "pytest-cov"
 ]
 optional-dependencies.docs = [
   "pre-commit",
-  "mypy",
+  "mypy>=1.18",
   "numpy>=1.24",
   "xarray",
   "geopandas",
@@ -60,7 +60,7 @@ optional-dependencies.docs = [
 ]
 optional-dependencies.test = [
   "earthkit-data",
-  "mypy",
+  "mypy>=1.18",
   "pytest>=8",
   "pytest-cov",
   "pytest-reraise",
