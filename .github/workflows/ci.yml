@@ -21,13 +21,8 @@ jobs:
       with:
         python-version: "3.10"
 
-    - name: Create virtual environment
-      run: uv venv
+    - run: uv venv .venv --python 3.10
 
-    - name: Install the project
-      run: uv pip install .[test] --resolution lowest-direct
+    - run: uv pip install --python .venv/bin/python ".[test]" --resolution lowest-direct
 
-    - name: Run tests
-      run: |
-        source .venv/bin/activate
-        pytest tests
+    - run: .venv/bin/python -m pytest tests
