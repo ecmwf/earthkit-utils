@@ -20,7 +20,7 @@ classifiers = [
   "Topic :: Scientific/Engineering"
 ]
 dependencies = [
-  "array-api-compat>=1.6",
+  "array-api-compat>=1.12",
   "pint>=0.24",
   "numpy>=1.24"
 ]
