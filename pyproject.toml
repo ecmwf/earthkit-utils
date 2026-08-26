@@ -59,7 +59,7 @@ optional-dependencies.docs = [
   "sphinx-tabs"
 ]
 optional-dependencies.test = [
-  "earthkit-data",
+  "earthkit-data~=1.0",
   "mypy>=1.18",
   "pytest>=8",
   "pytest-cov>=6",
