@@ -42,7 +42,7 @@ optional-dependencies.docs = [
   "pre-commit",
   "mypy>=1.18",
   "numpy>=1.24",
-  "xarray",
+  "xarray>=0.21.0",
   "geopandas",
   "earthkit-data~=1.0",
   "ipykernel",
