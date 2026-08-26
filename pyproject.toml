@@ -21,7 +21,8 @@ classifiers = [
 ]
 dependencies = [
   "array-api-compat",
-  "pint"
+  "pint",
+  "numpy>=1.24"
 ]
 description = "Utilities for the Earthkit ecosystem"
 dynamic = ["version"]
@@ -33,14 +34,14 @@ requires-python = ">=3.10"
 optional-dependencies.dev = [
   "pre-commit",
   "mypy",
-  "numpy",
+  "numpy>=1.24",
   "pytest",
   "pytest-cov"
 ]
 optional-dependencies.docs = [
   "pre-commit",
   "mypy",
-  "numpy",
+  "numpy>=1.24",
   "xarray",
   "geopandas",
   "earthkit-data~=1.0",
