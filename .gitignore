@@ -380,4 +380,3 @@ ci/combined-environment-*.yml
 
 .python-version
 autodocs/
-.goals
