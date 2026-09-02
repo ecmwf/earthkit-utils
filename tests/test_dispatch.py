@@ -10,6 +10,7 @@ import sys
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 from earthkit.data import SimpleFieldList
@@ -19,8 +20,10 @@ from earthkit.utils.decorators._dispatch import (
     ArrayDispatcher,
     ArrayLikeDispatcher,
     FieldListDispatcher,
+    PandasDispatcher,
     XArrayDispatcher,
     _is_fieldlist,
+    _is_pandas,
     _is_xarray,
     dispatch,
     is_array_like,
@@ -32,6 +35,8 @@ TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])
 TEST_XARRAY_DATAARRAY = xr.DataArray(TEST_NUMPY_ARRAY, name="test", dims=["x"], coords={"x": [0, 1, 2, 3, 4]})
 TEST_XARRAY_DATASET = xr.Dataset({"test": TEST_XARRAY_DATAARRAY})
 TEST_FIELDLIST = SimpleFieldList(TEST_NUMPY_ARRAY)
+TEST_PANDAS_SERIES = pd.Series(TEST_NUMPY_ARRAY, index=list("abcde"))
+TEST_PANDAS_DATAFRAME = TEST_PANDAS_SERIES.to_frame(name="test")
 
 
 class TestIsModuleLoaded:
@@ -50,6 +55,7 @@ class TestIsModuleLoaded:
         """Test module that may or may not be loaded."""
         # xarray should be loaded from our imports
         assert is_module_loaded("xarray")
+        assert is_module_loaded("pandas")
 
 
 class TestIsXarray:
@@ -100,6 +106,32 @@ class TestIsFieldlist:
         assert not _is_fieldlist("string")
         assert not _is_fieldlist(42)
         assert not _is_fieldlist(None)
+
+
+class TestIsPandas:
+    """Test the _is_pandas helper function."""
+
+    def test_series(self):
+        """Test that a pandas.Series is identified as pandas."""
+        assert _is_pandas(TEST_PANDAS_SERIES)
+
+    def test_dataframe(self):
+        """Test that a pandas.DataFrame is identified as pandas."""
+        assert _is_pandas(TEST_PANDAS_DATAFRAME)
+
+    def test_not_pandas_when_module_not_loaded(self):
+        """Test that object is not identified as pandas when pandas is not loaded."""
+        with patch.object(sys, "modules", {"sys": sys.modules["sys"]}):
+            assert not _is_pandas(TEST_PANDAS_DATAFRAME)
+
+    def test_not_pandas_with_other_types(self):
+        """Test that non-pandas objects are not identified as pandas objects."""
+        assert not _is_pandas([1, 2, 3])
+        assert not _is_pandas("string")
+        assert not _is_pandas(42)
+        assert not _is_pandas(TEST_NUMPY_ARRAY)
+        assert not _is_pandas(TEST_XARRAY_DATAARRAY)
+        assert not _is_pandas(TEST_FIELDLIST)
 
 
 class TestXArrayDispatcher:
@@ -168,6 +200,45 @@ class TestFieldListDispatcher:
             result = dispatcher.dispatch("test_func", "dummy.module", 1, 2, key="value")
 
         assert result == "fieldlist_result"
+        mock_module.test_func.assert_called_once_with(1, 2, key="value")
+
+
+class TestPandasDispatcher:
+    """Test the PandasDispatcher class."""
+
+    def test_match_with_series(self):
+        """Test that PandasDispatcher matches pandas Series."""
+        dispatcher = PandasDispatcher()
+        assert dispatcher.match(TEST_PANDAS_SERIES)
+
+    def test_match_with_dataframe(self):
+        """Test that PandasDispatcher matches pandas DataFrame."""
+        dispatcher = PandasDispatcher()
+        assert dispatcher.match(TEST_PANDAS_DATAFRAME)
+
+    def test_no_match_with_numpy(self):
+        """Test that PandasDispatcher does not match numpy arrays."""
+        dispatcher = PandasDispatcher()
+        assert not dispatcher.match(TEST_NUMPY_ARRAY)
+
+    def test_no_match_with_other_types(self):
+        """Test that PandasDispatcher does not match other types."""
+        dispatcher = PandasDispatcher()
+        assert not dispatcher.match([1, 2, 3])
+        assert not dispatcher.match("string")
+
+    def test_dispatch(self):
+        """Test the dispatch method of PandasDispatcher."""
+        dispatcher = PandasDispatcher()
+
+        # Create a mock module with a test function
+        mock_module = MagicMock()
+        mock_module.test_func = MagicMock(return_value="pandas_result")
+
+        with patch.object(dispatch_module, "import_module", return_value=mock_module):
+            result = dispatcher.dispatch("test_func", "dummy.module", 1, 2, key="value")
+
+        assert result == "pandas_result"
         mock_module.test_func.assert_called_once_with(1, 2, key="value")
 
 
@@ -395,6 +466,46 @@ class TestDispatchWrapper:
             result = process_data(TEST_NUMPY_ARRAY)
             assert result == "array_implementation"
 
+    def test_dispatch_with_pandas_series(self):
+        """Test dispatch wrapper with pandas Series input using default match index."""
+
+        def process_data(data):
+            dispatched = dispatch(process_data)
+            return dispatched(data)
+
+        mock_pandas_module = MagicMock()
+        mock_pandas_module.process_data = MagicMock(return_value="pandas_implementation")
+
+        with patch.object(dispatch_module, "import_module", return_value=mock_pandas_module):
+            result = process_data(TEST_PANDAS_SERIES)
+
+        assert result == "pandas_implementation"
+
+    def test_dispatch_with_pandas_dataframe(self):
+        """Test dispatch wrapper with pandas DataFrame input using default match index."""
+
+        def process_data(data):
+            dispatched = dispatch(process_data)
+            return dispatched(data)
+
+        mock_pandas_module = MagicMock()
+        mock_pandas_module.process_data = MagicMock(return_value="pandas_implementation")
+
+        with patch.object(dispatch_module, "import_module", return_value=mock_pandas_module):
+            result = process_data(TEST_PANDAS_DATAFRAME)
+
+        assert result == "pandas_implementation"
+
+    def test_dispatch_with_pandas_disabled(self):
+        """Test that a pandas Series raises TypeError when pandas dispatching is disabled."""
+
+        def process_data(data):
+            dispatched = dispatch(process_data, xarray=False, fieldlist=False, array=False, pandas=False)
+            return dispatched(data)
+
+        with pytest.raises(TypeError, match="No dispatcher matched for function"):
+            process_data(TEST_PANDAS_SERIES)
+
     def test_dispatch_with_named_parameter(self):
         """Test dispatch wrapper with named parameter match."""
 
@@ -556,6 +667,23 @@ class TestDispatchIntegration:
             result = process(TEST_XARRAY_DATAARRAY)
 
         assert result == "xarray"
+
+    def test_pandas_dispatched_over_array_like(self):
+        """Test that pandas objects are routed to pandas even when array_like is enabled."""
+
+        def process(data):
+            dispatched = dispatch(process, pandas=True, array_like=True)
+            return dispatched(data)
+
+        mock_pandas_module = MagicMock()
+        mock_pandas_module.process = MagicMock(return_value="pandas")
+
+        with patch.object(dispatch_module, "import_module", return_value=mock_pandas_module):
+            series_result = process(TEST_PANDAS_SERIES)
+            dataframe_result = process(TEST_PANDAS_DATAFRAME)
+
+        assert series_result == "pandas"
+        assert dataframe_result == "pandas"
 
     def test_decorator_preserves_function_metadata(self):
         """Test that dispatch wrapper preserves function metadata."""

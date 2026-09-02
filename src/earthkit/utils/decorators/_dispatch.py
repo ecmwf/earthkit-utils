@@ -18,6 +18,7 @@ from inspect import signature
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    import pandas as pd  # noqa: F401
     import xarray as xr  # noqa: F401
     from earthkit.data import FieldList  # noqa: F401
 
@@ -52,6 +53,18 @@ def _is_fieldlist(obj: Any) -> bool:
         return False
 
     return isinstance(obj, FieldList)
+
+
+def _is_pandas(obj: Any) -> bool:
+    if not is_module_loaded("pandas"):
+        return False
+
+    try:
+        import pandas as pd
+    except ImportError:
+        return False
+
+    return isinstance(obj, (pd.Series, pd.DataFrame))
 
 
 def _is_array(obj: Any) -> bool:
@@ -109,6 +122,16 @@ class FieldListDispatcher(DataDispatcher):
         return getattr(module, func)(*args, **kwargs)
 
 
+class PandasDispatcher(DataDispatcher):
+    @staticmethod
+    def match(obj: Any) -> bool:
+        return _is_pandas(obj)
+
+    def dispatch(self, func, module, *args, **kwargs):
+        module = import_module(module + ".pandas")
+        return getattr(module, func)(*args, **kwargs)
+
+
 class ArrayDispatcher(DataDispatcher):
     @staticmethod
     def match(obj: Any) -> bool:
@@ -128,8 +151,10 @@ class ArrayLikeDispatcher(ArrayDispatcher):
 def dispatch(
     func: Callable,
     match: int | str = 0,
+    *,
     xarray: bool = True,
     fieldlist: bool = True,
+    pandas: bool = True,
     array: bool = True,
     array_like: bool = False,
 ):
@@ -138,13 +163,13 @@ def dispatch(
     The dispatch will attempt to route the call to the appropriate
     implementation based on the type of the specified argument.
     The implementations are assumed to live in submodules named after the data
-    type (e.g., .xarray, .fieldlist, .array) with the same function name as
-    the toplevel function.
+    type (e.g., .xarray, .fieldlist, .pandas, .array) with the same function
+    name as the toplevel function.
 
     This wrapper should be applied inline as:
 
         def func(...):
-            return dispatch(func, match=..., xarray=..., fieldlist=..., array=..., array_like=...)(...)
+            return dispatch(func, match=..., xarray=..., fieldlist=..., pandas=..., array=..., array_like=...)(...)
 
     Parameters
     ----------
@@ -156,6 +181,8 @@ def dispatch(
         Whether to include the xarray dispatcher. Default is True.
     fieldlist: bool
         Whether to include the FieldList dispatcher. Default is True.
+    pandas: bool
+        Whether to include the pandas dispatcher. Default is True.
     array: bool
         Whether to include the array dispatcher. Default is True.
     array_like: bool
@@ -174,6 +201,8 @@ def dispatch(
             DISPATCHERS.append(XArrayDispatcher())
         if fieldlist:
             DISPATCHERS.append(FieldListDispatcher())
+        if pandas:
+            DISPATCHERS.append(PandasDispatcher())
         if array:
             DISPATCHERS.append(ArrayDispatcher())
         if array_like:
