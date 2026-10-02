@@ -562,3 +562,94 @@ class TestUnitTypes:
             source_units=Units.from_any("m"),
         )
         np.testing.assert_allclose(result, [1.0])
+
+
+# ---- errors="raise" ----
+
+
+class TestErrorsRaise:
+    @pytest.mark.parametrize("func", [convert_array, convert_dataarray, convert_dataset, convert_units])
+    def test_invalid_errors_value(self, func):
+        data = {
+            convert_dataarray: xr.DataArray([1.0], attrs={"units": "m"}),
+            convert_dataset: xr.Dataset({"dist": xr.DataArray([1.0], attrs={"units": "m"})}),
+        }.get(func, np.array([1.0]))
+        with pytest.raises(ValueError, match="errors must be"):
+            func(data, target_units="km", source_units="m", errors="bogus")
+
+    def test_array_converts(self):
+        data = np.array([0.0, 10.0])
+        result = convert_array(data, target_units="K", source_units="degC", errors="raise")
+        np.testing.assert_allclose(result, [273.15, 283.15])
+
+    @pytest.mark.parametrize(
+        "target_units, source_units, match",
+        [
+            ("kelvin", "m", "incompatible"),
+            ("m", "foobar", "unrecognised"),
+            ("foobar", "m", "unrecognised"),
+            ("m", None, "must both be provided"),
+            (None, "m", "must both be provided"),
+            ({"x": "km"}, "m", "dictionaries are not supported"),
+        ],
+    )
+    def test_array_raises(self, target_units, source_units, match):
+        with pytest.raises(ValueError, match=match):
+            convert_array(np.array([1.0]), target_units=target_units, source_units=source_units, errors="raise")
+
+    def test_dataarray_raises_incompatible(self):
+        da = xr.DataArray([1.0], attrs={"units": "m"})
+        with pytest.raises(ValueError, match="incompatible"):
+            convert_dataarray(da, target_units="kelvin", errors="raise")
+
+    def test_dataarray_raises_no_source_units(self):
+        da = xr.DataArray([1.0], name="dist")
+        with pytest.raises(ValueError, match="No source units"):
+            convert_dataarray(da, target_units="km", errors="raise")
+
+    def test_dataarray_raises_name_not_in_target_dict(self):
+        da = xr.DataArray([1.0], name="dist", attrs={"units": "m"})
+        with pytest.raises(ValueError, match="No target units"):
+            convert_dataarray(da, target_units={"other": "km"}, errors="raise")
+
+    @pytest.fixture
+    def ds(self):
+        return xr.Dataset({
+            "dist": xr.DataArray([1000.0], attrs={"units": "m"}),
+            "temp": xr.DataArray([273.15], attrs={"units": "K"}),
+            "flag": xr.DataArray([1.0]),
+        })
+
+    def test_dataset_dict_converts_only_requested(self, ds):
+        # "temp" is not in the dict, so it is not requested and does not raise
+        result = convert_dataset(ds, target_units={"dist": "km"}, errors="raise")
+        np.testing.assert_allclose(result["dist"].values, [1.0])
+        np.testing.assert_allclose(result["temp"].values, [273.15])
+
+    @pytest.mark.parametrize(
+        "target_units, match",
+        [
+            ({"dist": "km", "nonexistent": "degC"}, "not in the Dataset"),
+            ({"dist": "kelvin"}, "Cannot convert variable 'dist'"),
+            ({"flag": "km"}, "No source units found for variable 'flag'"),
+            (None, "target_units must be provided"),
+        ],
+    )
+    def test_dataset_raises(self, ds, target_units, match):
+        with pytest.raises(ValueError, match=match):
+            convert_dataset(ds, target_units=target_units, errors="raise")
+
+    def test_dataset_all_variables_requested(self, ds):
+        # without a dict or a source_units filter, every variable must be convertible
+        with pytest.raises(ValueError, match="Cannot convert variable 'temp'"):
+            convert_dataset(ds.drop_vars("flag"), target_units="km", errors="raise")
+
+    def test_dataset_source_filter_selects_requested(self, ds):
+        # only the variables matching source_units are requested
+        result = convert_dataset(ds, target_units="km", source_units="m", errors="raise")
+        np.testing.assert_allclose(result["dist"].values, [1.0])
+        np.testing.assert_allclose(result["temp"].values, [273.15])
+
+    def test_convert_units_passes_errors(self):
+        with pytest.raises(ValueError, match="incompatible"):
+            convert_units(np.array([1.0]), target_units="kelvin", source_units="m", errors="raise")
