@@ -1,4 +1,4 @@
-# (C) Copyright 2026 ECMWF.
+# (C) Copyright 2025 ECMWF.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,24 +8,18 @@
 
 """The ``earthkit`` command line interface.
 
-``earthkit`` is a single :mod:`click` entry point shared by the whole earthkit ecosystem. Any installed
-earthkit package can contribute commands to it by declaring them in the ``earthkit.cli`` entry point
-group of its ``pyproject.toml``::
+``earthkit`` is a single :mod:`click` group shared by the whole earthkit ecosystem. Each package listed in
+:data:`EARTHKIT_PACKAGES` can contribute commands by defining a ``COMMANDS`` mapping of command name to
+:class:`click.Command` in its ``earthkit.<package>.cli`` module::
 
-    [project.entry-points."earthkit.cli"]
-    ls = "earthkit.data.cli:ls"
+    # earthkit/data/cli.py
+    COMMANDS = {"ls": ls}
 
-The entry point name (``ls`` above) becomes the sub-command name, so the example is invoked as
-``earthkit ls <file>``. The entry point value must resolve to a :class:`click.Command`. A
-:class:`click.Group` is also a command, so a package can register a whole group of nested commands under a
-single name (e.g. ``earthkit data ls <file>``).
+which makes ``earthkit ls <file>`` available once earthkit-data is installed. Packages that are not
+installed, or have no ``cli`` module, are skipped. Importing ``earthkit.<package>.cli`` also imports the
+package itself, so heavy imports should live inside the command functions.
 
-Commands are discovered from the installed distributions and loaded on demand: ``earthkit ls`` imports
-only the ``ls`` command, while ``earthkit --help`` imports every registered command to show its help text.
-Packages should therefore keep heavy imports inside their command functions. A command that fails to
-import is still listed, with a warning, so that one broken package does not take down the whole CLI.
-
-Commands can also be attached directly to the :data:`earthkit` group in the usual click way::
+Commands can also be attached directly to the :data:`earthkit` group::
 
     from earthkit.utils.cli import earthkit
 
@@ -33,14 +27,13 @@ Commands can also be attached directly to the :data:`earthkit` group in the usua
     def hello():
         click.echo("hello")
 
-but this only takes effect once the defining module has been imported, which is why packages should
-prefer the entry point mechanism.
+but this only takes effect once the defining module has been imported.
 """
 
 from __future__ import annotations
 
+import importlib
 import warnings
-from collections import defaultdict
 from importlib import metadata
 from typing import Any, Iterable
 
@@ -48,141 +41,85 @@ import click
 
 from earthkit.utils import __version__
 
-__all__ = [
-    "ENTRY_POINT_GROUP",
-    "BrokenCommand",
-    "EarthkitCLI",
-    "discover_commands",
-    "earthkit",
-    "installed_earthkit_packages",
-    "main",
-]
+__all__ = ["EARTHKIT_PACKAGES", "EarthkitCLI", "discover_commands", "earthkit", "load_commands", "main"]
 
-#: Entry point group that earthkit packages use to register commands.
-ENTRY_POINT_GROUP = "earthkit.cli"
+#: The earthkit packages checked for CLI commands, in search order. Each is looked up as
+#: ``earthkit.<package>.cli`` and is expected to define a ``COMMANDS`` mapping.
+EARTHKIT_PACKAGES: tuple[str, ...] = (
+    "data",
+    "geo",
+    "hydro",
+    "meteo",
+    "plots",
+    "time",
+    "climate",
+    "transforms",
+    "workflows",
+)
 
-#: Prefix identifying earthkit distributions on PyPI (``earthkit-data``, ``earthkit-plots``, ...).
-_DISTRIBUTION_PREFIX = "earthkit"
 
-
-def installed_earthkit_packages() -> dict[str, str]:
-    """Return the installed earthkit distributions.
-
-    Returns
-    -------
-    dict
-        Mapping of distribution name (e.g. ``"earthkit-data"``) to installed version, sorted by name.
+def load_commands(package: str) -> dict[str, click.Command]:
     """
-    packages: dict[str, str] = {}
-    for dist in metadata.distributions():
-        name = dist.metadata["Name"]
-        if name and name.lower().startswith(_DISTRIBUTION_PREFIX):
-            packages[name] = dist.version
-    return dict(sorted(packages.items()))
+    Return the commands provided by ``earthkit.<package>.cli``.
 
-
-def _iter_entry_points() -> Iterable[metadata.EntryPoint]:
-    """Yield the raw ``earthkit.cli`` entry points of all installed distributions."""
-    return metadata.entry_points(group=ENTRY_POINT_GROUP)
-
-
-def discover_commands() -> dict[str, metadata.EntryPoint]:
-    """Find the commands registered by installed packages.
-
-    Returns
-    -------
-    dict
-        Mapping of command name to the (not yet loaded) entry point providing it. If two distributions
-        register the same command name, the first one found wins and a warning is emitted.
+    An empty mapping is returned if the package is not installed or has no ``cli`` module. Any other
+    import error is propagated.
     """
-    found: dict[str, metadata.EntryPoint] = {}
-    for entry_point in _iter_entry_points():
-        if entry_point.name in found:
-            warnings.warn(
-                f"Ignoring duplicate earthkit command '{entry_point.name}' from '{entry_point.value}'; "
-                f"using '{found[entry_point.name].value}' instead",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-            continue
-        found[entry_point.name] = entry_point
+    module_name = f"earthkit.{package}.cli"
+    try:
+        module = importlib.import_module(module_name)
+    except ModuleNotFoundError:
+        return {}
+    
+    commands = getattr(module, "COMMANDS", {})
+    for name, command in commands.items():
+        if not isinstance(command, click.Command):
+            raise TypeError(f"{module_name}.COMMANDS[{name!r}] is not a click.Command: {command!r}")
+    return dict(commands)
+
+
+def discover_commands(packages: Iterable[str] = EARTHKIT_PACKAGES) -> dict[str, click.Command]:
+    """
+    Collect the commands of all installed earthkit packages.
+
+    If two packages provide the same command name, the first one in ``packages`` wins and a warning is
+    emitted.
+    """
+    found: dict[str, click.Command] = {}
+    for package in packages:
+        for name, command in load_commands(package).items():
+            if name in found:
+                warnings.warn(f"Ignoring duplicate earthkit command '{name}' from earthkit-{package}", stacklevel=2)
+                continue
+            found[name] = command
     return found
 
 
-def _distribution_name(entry_point: metadata.EntryPoint) -> str:
-    dist = getattr(entry_point, "dist", None)
-    if dist is None:
-        return "<unknown>"
-    return dist.metadata["Name"] or "<unknown>"
-
-
-class BrokenCommand(click.Command):
-    """Placeholder for a registered command that could not be loaded.
-
-    It is listed in ``earthkit --help`` with a warning and raises a :class:`click.ClickException`
-    describing the problem when invoked.
-    """
-
-    def __init__(self, name: str, entry_point: metadata.EntryPoint, error: BaseException) -> None:
-        self.entry_point = entry_point
-        self.error = error
-        message = f"Warning: could not load '{entry_point.value}': {error!r}"
-        super().__init__(name, help=message, short_help=message)
-
-    def invoke(self, ctx: click.Context) -> Any:
-        raise click.ClickException(
-            f"Command '{self.name}' could not be loaded from '{self.entry_point.value}' "
-            f"(provided by {_distribution_name(self.entry_point)}): {self.error!r}"
-        )
-
-
 class EarthkitCLI(click.Group):
-    """A :class:`click.Group` whose commands are collected from installed earthkit packages.
+    """
+    A :class:`click.Group` that adds the commands of the installed earthkit packages on first use.
 
-    Commands added directly with :meth:`add_command` take precedence over commands registered through
-    entry points. Entry point commands are loaded lazily, the first time they are looked up.
+    Commands added directly with :meth:`add_command` take precedence over discovered ones.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, packages: Iterable[str] = EARTHKIT_PACKAGES, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._plugins: dict[str, metadata.EntryPoint] | None = None
+        self.packages = tuple(packages)
+        self._discovered = False
 
-    @property
-    def plugins(self) -> dict[str, metadata.EntryPoint]:
-        """Commands registered through entry points, discovered on first access."""
-        if self._plugins is None:
-            self._plugins = discover_commands()
-        return self._plugins
+    def _discover(self) -> None:
+        if not self._discovered:
+            self._discovered = True
+            for name, command in discover_commands(self.packages).items():
+                self.commands.setdefault(name, command)
 
     def list_commands(self, ctx: click.Context) -> list[str]:
-        return sorted(set(self.commands) | set(self.plugins))
+        self._discover()
+        return super().list_commands(ctx)
 
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
-        if cmd_name in self.commands:
-            return self.commands[cmd_name]
-
-        entry_point = self.plugins.get(cmd_name)
-        if entry_point is None:
-            return None
-
-        command: click.Command
-        try:
-            loaded = entry_point.load()
-        except Exception as error:
-            command = BrokenCommand(cmd_name, entry_point, error)
-        else:
-            if isinstance(loaded, click.Command):
-                command = loaded
-            else:
-                command = BrokenCommand(
-                    cmd_name,
-                    entry_point,
-                    TypeError(f"expected a click.Command, got {type(loaded).__name__}"),
-                )
-
-        # Cache so the entry point is only loaded once per process.
-        self.add_command(command, cmd_name)
-        return command
+        self._discover()
+        return super().get_command(ctx, cmd_name)
 
 
 @click.group(cls=EarthkitCLI, name="earthkit", context_settings={"help_option_names": ["-h", "--help"]})
@@ -198,25 +135,16 @@ def earthkit() -> None:
 @earthkit.command()
 def info() -> None:
     """List the installed earthkit packages and the commands they provide."""
-    commands_by_package: dict[str, list[str]] = defaultdict(list)
-    for name, entry_point in discover_commands().items():
-        commands_by_package[_distribution_name(entry_point)].append(name)
-
-    packages = installed_earthkit_packages()
-    for dist_name in commands_by_package:
-        packages.setdefault(dist_name, "")
-
-    if not packages:
-        click.echo("No earthkit packages found.")
-        return
-
-    width = max(len(name) for name in packages)
-    for dist_name, version in sorted(packages.items()):
-        commands = ", ".join(sorted(commands_by_package.get(dist_name, [])))
-        line = f"{dist_name:<{width}}  {version}"
+    for package in ("utils", *EARTHKIT_PACKAGES):
+        try:
+            version = metadata.version(f"earthkit-{package}")
+        except metadata.PackageNotFoundError:
+            continue
+        line = f"earthkit-{package:<12} {version}"
+        commands = ", ".join(sorted(load_commands(package))) if package != "utils" else ""
         if commands:
             line += f"  (commands: {commands})"
-        click.echo(line.rstrip())
+        click.echo(line)
 
 
 def main() -> None:
