@@ -26,6 +26,10 @@ which makes ``earthkit ls <file>`` available once earthkit-data is installed. Al
 are imported when the commands are needed (e.g. for ``earthkit -h``), which runs the decorators. Modules
 starting with an underscore are ignored.
 
+A package with many commands can instead install a sub-package ``earthkit/cli/<name>/``, whose
+``__init__.py`` imports the submodules that register the commands. Only ``earthkit.cli.<name>`` itself is
+imported by the discovery, and the commands of all its submodules are attributed to ``earthkit-<name>``.
+
 Because these modules live outside of the ``earthkit.<package>`` packages, importing them does not run the
 ``__init__`` of those packages. They should only import :mod:`click` and light standard library modules at
 module level and import any heavy dependency (including the contributing package itself) inside the command
@@ -111,7 +115,8 @@ def info() -> None:
     owners: dict[str, list[str]] = {}
     for cmd_name, command in earthkit.commands.items():
         module = getattr(command.callback, "__module__", None) or ""
-        owners.setdefault(module.removeprefix("earthkit.cli."), []).append(cmd_name)
+        # Commands may be defined in submodules of a command package, e.g. earthkit.cli.transforms.temporal
+        owners.setdefault(module.removeprefix("earthkit.cli.").split(".")[0], []).append(cmd_name)
 
     for name in ("utils", *command_modules()):
         try:
