@@ -280,7 +280,13 @@ def target_options(name: str = "target", *, positional: bool = False) -> Callabl
 #: The earthkit-data Xarray engine profile used when reading the source, passed as ``profile``.
 profile_option = click.option(
     "--profile",
-    default=None,
-    help="Name of the earthkit Xarray engine profile used when opening GRIB data, e.g. 'mars'. "
-    "Uses the earthkit-data default if not given.",
+    type=str,
+    default=["earthkit"],
+    multiple=True,
+    help=(
+        "Profile controlling how the xr-engine builds the Xarray dataset. Either the name of a "
+        "pre-defined profile ('earthkit', 'grib', 'mars', 'defaults') or a path to a YAML/JSON file "
+        "containing a custom profile. Can be specified multiple times, in which case the profiles are "
+        "layered in order, each one overriding the options defined by the previous ones."
+    ),
 )
