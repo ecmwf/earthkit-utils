@@ -25,29 +25,32 @@ def convert_units(
 
     Parameters
     ----------
-    data : array
+    data : array, xarray.DataArray or xarray.Dataset
         The data to convert.
-    target_units : str, pint.Unit or Units
-        The units to convert to.
-    source_units : str, pint.Unit or Units
-        The units of the data.
+    target_units : str, pint.Unit, Units or dict
+        The units to convert to. A dict, mapping DataArray/variable names to
+        units, is only supported for xarray objects.
+    source_units : str, pint.Unit, Units or dict
+        The units of the data. Required for arrays. For xarray objects it
+        defaults to the ``units`` attribute; see the xarray implementation.
     errors : {"ignore", "raise"}, default "ignore"
         What to do when the conversion cannot be performed. With ``"ignore"``
         a warning is logged and the data is returned unchanged. With ``"raise"``
-        a ``ValueError`` is raised.
+        the error is raised.
 
     Returns
     -------
-    array
-        The converted data.
+    array, xarray.DataArray or xarray.Dataset
+        The converted data, of the same type as ``data``.
 
     Implementations
     ---------------
     :func:`convert_units` calls one of the following implementations depending on the type of ``data``:
 
     - :py:func:`earthkit.utils.units.array.convert_units` for arrays
+    - :py:func:`earthkit.utils.units.xarray.convert_units` for xarray.DataArray and xarray.Dataset
     """
-    dispatched = dispatch(convert_units, array=True, xarray=False, fieldlist=False)
+    dispatched = dispatch(convert_units, array=True, xarray=True, fieldlist=False)
     return dispatched(data, target_units, source_units, errors=errors)
 
 
