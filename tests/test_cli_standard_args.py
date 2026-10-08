@@ -8,6 +8,8 @@
 #
 
 import json
+import sys
+import types
 
 import click
 import pytest
@@ -15,7 +17,6 @@ from click.testing import CliRunner
 
 from earthkit.cli.main import command_modules
 from earthkit.cli.standard_args import (
-    Source,
     Target,
     add_options,
     profile_option,
@@ -25,15 +26,26 @@ from earthkit.cli.standard_args import (
 )
 
 
+@pytest.fixture(autouse=True)
+def earthkit_data(monkeypatch):
+    """Stub earthkit.data, with from_source returning its arguments and to_target recording its calls."""
+    module = types.ModuleType("earthkit.data")
+    module.from_source = lambda *args, **kwargs: [list(args), kwargs]
+    module.to_target = lambda *args, **kwargs: module.written.append((args, kwargs))
+    module.written = []
+    monkeypatch.setitem(sys.modules, "earthkit.data", module)
+    return module
+
+
 def _resolved_json(*data):
-    return json.dumps([[list(d.args), d.kwargs] for d in data])
+    return json.dumps([[list(d.args), d.kwargs] if isinstance(d, Target) else d for d in data])
 
 
 @click.command()
 @add_options([source_options(), target_options(), profile_option])
 @click.option("-k", "--keys", multiple=True, callback=split_csv)
 def _command(source, target, profile, keys):
-    assert isinstance(source, Source) and isinstance(target, Target)
+    assert isinstance(target, Target)
     click.echo(json.dumps({"data": json.loads(_resolved_json(source, target)), "profile": profile, "keys": keys}))
 
 
@@ -242,11 +254,17 @@ def test_standard_args_positional(source_file, tmp_path):
     ]
 
 
+def test_standard_args_positional_merges_sources(source_file):
+    resolved = _resolved(source_file, source_file, "out.nc", "--source-2", source_file, command=_positional)
+    assert resolved[0] == [["multi", [["file", str(source_file)], {}], [["file", str(source_file)], {}]], {}]
+    assert resolved[2] == [["file", "out.nc"], {}]
+
+
 @pytest.mark.parametrize(
     "args, message",
     (
         (["--source-2", "{src}"], "Missing argument 'SOURCE_1'"),
-        (["{src}", "--source-2", "{src}"], "Missing argument 'TARGET'"),
+        (["{src}", "--source-2", "{src}"], "Missing argument 'SOURCE_1'"),
         (["{tmp}/missing.grib", "{tmp}/o.nc", "--source-2", "{src}"], "Invalid value for 'SOURCE_1'"),
     ),
 )
@@ -257,24 +275,24 @@ def test_standard_args_positional_invalid(source_file, tmp_path, args, message):
     assert message in result.output
 
 
-def test_source_and_target_call_earthkit_data(monkeypatch):
-    import sys
-    import types
-
-    calls = []
-    module = types.ModuleType("earthkit.data")
-    module.from_source = lambda *args, **kwargs: calls.append(("from_source", args, kwargs)) or "data"
-    module.to_target = lambda *args, **kwargs: calls.append(("to_target", args, kwargs))
-    monkeypatch.setitem(sys.modules, "earthkit.data", module)
-
-    source = Source(("cds", "dataset"), {"request": {"year": "2020"}})
-    target = Target(("file", "out.grib"))
-    assert source.name == "cds" and target.name == "file"
-    target.to_target(source.from_source(prompt=False), append=True)
-    assert calls == [
-        ("from_source", ("cds", "dataset"), {"request": {"year": "2020"}, "prompt": False}),
-        ("to_target", ("file", "out.grib"), {"data": "data", "append": True}),
+def test_standard_args_merges_sources(source_file):
+    resolved = _resolved("--source", source_file, "--source", "url:https://myhost.int/file.nc", "--target", "o.nc")
+    assert resolved[0] == [
+        ["multi", [["file", str(source_file)], {}], [["url", "https://myhost.int/file.nc"], {}]],
+        {},
     ]
+
+
+def test_target_calls_earthkit_data(earthkit_data):
+    Target(("file", "out.grib"), {"append": False}).to_target("data", append=True)
+    assert earthkit_data.written == [(("file", "out.grib"), {"data": "data", "append": True})]
+
+
+def test_missing_earthkit_data(monkeypatch, source_file):
+    monkeypatch.setitem(sys.modules, "earthkit.data", None)
+    result = _invoke(_command, "--source", source_file, "--target", "o.nc")
+    assert result.exit_code == 1
+    assert "earthkit-data is required" in result.output
 
 
 @pytest.mark.parametrize("name", ("", "source-1", "1source"))
