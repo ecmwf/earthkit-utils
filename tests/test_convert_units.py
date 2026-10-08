@@ -28,7 +28,7 @@ import pytest
 import xarray as xr
 from earthkit.data import SimpleFieldList
 
-from earthkit.utils.units import Units, convert_units
+from earthkit.utils.units import Units, are_compatible, convert_units
 from earthkit.utils.units.units import get_registry
 
 ureg = get_registry()
@@ -346,6 +346,48 @@ def test_dataset_single_source_units_applies_to_all_variables(ds):
     result = convert_units(ds, {"dist": "km", "flag": "km"}, "m")
     np.testing.assert_allclose(result["dist"].values, [1.0, 2.0])
     np.testing.assert_allclose(result["flag"].values, [0.0, 0.001])
+
+
+# ---- are_compatible ----
+
+
+@pytest.mark.parametrize(
+    "unit_1, unit_2, expected",
+    [
+        ("m", "km", True),
+        ("degC", "K", True),
+        ("m s-1", "km/h", True),
+        ("dimensionless", "%", True),
+        ("m/s", "m s-1", True),
+        ("dBZ", "dBZ", True),
+        (None, None, True),
+        ("m", "K", False),
+        ("m", "dBZ", False),
+        ("code table", "%", False),
+        (None, "m", False),
+    ],
+)
+def test_are_compatible(unit_1, unit_2, expected):
+    assert are_compatible(unit_1, unit_2) is expected
+
+
+@pytest.mark.parametrize("make_units", [str, ureg.Unit, Units.from_any], ids=["str", "pint", "Units"])
+def test_are_compatible_unit_types(make_units):
+    assert are_compatible(make_units("m"), make_units("km"))
+    assert not are_compatible(make_units("m"), make_units("K"))
+
+
+@pytest.mark.parametrize(
+    "source_units, target_units",
+    [case[:2] for case in CONVERTIBLE + ARRAY_NOT_CONVERTIBLE] + [("dBZ", "dBZ"), ("m/s", "m s-1")],
+)
+def test_are_compatible_matches_convert_units(source_units, target_units):
+    try:
+        convert_units(np.array([1.0]), target_units, source_units, errors="raise")
+        converted = True
+    except (ValueError, pint.DimensionalityError):
+        converted = False
+    assert are_compatible(source_units, target_units) is converted
 
 
 # ---- dask ----

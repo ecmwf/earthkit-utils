@@ -8,6 +8,7 @@
 
 from earthkit.utils.units.array import convert_units as convert_array
 from earthkit.utils.units.convert import (
+    are_compatible,
     are_equal,
     convert_units,
 )
@@ -18,6 +19,7 @@ from earthkit.utils.units.units import Units
 
 __all__ = [
     "Units",
+    "are_compatible",
     "are_equal",
     "convert_array",
     "convert_units",

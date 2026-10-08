@@ -71,3 +71,31 @@ def are_equal(unit_1, unit_2) -> bool:
         True if the units are equivalent, False otherwise.
     """
     return Units.from_any(unit_1) == Units.from_any(unit_2)
+
+
+def are_compatible(unit_1, unit_2) -> bool:
+    """
+    Check if data can be converted from one unit to another.
+
+    Units are compatible when they are equal, including equal units that Pint
+    does not recognise (e.g. "dBZ"), or when both are recognised by Pint and
+    have the same dimensionality. This matches when :func:`convert_units` succeeds.
+
+    Parameters
+    ----------
+    unit_1 : str, pint.Unit, Units or None
+        The units to convert from.
+    unit_2 : str, pint.Unit, Units or None
+        The units to convert to.
+
+    Returns
+    -------
+    bool
+        True if the units are compatible, False otherwise.
+    """
+    unit_1, unit_2 = Units.from_any(unit_1), Units.from_any(unit_2)
+    if unit_1 == unit_2:
+        return True
+    if unit_1.to_pint() is None or unit_2.to_pint() is None:
+        return False
+    return unit_1.to_pint().is_compatible_with(unit_2.to_pint())
