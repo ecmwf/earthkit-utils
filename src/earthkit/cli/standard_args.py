@@ -218,10 +218,14 @@ def _parse_source(value: str, option: str) -> Source:
     source_name, value = _split_name(value)
     if _is_json(value):
         dataset, request = _pop_dataset(_parse_json(value, option, allow_list=True), option)
-        return Source((source_name, *dataset), {"request": request})
+        return _import_earthkit_data().from_source(source_name, dataset, request=request)
     if source_name == "file":
         _check_file("source", value, option)
-    return Source((source_name, value) if value else (source_name,))
+    return _import_earthkit_data().from_source(source_name, value) if value else _import_earthkit_data().from_source(source_name)
+
+
+def _merge_sources(ctx, param, values):
+    return _import_earthkit_data().from_source("multi", *values)
 
 
 def _parse_target(value: str, option: str) -> Target:
@@ -252,7 +256,8 @@ def _data_option(
         name,
         required=True,
         metavar="[NAME:]VALUE",
-        callback=lambda ctx, param, value: parse(value, flag),
+        type=lambda value: parse(value, flag),
+        callback=_merge_sources,
         help=help,
     )
 
