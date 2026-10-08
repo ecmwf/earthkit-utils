@@ -24,7 +24,8 @@ commands by installing a module ``earthkit/cli/<name>.py`` that registers them o
 
 which makes ``earthkit ls <file>`` available once earthkit-data is installed. All modules of ``earthkit.cli``
 are imported when the commands are needed (e.g. for ``earthkit -h``), which runs the decorators. Modules
-starting with an underscore are ignored.
+starting with an underscore, and the modules of earthkit-utils itself (``main`` and ``standard_args``), are
+ignored. Commands should use the shared arguments and options of :mod:`earthkit.cli.standard_args` where they fit.
 
 A package with many commands can instead install a sub-package ``earthkit/cli/<name>/``, whose
 ``__init__.py`` imports the submodules that register the commands. Only ``earthkit.cli.<name>`` itself is
@@ -49,7 +50,7 @@ import click
 __all__ = ["EarthkitCLI", "command_modules", "earthkit", "main"]
 
 #: Modules of ``earthkit.cli`` that are not command modules.
-_RESERVED = frozenset({"main"})
+_RESERVED = frozenset({"main", "standard_args"})
 
 
 def command_modules() -> list[str]:
