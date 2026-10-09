@@ -58,7 +58,9 @@ A command can take its sources and targets as positional arguments instead, with
     @add_options([source_options(positional=True), target_options(positional=True)])
     def copy(source, target): ...
 
-gives ``earthkit copy [OPTIONS] SOURCE... TARGET``, e.g. ``earthkit copy a.grib b.grib 'zarr:{...}'``.
+gives ``earthkit copy [OPTIONS] SOURCE... TARGET``, e.g. ``earthkit copy a.grib b.grib 'zarr:{...}'``. Click
+arguments have no help, so describe them in the command docstring with :data:`SOURCE_HELP` and
+:data:`TARGET_HELP`.
 
 The arguments and options are plain :mod:`click` decorators, so they can be reused on any number of commands.
 """
@@ -69,6 +71,7 @@ import glob
 import json
 import os
 import re
+import sys
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
@@ -76,8 +79,11 @@ from typing import Any
 import click
 
 __all__ = [
+    "SOURCE_HELP",
+    "TARGET_HELP",
     "Target",
     "add_options",
+    "index_option",
     "profile_option",
     "source_options",
     "split_csv",
@@ -89,6 +95,26 @@ DEFAULT_NAME = "file"
 
 #: Key of a JSON request holding the first positional argument of the source, e.g. the CDS dataset.
 REQUEST_DATASET_KEY = "dataset"
+
+#: Help for a source, used by :func:`source_options` and in the docstrings of commands with a positional source,
+#: e.g. ``f"SOURCE: {SOURCE_HELP}"``.
+SOURCE_HELP = (
+    "The earthkit-data source to read, as [NAME:]VALUE, with NAME 'file' if not given. VALUE is passed to the "
+    "source as its first argument, e.g. a file path (glob patterns allowed) or 'url:https://myhost.int/file.nc', "
+    'or as its request if it is a JSON object, e.g. \'mars:{"param": "2t", "levtype": "sfc"}\'. The '
+    f"'{REQUEST_DATASET_KEY}' key of a JSON request, if any, is passed as the first argument, e.g. "
+    '\'cds:{"dataset": "reanalysis-era5-single-levels", ...}\'. Several sources are merged. '
+    "'-' reads GRIB data from stdin."
+)
+
+#: Help for a target, used by :func:`target_options` and in the docstrings of commands with a positional target,
+#: e.g. ``f"TARGET: {TARGET_HELP}"``.
+TARGET_HELP = (
+    "The earthkit-data target to write to, as [NAME:]VALUE, with NAME 'file' if not given. VALUE is passed to the "
+    "target as its first argument, e.g. a file path, or as its keyword arguments if it is a JSON object, e.g. "
+    '\'file:{"file": "out.grib", "append": true}\' or \'zarr:{"xarray_to_zarr_kwargs": {"store": "out.zarr"}}\'. '
+    "'-' writes to stdout."
+)
 
 _NAME_PATTERN = re.compile(r"[A-Za-z][\w-]*")
 
@@ -187,8 +213,14 @@ def _check_path(path: str, exists: bool) -> None:
         raise click.BadParameter(f"Path {path!r} is a directory.")
 
 
+#: The VALUE reading a source from stdin, or writing a target to stdout.
+STDIO = "-"
+
+
 def _parse_source(value: str) -> tuple[tuple[Any, ...], dict[str, Any]]:
     """Turn a ``[NAME:]VALUE`` string into the arguments of :func:`earthkit.data.from_source`."""
+    if value == STDIO:
+        return ("stream", sys.stdin.buffer), {}
     name, value = _split_name(value)
     request = _parse_json(value, allow_list=True)
     if request is not None:
@@ -208,6 +240,8 @@ def _open_sources(ctx: click.Context, param: click.Parameter, values: tuple[str,
 
 def _parse_target(value: str) -> Target:
     """Turn a ``[NAME:]VALUE`` string into a :class:`Target`."""
+    if value == STDIO:
+        return Target(("file", sys.stdout.buffer))
     name, value = _split_name(value)
     kwargs = _parse_json(value, allow_list=False)
     if kwargs is not None:
@@ -240,16 +274,12 @@ def source_options(name: str = "source", *, positional: bool = False) -> Callabl
 
     With ``positional=True``, adds the ``NAME...`` positional argument instead, with ``name`` in upper case,
     e.g. ``SOURCE``, taking one or more values. A command can only have one positional source, and must
-    describe it in its docstring, as click arguments have no help.
+    describe it in its docstring, as click arguments have no help, e.g. with :data:`SOURCE_HELP`.
     """
     return _data_param(
         name,
         positional,
-        "The earthkit-data source to read, as [NAME:]VALUE, with NAME 'file' if not given. VALUE is passed to "
-        "the source as its first argument, or as its request if it is a JSON object, whose "
-        f"'{REQUEST_DATASET_KEY}' key, if any, is passed as the first argument. E.g. '/path/to/file.nc' "
-        "(glob patterns allowed), 'url:https://myhost.int/file.nc' or "
-        '\'mars:{"param": "2t", "levtype": "sfc"}\'. Can be repeated to merge several sources.',
+        SOURCE_HELP,
         type=_parse_source,
         callback=_open_sources,
         **({"nargs": -1} if positional else {"multiple": True}),
@@ -264,23 +294,56 @@ def target_options(name: str = "target", *, positional: bool = False) -> Callabl
     ``name`` for each target of a command with several targets.
 
     With ``positional=True``, adds the ``NAME`` positional argument instead, with ``name`` in upper case, e.g.
-    ``TARGET``. Describe it in the command docstring, as click arguments have no help.
+    ``TARGET``. Describe it in the command docstring, as click arguments have no help, e.g. with
+    :data:`TARGET_HELP`.
     """
     return _data_param(
         name,
         positional,
-        "The earthkit-data target to write to, as [NAME:]VALUE, with NAME 'file' if not given. VALUE is passed "
-        "to the target as its first argument, or as its keyword arguments if it is a JSON object. E.g. "
-        '\'/path/to/file.nc\', \'file:{"file": "out.grib", "append": true}\' or '
-        '\'zarr:{"xarray_to_zarr_kwargs": {"store": "out.zarr"}}\'.',
+        TARGET_HELP,
         type=_parse_target,
     )
 
 
-#: The earthkit-data Xarray engine profile used when reading the source, passed as ``profile``.
+#: The earthkit-data Xarray engine profile(s) used when opening the source with Xarray, passed as ``profile``,
+#: a list of profiles in the order given, or None if not given.
 profile_option = click.option(
+    "-p",
     "--profile",
-    default=None,
-    help="Name of the earthkit Xarray engine profile used when opening GRIB data, e.g. 'mars'. "
-    "Uses the earthkit-data default if not given.",
+    multiple=True,
+    callback=lambda ctx, param, value: list(value) or None,
+    help="Profile used when opening the data with Xarray: the name of an earthkit-data built-in profile, e.g. "
+    "'earthkit', 'mars' or 'grib', or the path of a YAML file holding a profile. Can be repeated, in which case "
+    "the profiles are layered in order, each overriding the options of the previous ones. Uses the earthkit-data "
+    "default if not given.",
+)
+
+
+def _parse_index(ctx: click.Context, param: click.Parameter, value: str | None) -> int | list[int] | slice | None:
+    """Turn an index string into an int (``3``), a list (``4,5,8``) or a slice (``1:7``, ``::2``)."""
+    if value is None:
+        return None
+    try:
+        if ":" in value:
+            parts = value.split(":")
+            if len(parts) > 3:
+                raise ValueError
+            return slice(*(int(p) if p.strip() else None for p in parts))
+        if "," in value:
+            return [int(p) for p in value.split(",")]
+        return int(value)
+    except ValueError:
+        raise click.BadParameter(
+            f"Expected an integer, a comma-separated list or a START:STOP[:STEP] slice, got {value!r}"
+        )
+
+
+#: The index of the items to use, passed as ``index``: an int, a list of ints, a slice, or None if not given.
+#: Slices exclude their stop, as in Python.
+index_option = click.option(
+    "-i",
+    "--index",
+    callback=_parse_index,
+    help="Index of the items to use: an integer, e.g. '3', a comma-separated list, e.g. '4,5,8', or a slice "
+    "START:STOP[:STEP], e.g. '1:7' or '::2', which excludes STOP. Indexes start at 0.",
 )

@@ -17,8 +17,11 @@ from click.testing import CliRunner
 
 from earthkit.cli.main import command_modules
 from earthkit.cli.standard_args import (
+    SOURCE_HELP,
+    TARGET_HELP,
     Target,
     add_options,
+    index_option,
     profile_option,
     source_options,
     split_csv,
@@ -96,6 +99,78 @@ def test_standard_args_usage():
         assert removed not in result.output
 
 
+@pytest.mark.parametrize(
+    "args, expected",
+    (
+        ([], None),
+        (["-p", "mars"], ["mars"]),
+        (["--profile", "earthkit", "-p", "/my/profile.yaml"], ["earthkit", "/my/profile.yaml"]),
+    ),
+)
+def test_profile_option(args, expected):
+    @click.command()
+    @profile_option
+    def command(profile):
+        click.echo(json.dumps(profile))
+
+    result = _invoke(command, *args)
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == expected
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    (
+        (None, None),
+        ("3", 3),
+        ("-1", -1),
+        ("4,5,8", [4, 5, 8]),
+        ("1:7", slice(1, 7)),
+        ("::2", slice(None, None, 2)),
+        ("2:", slice(2, None)),
+    ),
+)
+def test_index_option(value, expected):
+    @click.command()
+    @index_option
+    def command(index):
+        click.echo(repr(index))
+
+    result = _invoke(command, *(["-i", value] if value is not None else []))
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == repr(expected)
+
+
+@pytest.mark.parametrize("value", ("a", "1,a", "1:2:3:4", "1.5"))
+def test_index_option_invalid(value):
+    @click.command()
+    @index_option
+    def command(index): ...
+
+    result = _invoke(command, "--index", value)
+    assert result.exit_code == 2
+    assert "Invalid value for '-i' / '--index'" in result.output
+
+
+def test_standard_args_stdio(earthkit_data):
+    @click.command()
+    @add_options([source_options(positional=True), target_options(positional=True)])
+    def command(source, target):
+        assert source[0] == ["stream", sys.stdin.buffer]
+        assert target.args == ("file", sys.stdout.buffer)
+        target.to_target("data")
+
+    result = CliRunner().invoke(command, ["-", "-"], input=b"GRIB")
+    assert result.exit_code == 0, result.output + repr(result.exception)
+    assert earthkit_data.written[0][1] == {"data": "data"}
+
+
+def test_standard_args_help_text():
+    usage = " ".join(_invoke(_command, "--help").output.split())
+    for text in (SOURCE_HELP, TARGET_HELP):
+        assert " ".join(text.split()) in usage
+
+
 def test_standard_args_files(source_file, tmp_path):
     target = tmp_path / "out.nc"
     result = _invoke(
@@ -104,7 +179,7 @@ def test_standard_args_files(source_file, tmp_path):
     assert result.exit_code == 0, result.output
     assert json.loads(result.output) == {
         "data": [[["file", str(source_file)], {}], [["file", str(target)], {}]],
-        "profile": "mars",
+        "profile": ["mars"],
         "keys": ["a", "b"],
     }
 
