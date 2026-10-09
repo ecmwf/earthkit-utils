@@ -122,7 +122,7 @@ _NAME_PATTERN = re.compile(r"[A-Za-z][\w-]*")
 def split_csv(ctx: click.Context, param: click.Parameter, value: Iterable[str] | None) -> list[str] | None:
     """Turn a tuple of (possibly comma-separated) option values into a flat list.
 
-    Use as the ``callback`` of an option with ``multiple=True``, so that ``-k a,b -k c`` gives
+    Use as the ``callback`` of an option with ``multiple=True``, so that ``--keys a,b --keys c`` gives
     ``["a", "b", "c"]``.
     """
     if not value:

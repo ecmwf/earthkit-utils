@@ -46,7 +46,7 @@ def _resolved_json(*data):
 
 @click.command()
 @add_options([source_options(), target_options(), profile_option])
-@click.option("-k", "--keys", multiple=True, callback=split_csv)
+@click.option("--keys", multiple=True, callback=split_csv)
 def _command(source, target, profile, keys):
     assert isinstance(target, Target)
     click.echo(json.dumps({"data": json.loads(_resolved_json(source, target)), "profile": profile, "keys": keys}))
@@ -174,7 +174,7 @@ def test_standard_args_help_text():
 def test_standard_args_files(source_file, tmp_path):
     target = tmp_path / "out.nc"
     result = _invoke(
-        _command, "--source", f"file:{source_file}", "--target", f"file:{target}", "--profile", "mars", "-k", "a,b"
+        _command, "--source", f"file:{source_file}", "--target", f"file:{target}", "--profile", "mars", "--keys", "a,b"
     )
     assert result.exit_code == 0, result.output
     assert json.loads(result.output) == {
