@@ -37,3 +37,13 @@ opaque ``StrUnits`` object rather than raising an error. Conversion between two
 such unrecognised units is skipped and the original data is returned unchanged,
 with a warning logged. This ensures that pipelines handling heterogeneous or
 non-standard metadata remain robust.
+
+When a conversion must not be skipped, pass ``errors="raise"`` to any of the
+conversion functions. A ``ValueError`` is then raised instead, e.g. for
+incompatible or unrecognised units, missing units, or a ``target_units`` dict
+naming a variable that is not in the Dataset:
+
+.. code:: python
+
+   convert_units(data, target_units="K", source_units="m", errors="raise")
+   # ValueError: Cannot convert incompatible units: m -> K
