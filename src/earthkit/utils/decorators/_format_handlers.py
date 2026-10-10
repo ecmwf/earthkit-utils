@@ -23,6 +23,7 @@ except AttributeError:
     ]
 
 EMPTY_TYPES = [inspect._empty]
+PARAMETERIZED_CONTAINERS = (list, tuple, dict, set, frozenset)
 
 
 # Consider moving these to earthkit-utils
@@ -38,6 +39,46 @@ def _ensure_tuple(input_item):
     if not isinstance(input_item, tuple):
         return tuple(_ensure_iterable(input_item))
     return input_item
+
+
+def _matches_annotation(value: T.Any, annotation: T.Any) -> bool:
+    """Check an object against a type annotation used by format_handler."""
+    if annotation is T.Any:
+        return True
+
+    origin = T.get_origin(annotation)
+    if origin in UNION_TYPES:
+        return any(_matches_annotation(value, item) for item in T.get_args(annotation))
+
+    if origin in PARAMETERIZED_CONTAINERS:
+        if not isinstance(value, origin):
+            return False
+
+        args = T.get_args(annotation)
+        if origin is dict:
+            if len(args) != 2:
+                return True
+            key_type, value_type = args
+            return all(
+                _matches_annotation(key, key_type) and _matches_annotation(item, value_type)
+                for key, item in value.items()
+            )
+
+        if origin is tuple:
+            if len(args) == 2 and args[1] is Ellipsis:
+                return all(_matches_annotation(item, args[0]) for item in value)
+            if len(args) != len(value):
+                return False
+            return all(_matches_annotation(item, item_type) for item, item_type in zip(value, args))
+
+        if not args:
+            return True
+        return all(_matches_annotation(item, args[0]) for item in value)
+
+    try:
+        return isinstance(value, annotation)
+    except TypeError:
+        return False
 
 
 def format_handler(
@@ -91,20 +132,25 @@ def format_handler(
                     k for k in convert_kwargs if isinstance(kwargs[k], _ensure_tuple(_convert_types.get(k, ())))
                 ]
 
-            # Transform args/kwargs
-            try:
-                from earthkit.data.translators import transform
-            except ImportError as e:
-                LOG.debug(
-                    "earthkit.data is required for the format_handler decorator to perform data "
-                    f"transformations, error: {e}"
-                )
-                transform = None
-
+            mismatched_kwargs = []
             for key in convert_kwargs:
                 value = kwargs[key]
                 types_allowed = _ensure_iterable(mapping[key])
-                if type(value) not in types_allowed:
+                if not any(_matches_annotation(value, annotation) for annotation in types_allowed):
+                    mismatched_kwargs.append((key, value, types_allowed))
+
+            # Transform args/kwargs only when a value does not match its annotation.
+            if mismatched_kwargs:
+                try:
+                    from earthkit.data.translators import transform
+                except ImportError as e:
+                    LOG.debug(
+                        "earthkit.data is required for the format_handler decorator to perform data "
+                        f"transformations, error: {e}"
+                    )
+                    transform = None
+
+                for key, value, types_allowed in mismatched_kwargs:
                     if transform is None:
                         LOG.warning(
                             "input object type does not match the expected function type(s) and "

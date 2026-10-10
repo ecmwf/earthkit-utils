@@ -162,3 +162,55 @@ def test_format_handler_no_earthkit_data(caplog, monkeypatch):
         or "input object type does not match the expected function type" in record.getMessage()
         for record in caplog.records
     )
+
+
+@pytest.mark.parametrize(
+    "annotation,in_data",
+    [
+        (xr.DataArray, TEST_DATAARRAY),
+        (xr.Dataset, TEST_DATASET),
+        (list[xr.DataArray], [TEST_DATAARRAY]),
+        (xr.DataArray | xr.Dataset, TEST_DATAARRAY),
+        (xr.DataArray | None, None),
+    ],
+)
+def test_format_handler_matching_annotations_without_earthkit_data(annotation, in_data, caplog, monkeypatch):
+    import sys
+    import types
+
+    fake_earthkit = types.ModuleType("earthkit")
+    monkeypatch.delitem(sys.modules, "earthkit.data", raising=False)
+    monkeypatch.delitem(sys.modules, "earthkit.data.translators", raising=False)
+    monkeypatch.setitem(sys.modules, "earthkit", fake_earthkit)
+
+    @format_handler()
+    def _handler(data: annotation):
+        return data
+
+    result = _handler(in_data)
+
+    assert result is in_data
+    assert not [record for record in caplog.records if record.levelno >= 30]
+
+
+def test_format_handler_unsupported_input_without_earthkit_data(caplog, monkeypatch):
+    import sys
+    import types
+
+    fake_earthkit = types.ModuleType("earthkit")
+    monkeypatch.delitem(sys.modules, "earthkit.data", raising=False)
+    monkeypatch.delitem(sys.modules, "earthkit.data.translators", raising=False)
+    monkeypatch.setitem(sys.modules, "earthkit", fake_earthkit)
+
+    @format_handler()
+    def _handler(data: list[xr.DataArray]):
+        return data
+
+    input_value = [1, 2, 3]
+    result = _handler(input_value)
+
+    assert result is input_value
+    assert any(
+        "input object type does not match the expected function type" in record.getMessage()
+        for record in caplog.records
+    )
