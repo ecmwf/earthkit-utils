@@ -3,7 +3,7 @@ requires = ["setuptools>=77", "setuptools-scm>=8"]
 
 [project]
 authors = [
-  {name = "European Centre for Medium-Range Weather Forecasts (ECMWF)", email = "software.support@ecmwf.int"}
+  { name = "European Centre for Medium-Range Weather Forecasts (ECMWF)", email = "software.support@ecmwf.int" }
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -21,7 +21,6 @@ classifiers = [
 ]
 dependencies = [
   "array-api-compat>=1.12",
-  "pint>=0.21",
   "numpy>=1.24"
 ]
 description = "Utilities for the Earthkit ecosystem"
@@ -29,19 +28,19 @@ dynamic = ["version"]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 name = "earthkit-utils"
-readme = "README.md"
-requires-python = ">=3.10"
+optional-dependencies.all = [
+  "xarray>=2023.1.0",
+  "pint>=0.21"
+]
 optional-dependencies.dev = [
   "pre-commit>=3",
   "mypy>=1.18",
-  "numpy>=1.24",
   "pytest>=8",
   "pytest-cov>=6"
 ]
 optional-dependencies.docs = [
   "pre-commit",
   "mypy>=1.18",
-  "numpy>=1.24",
   "xarray>=0.21.0",
   "geopandas",
   "earthkit-data~=1.0",
@@ -64,8 +63,11 @@ optional-dependencies.test = [
   "pytest>=8",
   "pytest-cov>=6",
   "pytest-reraise",
-  "xarray>=2023.1.0"
+  "xarray>=2023.1.0",
+  "pint>=0.21"
 ]
+readme = "README.md"
+requires-python = ">=3.10"
 urls.Documentation = "https://earthkit-utils.readthedocs.io/"
 urls.Homepage = "https://github.com/ecmwf/earthkit-utils/"
 urls.Issues = "https://github.com/ecmwf/earthkit-utils/issues"
@@ -87,7 +89,6 @@ convention = "numpy"
 
 [tool.ruff]
 line-length = 120
-preview = true
 lint.ignore = [
   "D1",
   "D203",
@@ -104,6 +105,7 @@ lint.select = [
   "I",  # isort
   "W"  # pycodestyle warnings
 ]
+preview = true
 
 [tool.setuptools.packages.find]
 include = ["earthkit.utils"]
