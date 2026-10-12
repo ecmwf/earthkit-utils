@@ -69,7 +69,7 @@ def experimental(
     To silence runtime warnings, use any of Python's standard mechanisms::
 
         import warnings
-        from earthkit.utils.decorators.experimental import ExperimentalWarning
+        from earthkit.utils.decorators import ExperimentalWarning
         warnings.filterwarnings("ignore", category=ExperimentalWarning)
 
     Or via the environment variable ``PYTHONWARNINGS``::
@@ -78,7 +78,7 @@ def experimental(
 
     Examples
     --------
-    >>> from earthkit.utils.decorators.experimental import experimental
+    >>> from earthkit.utils.decorators import experimental
     >>> @experimental
     ... def compute():
     ...     return 42
