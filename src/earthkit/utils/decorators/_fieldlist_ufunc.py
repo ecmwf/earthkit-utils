@@ -1,9 +1,9 @@
 from itertools import repeat
 
-from earthkit.utils.parameters import FIELD_PARAMS
+from earthkit.utils.parameters import PARAMS
 
 
-def _field_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
+def _field_ufunc(func, *args, fieldlist_ufunc_kwargs=None, **kwargs):
     """
     Apply a function to the values of earthkit.data Field or FieldList objects.
 
@@ -48,6 +48,9 @@ def _field_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
     assert isinstance(field, ekd.Field), "field_ufunc first argument must be a Field"
     v = func(*(field.values if isinstance(field, ekd.Field) else field for field in fields), **kwargs)
 
+    if fieldlist_ufunc_kwargs is None:
+        fieldlist_ufunc_kwargs = {}
+
     # determine the metadata to set on the resulting Field
     variables = fieldlist_ufunc_kwargs.get("variables", {})
     param_ids = fieldlist_ufunc_kwargs.get("param_ids", {})
@@ -73,7 +76,7 @@ def _field_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
             "a 'default_variable' in 'fieldlist_ufunc_kwargs'."
         )
 
-    param_item = FIELD_PARAMS.get(name)
+    param_item = PARAMS.get(name)
 
     if param_item is None:
         raise ValueError(f"Unknown parameter '{name}' specified in fieldlist_ufunc_kwargs")
@@ -83,8 +86,11 @@ def _field_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
     return result
 
 
-def fieldlist_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
+def fieldlist_ufunc(func, *args, fieldlist_ufunc_kwargs=None, **kwargs):
     import earthkit.data as ekd
+
+    if fieldlist_ufunc_kwargs is None:
+        fieldlist_ufunc_kwargs = {}
 
     if args:
         if isinstance(args[0], ekd.Field):

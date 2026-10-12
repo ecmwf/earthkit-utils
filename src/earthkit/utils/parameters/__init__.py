@@ -1,1 +1,1 @@
-from ._params import FIELD_PARAMS
+from ._params import PARAMS
