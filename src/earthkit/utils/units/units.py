@@ -49,7 +49,7 @@ def _prepare_str(units: str | None = None) -> str:
     if units is None:
         units = "dimensionless"
     elif not isinstance(units, str):
-        raise ValueError(f"Unsupported type for units: {type(units)}")
+        raise TypeError(f"Unsupported type for units: {type(units)}")
     elif units in UNIT_STR_ALIASES:
         units = UNIT_STR_ALIASES[units]
 
@@ -144,7 +144,7 @@ class Units:
         elif units is None or isinstance(units, str):
             self._units, self._pint = units, _parse(units)
         else:
-            raise ValueError(f"Unsupported type for units: {type(units)}")
+            raise TypeError(f"Unsupported type for units: {type(units)}")
 
     @staticmethod
     def from_any(units: str | pint.Unit | Units | None) -> Units:
@@ -161,7 +161,7 @@ class Units:
 
         Raises
         ------
-        ValueError
+        TypeError
             If *units* is of an unsupported type.
         """
         if isinstance(units, Units):

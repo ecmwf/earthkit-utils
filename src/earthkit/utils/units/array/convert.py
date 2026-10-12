@@ -7,10 +7,12 @@
 # nor does it submit to any jurisdiction.
 
 import logging
+from itertools import combinations
 from typing import Any, TypeAlias
 
 import numpy as np
 
+from ..convert import are_compatible
 from ..units import Units, get_registry
 
 LOG = logging.getLogger(__name__)
@@ -18,18 +20,20 @@ LOG = logging.getLogger(__name__)
 ArrayLike: TypeAlias = Any
 
 
-def convert_units(data: ArrayLike, target_units=None, source_units=None, errors: str = "ignore") -> ArrayLike:
+def convert(data: ArrayLike, target_units, source_units=None, errors: str = "raise") -> ArrayLike:
     """Convert the units of an array.
 
     Parameters
     ----------
     data : array-like
         The data to convert. It is converted to a numpy array.
-    target_units : str, pint.Unit or Units
-        The units to convert to.
+    target_units : str, pint.Unit, Units or list
+        The units to convert to. With a list, the data is converted to the one
+        unit in it compatible with ``source_units``; two compatible units in the
+        list are ambiguous and always raise.
     source_units : str, pint.Unit or Units
         The units of the data.
-    errors : {"ignore", "raise"}, default "ignore"
+    errors : {"raise", "ignore"}, default "raise"
         What to do when the conversion cannot be performed. With ``"ignore"``
         a warning is logged and ``data`` is returned unchanged. With ``"raise"``
         the error is raised: a ``ValueError`` for units Pint does not recognise,
@@ -45,6 +49,20 @@ def convert_units(data: ArrayLike, target_units=None, source_units=None, errors:
 
     if errors not in ("ignore", "raise"):
         raise ValueError(f"errors must be 'ignore' or 'raise', got {errors!r}")
+
+    if isinstance(target_units, list):
+        if any(are_compatible(a, b) for a, b in combinations(target_units, 2)):
+            raise ValueError(f"Ambiguous target units, some are compatible: {target_units}")
+        for units in target_units:
+            try:
+                return convert(data, units, source_units, errors="raise")
+            except (ValueError, pint.errors.PintError):
+                pass
+        message = f"Cannot convert {source_units} to any of the target units {target_units}"
+        if errors == "raise":
+            raise ValueError(message)
+        LOG.warning(message)
+        return data
 
     source, target = Units.from_any(source_units), Units.from_any(target_units)
     if source == target:

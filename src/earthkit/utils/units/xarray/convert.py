@@ -7,19 +7,21 @@
 # nor does it submit to any jurisdiction.
 
 import logging
+from itertools import combinations
 
 import xarray as xr
 
 from .. import array
+from ..convert import are_compatible
 
 LOG = logging.getLogger(__name__)
 
 
-def convert_units(
+def convert(
     data: xr.DataArray | xr.Dataset,
-    target_units=None,
+    target_units,
     source_units=None,
-    errors: str = "ignore",
+    errors: str = "raise",
 ) -> xr.DataArray | xr.Dataset:
     """Convert the units of an xarray.DataArray or of each data variable of an xarray.Dataset.
 
@@ -29,13 +31,18 @@ def convert_units(
     ----------
     data : xarray.DataArray or xarray.Dataset
         The data to convert.
-    target_units : str, pint.Unit, Units or dict
-        The units to convert to. A dict maps DataArray/variable names to units,
-        and the DataArrays/variables not in it are left unchanged.
+    target_units : str, pint.Unit, Units, list or dict
+        The units to convert to. With a list, each DataArray/variable is converted
+        to the one unit in it compatible with its source units; two compatible
+        units in the list are ambiguous and always raise. A dict maps
+        DataArray/variable names to units (or lists of units): the Dataset
+        variables not in it are left unchanged, while a key that is not a
+        variable of the Dataset, or a DataArray whose name is not a key, cannot
+        be converted (see ``errors``).
     source_units : str, pint.Unit, Units or dict, optional
         The units of the data, overriding the ``units`` attribute. A dict maps
         DataArray/variable names to units, falling back to the ``units`` attribute.
-    errors : {"ignore", "raise"}, default "ignore"
+    errors : {"raise", "ignore"}, default "raise"
         What to do when a DataArray/variable cannot be converted, including when
         it has no source units. With ``"ignore"`` a warning is logged and it is
         returned unchanged, with ``"raise"`` the error is raised.
@@ -51,9 +58,25 @@ def convert_units(
         raise ValueError(f"errors must be 'ignore' or 'raise', got {errors!r}")
 
     if isinstance(data, xr.Dataset):
+        if isinstance(target_units, dict):
+            missing = sorted(set(target_units) - set(data.data_vars))
+            if missing:
+                message = f"target_units refers to variables not in the Dataset: {missing}"
+                if errors == "raise":
+                    raise ValueError(message)
+                LOG.warning(message)
         return data.assign({
-            name: convert_units(var, target_units, source_units, errors) for name, var in data.data_vars.items()
+            name: convert(var, target_units, source_units, errors)
+            for name, var in data.data_vars.items()
+            if not isinstance(target_units, dict) or name in target_units
         })
+
+    if isinstance(target_units, dict) and data.name not in target_units:
+        message = f"No target units found for '{data.name}'"
+        if errors == "raise":
+            raise ValueError(message)
+        LOG.warning(message)
+        return data
 
     target_units = _get(target_units, data.name)
     if target_units is None:
@@ -69,10 +92,24 @@ def convert_units(
         LOG.warning(message)
         return data
 
+    if isinstance(target_units, list):
+        if any(are_compatible(a, b) for a, b in combinations(target_units, 2)):
+            raise ValueError(f"Ambiguous target units, some are compatible: {target_units}")
+        for units in target_units:
+            try:
+                return convert(data, units, source_units, errors="raise")
+            except (ValueError, pint.errors.PintError):
+                pass
+        message = f"Cannot convert units of '{data.name}' to any of the target units {target_units}"
+        if errors == "raise":
+            raise ValueError(message)
+        LOG.warning(message)
+        return data
+
     try:
         # For dask data, the units are checked when dask infers the output dtype
         result = xr.apply_ufunc(
-            array.convert_units,
+            array.convert,
             data,
             kwargs={"target_units": target_units, "source_units": source_units, "errors": "raise"},
             keep_attrs=True,

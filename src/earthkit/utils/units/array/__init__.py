@@ -8,6 +8,6 @@
 
 """Unit conversion of array objects."""
 
-from .convert import convert_units
+from .convert import convert
 
-__all__ = ["convert_units"]
+__all__ = ["convert"]
