@@ -177,3 +177,98 @@ class TestXarrayUfunc:
             with patch.object(builtins, "__import__", side_effect=_mock_import):
                 with pytest.raises(ImportError):
                     xarray_ufunc(add_one, TEST_NUMPY_ARRAY)
+
+
+class TestXarrayUfuncVariablesAndAttrs:
+    """Test the "variables" and "attrs" options of xarray_ufunc_kwargs."""
+
+    @staticmethod
+    def _add_one(x):
+        return x + 1
+
+    @staticmethod
+    def _split(x) -> Tuple[float, float]:
+        return x / 2, x * 2
+
+    def test_variables_sets_name_and_metadata(self):
+        r = xarray_ufunc(self._add_one, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs={"variables": "wind_speed"})
+        assert r.name == "ws"
+        assert r.attrs["long_name"] == "Wind speed"
+        assert r.attrs["standard_name"] == "wind_speed"
+        assert r.attrs["units"] == "m s-1"
+
+    def test_attrs_adds_attributes(self):
+        r = xarray_ufunc(
+            self._add_one,
+            TEST_XARRAY_DATAARRAY,
+            xarray_ufunc_kwargs={"variables": "wind_speed", "attrs": {"foo": "bar"}},
+        )
+        assert r.attrs["foo"] == "bar"
+        assert r.attrs["standard_name"] == "wind_speed"
+
+    def test_attrs_overrides_metadata(self):
+        r = xarray_ufunc(
+            self._add_one,
+            TEST_XARRAY_DATAARRAY,
+            xarray_ufunc_kwargs={"variables": "wind_speed", "attrs": {"long_name": "My speed"}},
+        )
+        assert r.attrs["long_name"] == "My speed"
+
+    def test_attrs_none_removes_attribute(self):
+        r = xarray_ufunc(
+            self._add_one,
+            TEST_XARRAY_DATAARRAY,
+            xarray_ufunc_kwargs={"variables": "wind_speed", "attrs": {"standard_name": None}},
+        )
+        assert "standard_name" not in r.attrs
+
+    def test_attrs_multi_output_list(self):
+        r = xarray_ufunc(
+            self._split,
+            TEST_XARRAY_DATAARRAY,
+            xarray_ufunc_kwargs={
+                "variables": ["wind_speed", "temperature"],
+                "attrs": [{"foo": 1}, None],
+            },
+        )
+        assert [da.name for da in r] == ["ws", "t"]
+        assert r[0].attrs["foo"] == 1
+        assert "foo" not in r[1].attrs
+
+    def test_attrs_multi_output_single_dict(self):
+        r = xarray_ufunc(
+            self._split,
+            TEST_XARRAY_DATAARRAY,
+            xarray_ufunc_kwargs={"variables": ("wind_speed", "temperature"), "attrs": {"foo": 1}},
+        )
+        assert all(da.attrs["foo"] == 1 for da in r)
+
+    def test_attrs_multi_output_length_mismatch(self):
+        with pytest.raises(ValueError, match="must match"):
+            xarray_ufunc(
+                self._split,
+                TEST_XARRAY_DATAARRAY,
+                xarray_ufunc_kwargs={"variables": ["wind_speed", "temperature"], "attrs": [{"foo": 1}]},
+            )
+
+    @pytest.mark.parametrize("attrs", ["foo", 1, [1, 2]])
+    def test_attrs_multi_output_invalid_type(self, attrs):
+        with pytest.raises(ValueError, match="dict or a list/tuple of dicts"):
+            xarray_ufunc(
+                self._split,
+                TEST_XARRAY_DATAARRAY,
+                xarray_ufunc_kwargs={"variables": ["wind_speed", "temperature"], "attrs": attrs},
+            )
+
+    @pytest.mark.parametrize("attrs", [[{"foo": 1}], "foo", 1])
+    def test_attrs_single_output_invalid_type(self, attrs):
+        with pytest.raises(ValueError, match="must be a dict"):
+            xarray_ufunc(
+                self._add_one,
+                TEST_XARRAY_DATAARRAY,
+                xarray_ufunc_kwargs={"variables": "wind_speed", "attrs": attrs},
+            )
+
+    def test_attrs_without_variables_raises(self):
+        with pytest.raises(ValueError, match="requires 'variables'"):
+            xarray_ufunc(self._add_one, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs={"attrs": {"foo": 1}})

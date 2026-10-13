@@ -220,14 +220,14 @@ _PARAMS = {
     "lcl_pressure": {
         "variable": "p_lcl",
         "units": "Pa",
-        "long_name": "Lifting condensation level pressure",
+        "long_name": "Pressure at Lifting condensation level (LCL)",
         "standard_name": None,
         "cf_units": None,
     },
     "lcl_temperature": {
         "variable": "t_lcl",
         "units": "K",
-        "long_name": "Lifting condensation level temperature",
+        "long_name": "Temperature at Lifting condensation level (LCL)",
         "standard_name": None,
         "cf_units": None,
     },
@@ -270,6 +270,20 @@ _PARAMS = {
         "units": "Pa",
         "long_name": "Pressure at half level",
         "standard_name": "air_pressure",
+        "cf_units": "Pa",
+    },
+    "pressure_on_dry_adiabat": {
+        "variable": "pres_dry_adiabat",
+        "units": "Pa",
+        "long_name": "Pressure on dry adiabat",
+        "standard_name": None,
+        "cf_units": "Pa",
+    },
+    "pressure_on_moist_adiabat": {
+        "variable": "pres_moist_adiabat",
+        "units": "Pa",
+        "long_name": "Pressure on moist adiabat",
+        "standard_name": None,
         "cf_units": "Pa",
     },
     "relative_geopotential_thickness": {
@@ -364,6 +378,20 @@ _PARAMS = {
         "edition": ("1", "2"),
         "long_name": "Temperature",
         "standard_name": "air_temperature",
+        "cf_units": "K",
+    },
+    "temperature_on_dry_adiabat": {
+        "variable": "t_dry_adiabat",
+        "units": "K",
+        "long_name": "Temperature on dry adiabat",
+        "standard_name": None,
+        "cf_units": "K",
+    },
+    "temperature_on_moist_adiabat": {
+        "variable": "t_moist_adiabat",
+        "units": "K",
+        "long_name": "Temperature on moist adiabat",
+        "standard_name": None,
         "cf_units": "K",
     },
     "toa_incident_solar_radiation": {

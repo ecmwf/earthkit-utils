@@ -42,10 +42,11 @@ def test_param_item_values(name):
     assert isinstance(item["variable"], str) and item["variable"]
     assert isinstance(item["units"], str) and item["units"]
     assert isinstance(item["long_name"], str) and item["long_name"]
-    # cf_units is defined if and only if standard_name is defined
-    assert (item["standard_name"] is None) == (item["cf_units"] is None)
+    # cf_units must be defined when standard_name is, but can also exist without it
     if item["standard_name"] is not None:
         assert isinstance(item["standard_name"], str)
+        assert item["cf_units"] is not None
+    if item["cf_units"] is not None:
         assert isinstance(item["cf_units"], str)
     if "paramId" in item:
         assert isinstance(item["paramId"], int)
@@ -102,7 +103,7 @@ def test_xarray_variable_and_metadata_fallback_units():
     variable, meta = PARAMS.xarray_variable_and_metadata("lcl_temperature")
     assert variable == "t_lcl"
     assert meta == {
-        "long_name": "Lifting condensation level temperature",
+        "long_name": PARAMS.get("lcl_temperature")["long_name"],
         "units": "K",
         "standard_name": None,
     }
