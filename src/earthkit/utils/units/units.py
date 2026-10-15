@@ -199,7 +199,7 @@ class Units(metaclass=ABCMeta):
             # TODO: consider the range of exceptions that we accept here.
             try:
                 return PintUnits(ureg(units).units)
-            except (pint.errors.UndefinedUnitError, AssertionError, AttributeError):
+            except (pint.errors.UndefinedUnitError, AssertionError, AttributeError, pint.errors.DefinitionSyntaxError):
                 return StrUnits(units)
         elif isinstance(units, pint.Unit):
             return PintUnits(units)
