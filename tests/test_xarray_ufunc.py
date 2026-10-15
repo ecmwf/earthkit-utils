@@ -121,18 +121,75 @@ class TestXarrayUfunc:
         assert result.attrs.get("unit") == "meters"
 
     def test_ufunc_with_custom_xarray_kwargs(self):
-        """Test xarray ufunc with custom xarray_ufunc_kwargs."""
+        """Test xarray ufunc with keep_attrs passed in xarray_apply_ufunc_kwargs."""
+        data = TEST_XARRAY_DATAARRAY.copy()
+        data.attrs["unit"] = "meters"
 
         def add_one(x):
             return x + 1
 
         result = xarray_ufunc(
             add_one,
-            TEST_XARRAY_DATAARRAY,
-            xarray_ufunc_kwargs={"keep_attrs": False},
+            data,
+            xarray_ufunc_kwargs={"xarray_apply_ufunc_kwargs": {"keep_attrs": False}},
         )
 
         assert isinstance(result, xr.DataArray)
+        assert "unit" not in result.attrs
+
+    def test_ufunc_legacy_xarray_kwargs(self):
+        """apply_ufunc kwargs given directly in xarray_ufunc_kwargs are still forwarded."""
+        data = TEST_XARRAY_DATAARRAY.copy()
+        data.attrs["unit"] = "meters"
+
+        def add_one(x):
+            return x + 1
+
+        result = xarray_ufunc(add_one, data, xarray_ufunc_kwargs={"keep_attrs": False})
+
+        assert "unit" not in result.attrs
+
+    def test_ufunc_legacy_core_dims(self):
+        """The kwargs used by earthkit-meteo (core dims, dtypes) work at the top level."""
+        da = xr.DataArray(np.arange(6.0).reshape(2, 3), dims=["a", "b"])
+
+        def total(x):
+            return x.sum(axis=-1)
+
+        result = xarray_ufunc(
+            total,
+            da,
+            xarray_ufunc_kwargs={"input_core_dims": [["b"]], "output_core_dims": [[]], "output_dtypes": [float]},
+        )
+
+        assert result.dims == ("a",)
+        np.testing.assert_array_equal(result.values, [3.0, 12.0])
+
+    def test_ufunc_legacy_mixed_with_options(self):
+        """Legacy keys can be combined with variables; nested apply_ufunc kwargs take precedence."""
+        data = TEST_XARRAY_DATAARRAY.copy()
+        data.attrs["unit"] = "meters"
+
+        def add_one(x):
+            return x + 1
+
+        result = xarray_ufunc(
+            add_one,
+            data,
+            xarray_ufunc_kwargs={
+                "variables": "wind_speed",
+                "keep_attrs": False,
+                "xarray_apply_ufunc_kwargs": {"keep_attrs": True},
+            },
+        )
+
+        assert result.name == "ws"
+        assert result.attrs["unit"] == "meters"
+
+    def test_ufunc_does_not_modify_xarray_ufunc_kwargs(self):
+        opts = {"variables": "wind_speed", "keep_attrs": False, "xarray_apply_ufunc_kwargs": {}}
+        xarray_ufunc(lambda x: x + 1, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs=opts)
+        assert opts == {"variables": "wind_speed", "keep_attrs": False, "xarray_apply_ufunc_kwargs": {}}
 
     def test_ufunc_with_multiple_outputs(self):
         """Test xarray ufunc with function returning multiple outputs."""

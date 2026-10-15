@@ -12,6 +12,9 @@ from earthkit.utils.parameters._params import PARAMS
 
 OUTPUT_METADATA_KEYS = ["long_name", "standard_name", "units"]
 
+# options of xarray_ufunc_kwargs handled by xarray_ufunc itself
+_XARRAY_UFUNC_OPTIONS = {"xarray_apply_ufunc_kwargs", "variables", "attrs"}
+
 
 def _infer_output_count(func) -> int:
     """Infer the number of outputs of ``func`` from its return annotation.
@@ -60,16 +63,13 @@ def _normalise_attrs(attrs, count, is_multi_output):
     raise ValueError("For single-output functions, 'attrs' must be a dict.")
 
 
-def _resolve_param_info(name, raise_on_unknown, attrs=None):
+def _resolve_param_info(name, attrs=None):
     """Return the variable name and attributes for the output described by parameter ``name``.
 
     Parameters
     ----------
     name : str
         Name of the parameter in the parameter database.
-    raise_on_unknown : bool
-        If True, raise a ValueError when the parameter has no variable name. Note that an
-        unknown ``name`` currently raises a KeyError from the parameter database first.
     attrs : dict, optional
         Extra attributes to add to the ones defined by the parameter. They take precedence
         over the parameter metadata. Values set to None remove the attribute from the result.
@@ -83,8 +83,6 @@ def _resolve_param_info(name, raise_on_unknown, attrs=None):
     param_attrs = {k: v for k, v in param_attrs.items() if v is not None}
     if attrs is not None:
         param_attrs.update(attrs)
-    if not param_name and raise_on_unknown:
-        raise ValueError(f"Unknown output parameter '{name}' specified in xarray_ufunc_kwargs")
     return param_name, param_attrs
 
 
@@ -138,9 +136,11 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
         - "attrs": dict or list/tuple of dicts, extra attributes added to the result. A single
           dict is applied to all outputs; a list/tuple must have one item (a dict or None)
           per output. Values set to None remove the attribute. Requires "variables".
-        - "raise_on_unknown": bool, raise a ValueError when a parameter has no variable name
-          (default: True). Note that a parameter missing from the parameter database raises
-          a KeyError.
+
+        For backward compatibility, any other key is treated as a keyword argument for
+        :func:`xarray.apply_ufunc` (e.g. ``{"input_core_dims": ..., "output_dtypes": ...}``), as
+        if it had been given in "xarray_apply_ufunc_kwargs". Entries in
+        "xarray_apply_ufunc_kwargs" take precedence. The dict is not modified.
     **kwargs
         Keyword arguments passed to ``func``.
 
@@ -158,11 +158,18 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
     """
     import xarray as xr
 
-    if xarray_ufunc_kwargs is None:
-        xarray_ufunc_kwargs = {}
+    # work on a copy so that the caller's dict is never modified
+    xarray_ufunc_kwargs = dict(xarray_ufunc_kwargs or {})
 
     # kwargs for xarray.apply_ufunc
-    xarray_apply_ufunc_kwargs = xarray_ufunc_kwargs.pop("xarray_apply_ufunc_kwargs", {})
+    xarray_apply_ufunc_kwargs = xarray_ufunc_kwargs.pop("xarray_apply_ufunc_kwargs", None) or {}
+
+    # Backward compatibility: xarray_ufunc_kwargs used to be passed directly to xarray.apply_ufunc
+    # (e.g. {"input_core_dims": ..., "output_dtypes": ...}). Any key that is not one of our own
+    # options is therefore still forwarded to xarray.apply_ufunc. Explicit entries in
+    # "xarray_apply_ufunc_kwargs" take precedence.
+    legacy_apply_ufunc_kwargs = {k: v for k, v in xarray_ufunc_kwargs.items() if k not in _XARRAY_UFUNC_OPTIONS}
+    xarray_apply_ufunc_kwargs = {**legacy_apply_ufunc_kwargs, **xarray_apply_ufunc_kwargs}
 
     # determine the metadata to set on the resulting object(s). "variables" can either be a
     # single parameter name (single-output functions) or a tuple/list of parameter names
@@ -171,14 +178,10 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
     attrs = xarray_ufunc_kwargs.get("attrs")
     param_info = None
     if param_lookup_name:
-        raise_on_unknown = xarray_ufunc_kwargs.get("raise_on_unknown", True)
         is_multi_output = isinstance(param_lookup_name, (tuple, list))
         names = list(param_lookup_name) if is_multi_output else [param_lookup_name]
         attrs_list = _normalise_attrs(attrs, len(names), is_multi_output)
-        param_info = [
-            _resolve_param_info(name, raise_on_unknown, attrs=e) if name else (None, {})
-            for name, e in zip(names, attrs_list)
-        ]
+        param_info = [_resolve_param_info(name, attrs=e) if name else (None, {}) for name, e in zip(names, attrs_list)]
     elif attrs is not None:
         raise ValueError("'attrs' in xarray_ufunc_kwargs requires 'variables' to be specified")
 
