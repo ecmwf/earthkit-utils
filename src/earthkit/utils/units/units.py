@@ -25,7 +25,7 @@ UNIT_STR_ALIASES: dict[str, str] = {"(0 - 1)": "percent"}
 def _prepare_str(units: str | None = None) -> str:
     """Convert a unit string to a Pint-compatible string.
 
-    For example, it converts "m s-1" to "m.s^-1".
+    For example, it converts "m s-1" to "m*s^-1".
 
     Parameters
     ----------
@@ -47,9 +47,9 @@ def _prepare_str(units: str | None = None) -> str:
     if units in UNIT_STR_ALIASES:
         units = UNIT_STR_ALIASES[units]
 
-    # Replace spaces between unit chunks with dots (e.g. "m s-1" -> "m.s-1")
+    # Replace spaces between unit chunks with dots (e.g. "m s-1" -> "m*s-1")
     # Only replace spaces followed by a letter to avoid turning "** 2" into "**.2"
-    units = UNITS_PATTERN_1.sub(".", units)
+    units = UNITS_PATTERN_1.sub("*", units)
 
     # Insert ^ between characters and numbers (including negative numbers)
     units = UNITS_PATTERN_2.sub(r"\1^\2", units)
