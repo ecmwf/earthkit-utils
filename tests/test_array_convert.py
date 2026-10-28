@@ -13,7 +13,6 @@ import pytest
 
 from earthkit.utils.array import array_namespace, convert
 from earthkit.utils.array.namespace import _CUPY_NAMESPACE, _JAX_NAMESPACE, _NUMPY_NAMESPACE, _TORCH_NAMESPACE
-from earthkit.utils.array.testing.testing import NO_CUPY, NO_JAX, NO_TORCH
 
 # NUMPY
 
@@ -39,14 +38,15 @@ def test_array_convert_numpy_to_numpy():
     _to_numpy_checker(x)
 
 
-@pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
+@pytest.mark.cuda
+@pytest.mark.requires("cupy")
 def test_array_convert_cupy_to_numpy():
     xp = _CUPY_NAMESPACE
     x = xp.asarray([1.0, 2.0, 3.0])
     _to_numpy_checker(x)
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
+@pytest.mark.requires("torch")
 def test_array_convert_torch_to_numpy():
     import torch
 
@@ -82,22 +82,24 @@ def _to_cupy_checker(x):
     # assert xp.device(res) == "cuda:0" # Not implemented yet
 
 
-@pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
+@pytest.mark.cuda
+@pytest.mark.requires("cupy")
 def test_array_convert_cupy_to_cupy():
     xp = _CUPY_NAMESPACE
     x = xp.asarray([1.0, 2.0, 3.0])
     _to_cupy_checker(x)
 
 
-@pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
+@pytest.mark.cuda
+@pytest.mark.requires("cupy")
 def test_array_convert_numpy_to_cupy():
     xp = _NUMPY_NAMESPACE
     x = xp.asarray([1.0, 2.0, 3.0])
     _to_cupy_checker(x)
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
-@pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
+@pytest.mark.cuda
+@pytest.mark.requires("torch", "cupy")
 def test_array_convert_torch_to_cupy():
     xp = _TORCH_NAMESPACE
     import torch
@@ -142,7 +144,7 @@ def _to_torch_checker(x):
         assert xp.device(res) == torch.device("cuda:0")
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
+@pytest.mark.requires("torch")
 def test_array_convert_torch_to_torch():
     xp = _TORCH_NAMESPACE
     import torch
@@ -159,15 +161,14 @@ def test_array_convert_torch_to_torch():
         _to_torch_checker(x)
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
+@pytest.mark.requires("torch")
 def test_array_convert_numpy_to_torch():
     xp = _NUMPY_NAMESPACE
     x = xp.asarray([1.0, 2.0, 3.0], dtype="float32")
     _to_torch_checker(x)
 
 
-@pytest.mark.skipif(NO_TORCH, reason="No torch installed")
-@pytest.mark.skipif(NO_CUPY, reason="No cupy installed")
+@pytest.mark.requires("torch", "cupy")
 def test_array_convert_cupy_to_torch():
     xp = _CUPY_NAMESPACE
     x = xp.asarray([1.0, 2.0, 3.0], dtype="float32")
@@ -177,7 +178,7 @@ def test_array_convert_cupy_to_torch():
 # JAX
 
 
-@pytest.mark.skipif(NO_JAX, reason="No jax installed")
+@pytest.mark.requires("jax")
 def test_array_convert_jax_to_jax():
     xp = _JAX_NAMESPACE
     x = xp.asarray([1.0, 2.0, 3.0])
