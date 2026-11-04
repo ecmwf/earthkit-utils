@@ -15,6 +15,11 @@ except ImportError:  # pragma: no cover
     # Local copy or not installed with setuptools
     __version__ = "999"
 
-from earthkit.utils import array
+from earthkit.utils import array, decorators, units
 
-__all__ = ["__version__", "array"]
+__all__ = [
+    "__version__",
+    "array",
+    "decorators",
+    "units",
+]
