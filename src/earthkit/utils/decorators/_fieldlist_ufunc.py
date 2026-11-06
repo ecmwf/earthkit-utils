@@ -81,7 +81,12 @@ def _field_ufunc(func, *args, fieldlist_ufunc_kwargs=None, **kwargs):
     if param_item is None:
         raise ValueError(f"Unknown parameter '{name}' specified in fieldlist_ufunc_kwargs")
     parameter_kwargs = {"parameter.variable": param_item["variable"], "parameter.units": param_item["units"]}
-    result = field.set({"values": v, **parameter_kwargs})
+
+    metadata = {"values": v, **parameter_kwargs}
+    vertical = fieldlist_ufunc_kwargs.get("vertical")
+    if vertical is not None:
+        metadata["vertical"] = vertical
+    result = field.set(metadata)
 
     return result
 
