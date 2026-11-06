@@ -24,6 +24,7 @@ from earthkit.utils.units import Units
         ("kg m**-2", "kilogram / meter ** 2", True),
         ("kilogram / meter ** 2", "kilogram / meter ** 2", True),
         ("invalid", "invalid", False),
+        ("~", "~", False),
     ],
 )
 def test_units_to_str(input_units, expected_value, pint_object):

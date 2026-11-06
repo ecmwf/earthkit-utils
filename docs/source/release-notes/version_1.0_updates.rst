@@ -2,6 +2,12 @@ Version 1.0 Updates
 /////////////////////////
 
 
+Version 1.0.3
+=============
+
+- Fixed issue when creating units for the "~" character failed with pint==0.6.1 (:pr:`95`)
+
+
 Version 1.0.0
 =============
 

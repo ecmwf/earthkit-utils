@@ -10,15 +10,20 @@
 
 from earthkit.utils.decorators._dispatch import dispatch
 from earthkit.utils.decorators._experimental import ExperimentalWarning, experimental
+from earthkit.utils.decorators._deprecated import DeprecatedWarning, deprecated
 from earthkit.utils.decorators._format_handlers import format_handler
 from earthkit.utils.decorators._thread_handlers import thread_safe_cached_property
 from earthkit.utils.decorators._xarray_ufunc import xarray_ufunc
+from earthkit.utils.decorators._fieldlist_ufunc import fieldlist_ufunc
 
 __all__ = [
     "ExperimentalWarning",
     "experimental",
+    "DeprecatedWarning",
+    "deprecated",
     "thread_safe_cached_property",
     "format_handler",
     "dispatch",
     "xarray_ufunc",
+    "fieldlist_ufunc",
 ]
