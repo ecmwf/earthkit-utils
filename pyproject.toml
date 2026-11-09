@@ -21,8 +21,10 @@ classifiers = [
 ]
 dependencies = [
   "array-api-compat>=1.12",
+  "filelock",
   "pint>=0.21",
-  "numpy>=1.24"
+  "numpy>=1.24",
+  "pyyaml"
 ]
 description = "Utilities for the Earthkit ecosystem"
 dynamic = ["version"]

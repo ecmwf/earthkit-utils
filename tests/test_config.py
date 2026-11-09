@@ -455,6 +455,7 @@ class TestUtilsConfig(ConfigTests):
 
     @staticmethod
     def make_options(module):
+        humanise = pytest.importorskip("earthkit.utils.humanise")
         _ = module.ConfigOption
 
         # Same option definitions as the packages use (a subset of those defined by both
@@ -463,7 +464,7 @@ class TestUtilsConfig(ConfigTests):
             "url-download-timeout": _(
                 "30s",
                 "Timeout when downloading from an url.",
-                getter="_as_seconds",
+                getter=humanise.as_seconds,
             ),
             "check-out-of-date-urls": _(
                 True,
@@ -472,13 +473,13 @@ class TestUtilsConfig(ConfigTests):
             "maximum-cache-size": _(
                 None,
                 "Maximum disk space used by the cache (e.g.: 100G or 2T).",
-                getter="_as_bytes",
+                getter=humanise.as_bytes,
                 none_ok=True,
             ),
             "maximum-cache-disk-usage": _(
                 None,
                 "Maximum disk usage as a percentage of the full disk capacity (e.g.: 90%).",
-                getter="_as_percent",
+                getter=humanise.as_percent,
                 none_ok=True,
             ),
         }
@@ -643,6 +644,27 @@ class TestUtilsConfig(ConfigTests):
             assert config.get("even") == 4
 
         assert options["even"].docs_description == "An even number. Valid when even."
+
+    def test_config_custom_getter(self, module, tmp_path):
+        def as_even(value, name=None, none_ok=False):
+            value = int(value)
+            if value % 2:
+                raise ValueError(f"{name}: {value} is odd")
+            return value // 2
+
+        options = {"half": module.ConfigOption(4, "Half of an even number.", getter=as_even)}
+        config = module.Config.create("gettertest", options, version="1.0.0", config_file=str(tmp_path / "config.yaml"))
+
+        with config.temporary():
+            assert config.get("half") == 2
+            config.set("half", "10")
+            assert config.get("half") == 5
+            with pytest.raises(ValueError, match="half: 3 is odd"):
+                config.set("half", 3)
+
+    def test_config_getter_must_be_function(self, module):
+        with pytest.raises(TypeError):
+            module.ConfigOption(30, "A number.", getter="_as_int")
 
     def test_config_list_validator(self, module, tmp_path):
         options = {

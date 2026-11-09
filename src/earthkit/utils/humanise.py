@@ -59,3 +59,26 @@ def as_bytes(value, name=None, none_ok=False):
         units[u.lower()] = n
 
     return as_number(value, name, units, none_ok)
+
+
+def as_str(value, name=None, none_ok=False):
+    if value is None and none_ok:
+        return None
+    return str(value)
+
+
+def as_int(value, name=None, none_ok=False):
+    if value is None and none_ok:
+        return None
+    if isinstance(value, str):
+        value = value.replace('"', "").replace("'", "").strip()
+    return int(value)
+
+
+def as_list(value, name=None, none_ok=False):
+    if value is None and none_ok:
+        return []
+    if isinstance(value, str):
+        value = value.replace('"', "").replace("'", "").strip()
+        return value.split(",")
+    return list(value)

@@ -109,3 +109,56 @@ def test_as_number_custom_units():
 )
 def test_list_to_human(items, kwargs, expected):
     assert humanise.list_to_human(items, **kwargs) == expected
+
+
+@pytest.mark.parametrize("value,expected", [(5, "5"), ("a", "a"), (None, "None")])
+def test_as_str(value, expected):
+    assert humanise.as_str(value) == expected
+
+
+def test_as_str_none_ok():
+    assert humanise.as_str(None, none_ok=True) is None
+
+
+@pytest.mark.parametrize("value,expected", [("5", 5), (5, 5), (5.0, 5), (" 5 ", 5), ('"5"', 5), ("'5'", 5)])
+def test_as_int(value, expected):
+    assert humanise.as_int(value) == expected
+
+
+def test_as_int_none_ok():
+    assert humanise.as_int(None, none_ok=True) is None
+
+
+@pytest.mark.parametrize("value", ["A", "5.5", ""])
+def test_as_int_invalid(value):
+    with pytest.raises(ValueError):
+        humanise.as_int(value)
+
+
+def test_as_int_none():
+    with pytest.raises(TypeError):
+        humanise.as_int(None)
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("a,b", ["a", "b"]),
+        (' "a,b" ', ["a", "b"]),
+        ("a", ["a"]),
+        ("", [""]),
+        (("a", "b"), ["a", "b"]),
+        (["a", "b"], ["a", "b"]),
+    ],
+)
+def test_as_list(value, expected):
+    assert humanise.as_list(value) == expected
+
+
+def test_as_list_none_ok():
+    assert humanise.as_list(None, none_ok=True) == []
+
+
+def test_as_list_none():
+    with pytest.raises(TypeError):
+        humanise.as_list(None)
