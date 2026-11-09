@@ -105,6 +105,9 @@ lint.select = [
 ]
 preview = true
 
+[tool.setuptools.package-data]
+"earthkit.utils" = ["static/*"]
+
 [tool.setuptools.packages.find]
 include = ["earthkit.utils"]
 where = ["src/"]
