@@ -13,7 +13,7 @@ from earthkit.utils.parameters._params import PARAMS
 OUTPUT_METADATA_KEYS = ["long_name", "standard_name", "units"]
 
 # options of xarray_ufunc_kwargs handled by xarray_ufunc itself
-_XARRAY_UFUNC_OPTIONS = {"xarray_apply_ufunc_kwargs", "variables", "attrs"}
+_XARRAY_UFUNC_OPTIONS = {"xarray_apply_ufunc_kwargs", "parameters", "attrs", "parameter_definitions"}
 
 
 def _infer_output_count(func) -> int:
@@ -55,7 +55,7 @@ def _normalise_attrs(attrs, count, is_multi_output):
         return [attrs] * count
     if is_multi_output and isinstance(attrs, (tuple, list)):
         if len(attrs) != count:
-            raise ValueError("Length of 'variables' and 'attrs' must match for multi-output functions.")
+            raise ValueError("Length of 'parameters' and 'attrs' must match for multi-output functions.")
         if all(e is None or isinstance(e, dict) for e in attrs):
             return list(attrs)
     if is_multi_output:
@@ -63,7 +63,7 @@ def _normalise_attrs(attrs, count, is_multi_output):
     raise ValueError("For single-output functions, 'attrs' must be a dict.")
 
 
-def _resolve_param_info(name, attrs=None):
+def _resolve_param_info(name, attrs=None, definitions=None):
     """Return the variable name and attributes for the output described by parameter ``name``.
 
     Parameters
@@ -73,13 +73,16 @@ def _resolve_param_info(name, attrs=None):
     attrs : dict, optional
         Extra attributes to add to the ones defined by the parameter. They take precedence
         over the parameter metadata. Values set to None remove the attribute from the result.
+    definitions : dict, optional
+        Caller-supplied parameter definitions, looked up before the built-in database. See
+        ``PARAMS.xarray_variable_and_metadata``. It is not modified.
 
     Returns
     -------
     tuple
         The variable name and the dict of attributes. Metadata with a None value is omitted.
     """
-    param_name, param_attrs = PARAMS.xarray_variable_and_metadata(name)
+    param_name, param_attrs = PARAMS.xarray_variable_and_metadata(name, definitions=definitions)
     param_attrs = {k: v for k, v in param_attrs.items() if v is not None}
     if attrs is not None:
         param_attrs.update(attrs)
@@ -129,13 +132,23 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
           ``keep_attrs=True``). When missing, ``output_dtypes`` is inferred from the return
           annotation of ``func`` and, for multiple outputs, the core dimensions are taken
           from the inputs.
-        - "variables": str or list/tuple of str, name(s) of the parameter(s) in the parameter
-          database used to set the name and the ``long_name``, ``standard_name`` and
-          ``units`` attributes of the result. Use a list/tuple with one item per output
-          for multi-output functions. An empty item leaves that output untouched.
+        - "parameters": str or list/tuple of str, name(s) of the parameter(s) used to set the
+          name and the ``long_name``, ``standard_name`` and ``units`` attributes of the result.
+          Use a list/tuple with one item per output for multi-output functions. An empty item
+          leaves that output untouched. Names are looked up in "parameter_definitions" first,
+          then in the built-in parameter database.
         - "attrs": dict or list/tuple of dicts, extra attributes added to the result. A single
           dict is applied to all outputs; a list/tuple must have one item (a dict or None)
-          per output. Values set to None remove the attribute. Requires "variables".
+          per output. Values set to None remove the attribute. Requires "parameters".
+        - "parameter_definitions": dict, caller-supplied parameter definitions with the same
+          shape as the entries of the built-in parameter database (keys are parameter names,
+          values are dicts with the "variable", "units", "long_name", "standard_name" and
+          "cf_units" keys, plus the optional "paramId" and "edition" keys). They take
+          precedence over the built-in definitions, for this call only. This allows callers in
+          other earthkit packages (e.g. earthkit-meteo) to work with parameters that have not
+          yet been added to earthkit-utils; the final goal is to store all parameters in
+          earthkit-utils. It is validated whenever it is given, even when "parameters" is not
+          specified. The dict is not modified.
 
         For backward compatibility, any other key is treated as a keyword argument for
         :func:`xarray.apply_ufunc` (e.g. ``{"input_core_dims": ..., "output_dtypes": ...}``), as
@@ -152,9 +165,13 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
     Raises
     ------
     ValueError
-        If "attrs" is specified without "variables" or if it has an invalid type or length.
+        If "attrs" is specified without "parameters" or if it has an invalid type or length,
+        or if a definition in "parameter_definitions" is missing a required key.
+    TypeError
+        If "parameter_definitions" is not a dict or one of its entries is not a dict.
     KeyError
-        If a parameter in "variables" is not in the parameter database.
+        If a name in "parameters" is neither in "parameter_definitions" nor in the parameter
+        database.
     """
     import xarray as xr
 
@@ -171,19 +188,32 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
     legacy_apply_ufunc_kwargs = {k: v for k, v in xarray_ufunc_kwargs.items() if k not in _XARRAY_UFUNC_OPTIONS}
     xarray_apply_ufunc_kwargs = {**legacy_apply_ufunc_kwargs, **xarray_apply_ufunc_kwargs}
 
-    # determine the metadata to set on the resulting object(s). "variables" can either be a
+    # Caller-supplied parameter definitions ("parameter_definitions"): names in "parameters" are
+    # looked up here first, then in the built-in parameter database, so a caller definition
+    # overrides a built-in one of the same name for this call only. This lets callers in other
+    # earthkit packages (e.g. earthkit-meteo) use parameters not yet added to earthkit-utils;
+    # the final goal is to store all parameters in earthkit-utils. It is always validated, even
+    # when "parameters" is not given and the definitions are otherwise unused. The dict is not
+    # modified.
+    parameter_definitions = xarray_ufunc_kwargs.get("parameter_definitions")
+    PARAMS.check_definitions(parameter_definitions)
+
+    # determine the metadata to set on the resulting object(s). "parameters" can either be a
     # single parameter name (single-output functions) or a tuple/list of parameter names
     # (multi-output functions), one per output in the same order.
-    param_lookup_name = xarray_ufunc_kwargs.get("variables")
+    param_lookup_name = xarray_ufunc_kwargs.get("parameters")
     attrs = xarray_ufunc_kwargs.get("attrs")
     param_info = None
     if param_lookup_name:
         is_multi_output = isinstance(param_lookup_name, (tuple, list))
         names = list(param_lookup_name) if is_multi_output else [param_lookup_name]
         attrs_list = _normalise_attrs(attrs, len(names), is_multi_output)
-        param_info = [_resolve_param_info(name, attrs=e) if name else (None, {}) for name, e in zip(names, attrs_list)]
+        param_info = [
+            _resolve_param_info(name, attrs=e, definitions=parameter_definitions) if name else (None, {})
+            for name, e in zip(names, attrs_list)
+        ]
     elif attrs is not None:
-        raise ValueError("'attrs' in xarray_ufunc_kwargs requires 'variables' to be specified")
+        raise ValueError("'attrs' in xarray_ufunc_kwargs requires 'parameters' to be specified")
 
     merged = {
         "dask": "parallelized",

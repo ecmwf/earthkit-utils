@@ -20,9 +20,19 @@ Used for the various meteorological parameters earthkit-meteo computes. This met
 - "standard_name": the CF standard name for the parameter. If does not apply, set to None.
 - "cf_units": the CF canonical units for "standard_name". If does not apply, set to None.
 
-The keys of the dictionary are the names of the parameters used only internally by
+The keys of the dictionary are the names of the parameters used internally by
 various earthkit-meteo functions.
+
+On top of these definitions, the methods of ``_ParamDB`` accept an optional ``definitions``
+argument: a dictionary of parameter definitions provided by the caller, with the same shape
+as ``_PARAMS``. Entries given there take precedence over the built-in ones, for that call only.
+This allows callers in other earthkit packages (e.g. earthkit-meteo) to work with parameters
+that have not yet been added to earthkit-utils; the final goal is to store all parameters
+here, in ``_PARAMS``.
 """
+
+# Keys every parameter definition must provide. "paramId" and "edition" are optional.
+_REQUIRED_KEYS = ("variable", "units", "long_name", "standard_name", "cf_units")
 
 _PARAMS = {
     "10m_wind_direction": {
@@ -468,22 +478,92 @@ _PARAMS = {
 
 
 class _ParamDB:
+    """Database of parameter metadata.
+
+    The built-in definitions are stored in ``_PARAMS``. Looking up a parameter also accepts an
+    optional ``definitions`` argument, a dictionary shaped like ``_PARAMS`` and provided by the
+    caller: for that call, its entries take precedence over the built-in ones. ``_PARAMS`` is
+    never modified. This allows callers in other earthkit packages (e.g. earthkit-meteo) to work
+    with parameters that have not yet been added to earthkit-utils; the final goal is to store
+    all parameters here, in ``_PARAMS``.
+    """
+
     def __init__(self):
         self.params = _PARAMS
 
-    def get(self, name):
+    def check_definitions(self, definitions):
+        """Check a caller-supplied set of parameter definitions.
+
+        Parameters
+        ----------
+        definitions : dict or None
+            Parameter definitions, with the same shape as ``_PARAMS``. ``None`` means that there
+            is nothing to check and is accepted. The ``paramId`` and ``edition`` keys are optional,
+            the ones listed in ``_REQUIRED_KEYS`` must all be present.
+        """
+        if definitions is None:
+            return
+
+        if not isinstance(definitions, dict):
+            raise TypeError(f"`definitions` must be a dict or None, got {type(definitions).__name__}")
+
+        for name, item in definitions.items():
+            if not isinstance(item, dict):
+                raise TypeError(f"Definition of parameter '{name}' must be a dict, got {type(item).__name__}")
+
+        for name, item in definitions.items():
+            missing = [key for key in _REQUIRED_KEYS if key not in item]
+            if missing:
+                raise ValueError(f"Definition of parameter '{name}' is missing required key(s): {', '.join(missing)}")
+
+    def get(self, name, definitions=None):
+        """Return the definition of parameter ``name``.
+
+        Parameters
+        ----------
+        name : str
+            Name of the parameter.
+        definitions : dict, optional
+            Caller-supplied definitions, with the same shape as ``_PARAMS``. They are looked up
+            first, so they take precedence over the built-in definitions for this call.
+
+        Raises
+        ------
+        KeyError
+            If ``name`` is neither in ``definitions`` nor in the built-in definitions.
+        """
+        if definitions is not None and name in definitions:
+            return definitions[name]
         return self.params[name]
 
-    def field_parameter_metadata(self, name):
-        param_item = self.get(name)
+    def field_parameter_metadata(self, name, definitions=None):
+        """Return the Field metadata associated with parameter ``name``.
+
+        Parameters
+        ----------
+        name : str
+            Name of the parameter.
+        definitions : dict, optional
+            Caller-supplied definitions, looked up before the built-in ones. See ``get``.
+        """
+        param_item = self.get(name, definitions=definitions)
         return {
             "parameter.variable": param_item["variable"],
             "parameter.units": param_item["units"],
             "parameter.standard_name": param_item["standard_name"],
         }
 
-    def xarray_variable_and_metadata(self, name):
-        param_item = self.get(name)
+    def xarray_variable_and_metadata(self, name, definitions=None):
+        """Return the xarray variable name and metadata associated with parameter ``name``.
+
+        Parameters
+        ----------
+        name : str
+            Name of the parameter.
+        definitions : dict, optional
+            Caller-supplied definitions, looked up before the built-in ones. See ``get``.
+        """
+        param_item = self.get(name, definitions=definitions)
         return param_item["variable"], {
             "long_name": param_item["long_name"],
             "units": param_item["cf_units"] if param_item["cf_units"] is not None else param_item["units"],
