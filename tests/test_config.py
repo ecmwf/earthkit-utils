@@ -18,13 +18,18 @@ implementation under test by providing the ``config`` fixture and the ``env_pref
 environment variables:
 
 - ``TestUtilsConfig``: ``earthkit.utils.config``, the implementation to be shared. The only
-  part of the file that depends on how a config is created.
+  part of the file that depends on how a config is created. It also has the tests for what is
+  specific to the shared implementation (creating configs, several configs in one process,
+  custom validators), which the existing implementations cannot run.
 - ``TestDataConfig`` and ``TestGeoConfig``: the global config object of earthkit-data and
   earthkit-geo. They show that the tests describe the behaviour of the existing
   implementations. Remove them when data and geo use ``earthkit.utils.config``.
 
 A subclass is skipped when its implementation is not available.
 """
+
+import os
+import stat
 
 import pytest
 import yaml
@@ -445,13 +450,16 @@ class TestUtilsConfig(ConfigTests):
     env_prefix = "EARTHKIT_TEST_"
 
     @pytest.fixture
-    def config(self, tmp_path):
-        module = pytest.importorskip("earthkit.utils.config")
+    def module(self):
+        return pytest.importorskip("earthkit.utils.config")
+
+    @staticmethod
+    def make_options(module):
         _ = module.ConfigOption
 
         # Same option definitions as the packages use (a subset of those defined by both
         # earthkit-data and earthkit-geo).
-        options = {
+        return {
             "url-download-timeout": _(
                 "30s",
                 "Timeout when downloading from an url.",
@@ -475,14 +483,182 @@ class TestUtilsConfig(ConfigTests):
             ),
         }
 
+    @pytest.fixture
+    def config(self, module, tmp_path):
         # NOTE: tentative signature of the creation API
         return module.Config.create(
             "test",
-            options,
+            self.make_options(module),
             version="1.0.0",
             config_file=str(tmp_path / "config.yaml"),
             env_prefix=self.env_prefix,
         )
+
+    # ------------------------------------------------------------------
+    # Tests for the parts that are specific to the shared implementation:
+    # creating configs, and several configs living in one process. The
+    # existing implementations cannot run these, since they only provide
+    # a single global config object.
+    # ------------------------------------------------------------------
+
+    def test_create_writes_default_file(self, module, tmp_path):
+        path = tmp_path / "new" / "config.yaml"
+        module.Config.create(
+            "createtest", self.make_options(module), version="1.0.0", config_file=str(path), env_prefix="EARTHKIT_X_"
+        )
+
+        # missing directories are created
+        assert path.is_file()
+        assert "url-download-timeout" not in read_config_yaml(path)
+
+    def test_create_loads_file(self, module, tmp_path):
+        path = tmp_path / "config.yaml"
+        path.write_text("url-download-timeout: 1m\nversion: 1.0.0\n")
+
+        config = module.Config.create(
+            "createtest", self.make_options(module), version="1.0.0", config_file=str(path), env_prefix="EARTHKIT_X_"
+        )
+        assert config.get("url-download-timeout") == 60
+
+    def test_create_config_file_from_env(self, module, tmp_path, monkeypatch):
+        path = tmp_path / "from-env" / "config.yaml"
+        monkeypatch.setenv("EARTHKIT_CREATETEST_CONFIG_FILE", str(path))
+
+        config = module.Config.create("createtest", self.make_options(module), version="1.0.0")
+        assert path.is_file()
+
+        config.set("url-download-timeout", 7)
+        assert read_config_yaml(path)["url-download-timeout"] == 7
+
+    def test_create_default_location(self, module, tmp_path, monkeypatch):
+        monkeypatch.delenv("EARTHKIT_CREATETEST_CONFIG_FILE", raising=False)
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+        module.Config.create("createtest", self.make_options(module), version="1.0.0")
+
+        path = tmp_path / ".config" / "earthkit" / "createtest" / "config.yaml"
+        assert path.is_file()
+        if os.name == "posix":
+            assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
+
+    def test_create_env_prefix_from_name(self, module, tmp_path, monkeypatch):
+        env_name = "EARTHKIT_CREATETEST_URL_DOWNLOAD_TIMEOUT"
+        monkeypatch.setenv(env_name, "5")
+
+        config = module.Config.create(
+            "createtest", self.make_options(module), version="1.0.0", config_file=str(tmp_path / "config.yaml")
+        )
+        assert config.get("url-download-timeout") == 5
+        assert config.env()["url-download-timeout"] == (env_name, "5")
+
+    def test_create_explicit_overrides(self, module, tmp_path, monkeypatch):
+        monkeypatch.setenv("EARTHKIT_CREATETEST_CONFIG_FILE", str(tmp_path / "from-env.yaml"))
+        monkeypatch.setenv("EARTHKIT_CREATETEST_URL_DOWNLOAD_TIMEOUT", "5")
+        path = tmp_path / "explicit.yaml"
+
+        config = module.Config.create(
+            "createtest",
+            self.make_options(module),
+            version="1.0.0",
+            config_file=str(path),
+            env_prefix="EARTHKIT_OTHER_",
+        )
+
+        # neither the file nor the environment variable derived from the name is used
+        config.set("url-download-timeout", 7)
+        assert config.get("url-download-timeout") == 7
+        assert read_config_yaml(path)["url-download-timeout"] == 7
+        assert not (tmp_path / "from-env.yaml").exists()
+
+    def test_config_autosave_file(self, config, tmp_path):
+        path = tmp_path / "config.yaml"
+        assert path.is_file()
+
+        config.set("url-download-timeout", 7)
+        assert read_config_yaml(path)["url-download-timeout"] == 7
+
+        # changes in a temporary config are not saved into the file of the config
+        with config.temporary():
+            config.set("url-download-timeout", 9)
+        assert read_config_yaml(path)["url-download-timeout"] == 7
+
+        config.autosave = False
+        config.set("url-download-timeout", 11)
+        assert read_config_yaml(path)["url-download-timeout"] == 7
+
+    def test_config_instances_independent(self, module, config, tmp_path):
+        other = module.Config.create(
+            "other",
+            self.make_options(module),
+            version="1.0.0",
+            config_file=str(tmp_path / "other.yaml"),
+            env_prefix="EARTHKIT_OTHER_",
+        )
+        calls = []
+        other.on_change(lambda: calls.append(1))
+
+        assert config.autosave
+        assert other.autosave
+
+        # autosave is not shared between configs
+        config.autosave = False
+        assert other.autosave
+
+        # nor are the values and the callbacks
+        config.set("url-download-timeout", 7)
+        assert other.get("url-download-timeout") == 30
+        assert calls == []
+
+        other.set("url-download-timeout", 9)
+        assert config.get("url-download-timeout") == 7
+        assert len(calls) == 1
+
+    def test_config_autosave_shared_with_temporary(self, config):
+        config.autosave = False
+        with config.temporary():
+            assert not config.autosave
+            config.autosave = True
+        assert config.autosave
+
+    def test_config_custom_validator(self, module, tmp_path):
+        class Even(module.Validator):
+            def check(self, value):
+                return value % 2 == 0
+
+            def explain(self):
+                return "Valid when even."
+
+        options = {"even": module.ConfigOption(2, "An even number. {validator}", validator=Even())}
+        config = module.Config.create(
+            "validatortest", options, version="1.0.0", config_file=str(tmp_path / "config.yaml")
+        )
+
+        with config.temporary():
+            config.set("even", 4)
+            assert config.get("even") == 4
+
+            with pytest.raises(ValueError, match=r"Config option 'even' cannot be set to 3\. Valid when even\."):
+                config.set("even", 3)
+            assert config.get("even") == 4
+
+        assert options["even"].docs_description == "An even number. Valid when even."
+
+    def test_config_list_validator(self, module, tmp_path):
+        options = {
+            "policy": module.ConfigOption("off", "Policy. {validator}", validator=module.ListValidator(["off", "user"]))
+        }
+        config = module.Config.create(
+            "validatortest", options, version="1.0.0", config_file=str(tmp_path / "config.yaml")
+        )
+
+        with config.temporary():
+            config.set("policy", "user")
+            assert config.get("policy") == "user"
+
+            with pytest.raises(ValueError, match="Config option 'policy' cannot be set to bad"):
+                config.set("policy", "bad")
+            assert config.get("policy") == "user"
 
 
 class TestDataConfig(ConfigTests):
