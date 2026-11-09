@@ -277,6 +277,169 @@ class ConfigTests:
             with pytest.raises(error):
                 config.get("url-download-timeout")
 
+    # ------------------------------------------------------------------
+    # Additional tests for behaviour that is documented or relied upon by
+    # the packages but not covered by the original test suites.
+    # ------------------------------------------------------------------
+
+    @pytest.fixture
+    def changes(self, config):
+        calls = []
+
+        def callback():
+            calls.append(1)
+
+        config.on_change(callback)
+        yield calls
+        # there is no public way to unregister a callback
+        config._callbacks.remove(callback)
+
+    def test_config_reset_single(self, config):
+        with config.temporary():
+            config.set({"url-download-timeout": 5, "check-out-of-date-urls": False})
+
+            config.reset("url-download-timeout")
+            assert config.get("url-download-timeout") == 30
+            assert not config.get("check-out-of-date-urls")
+
+            with pytest.raises(KeyError):
+                config.reset("_invalid_")
+
+    @pytest.mark.parametrize("autosave", [True, False])
+    def test_config_env_warning(self, config, monkeypatch, autosave):
+        env_name = self.env_prefix + "URL_DOWNLOAD_TIMEOUT"
+        monkeypatch.setenv(env_name, "5")
+        config.autosave = autosave
+
+        msg = (
+            f"Config option 'url-download-timeout' is also set by environment variable '{env_name}'."
+            "The environment variable takes precedence and its value is returned when calling get()."
+        )
+
+        with config.temporary():
+            with pytest.warns(UserWarning) as record:
+                config.set("url-download-timeout", 10)
+            assert [str(w.message) for w in record] == [
+                msg + (" Still, the value set here will be saved to the config file." if autosave else "")
+            ]
+
+            with pytest.warns(UserWarning) as record:
+                config.reset("url-download-timeout")
+            assert [str(w.message) for w in record] == [
+                msg + (" Still, the value reset here will be saved to the config file." if autosave else "")
+            ]
+
+    def test_config_env_precedence(self, config, monkeypatch):
+        # the example in the documentation
+        env_name = self.env_prefix + "URL_DOWNLOAD_TIMEOUT"
+
+        with config.temporary():
+            config.reset()
+            assert config.get("url-download-timeout") == 30
+            assert "url-download-timeout" not in config.env()
+
+            monkeypatch.setenv(env_name, "5")
+            assert config.get("url-download-timeout") == 5
+            assert config.env()["url-download-timeout"] == (env_name, "5")
+
+            with pytest.warns(UserWarning):
+                config.set("url-download-timeout", 10)
+            assert config.get("url-download-timeout") == 5
+
+            monkeypatch.delenv(env_name)
+            assert config.get("url-download-timeout") == 10
+            assert "url-download-timeout" not in config.env()
+
+    def test_config_repr(self, config, monkeypatch):
+        env_name = self.env_prefix + "URL_DOWNLOAD_TIMEOUT"
+
+        with config.temporary():
+            config.reset()
+            assert "url-download-timeout: (30s, 30s)" in repr(config).splitlines()
+
+            config.set("url-download-timeout", "1m")
+            assert "url-download-timeout: (1m, 30s)" in repr(config).splitlines()
+
+            monkeypatch.setenv(env_name, "5")
+            assert f"url-download-timeout: ({env_name}=5, 1m, 30s)" in repr(config).splitlines()
+
+    def test_config_repr_html(self, config, monkeypatch):
+        env_name = self.env_prefix + "URL_DOWNLOAD_TIMEOUT"
+
+        with config.temporary():
+            config.reset()
+            html = config._repr_html_()
+            assert html.startswith("<style")
+            assert "<table class='ek'>" in html
+            assert "<tr><th>Name</th><th>Value</th><th>Default</th></tr>" in html
+            assert "<tr><td>url-download-timeout</td><td>'30s'</td><td>'30s'</td></tr>" in html
+
+            monkeypatch.setenv(env_name, "5")
+            assert (
+                f"<tr><td>url-download-timeout</td><td>{env_name}='5'<br>('30s')</td><td>'30s'</td></tr>"
+                in config._repr_html_()
+            )
+
+    def test_config_on_change(self, config, changes):
+        def count():
+            n = len(changes)
+            changes.clear()
+            return n
+
+        with config.temporary():
+            # entering the context
+            assert count() == 1
+
+            config.set("url-download-timeout", 7)
+            assert count() == 1
+
+            config.set({"url-download-timeout": 8})
+            assert count() == 1
+
+            # NOTE: the callbacks are called twice when using keyword arguments
+            config.set(url_download_timeout=9)
+            assert count() == 2
+
+            config.reset("url-download-timeout")
+            assert count() == 1
+
+            config.reset()
+            assert count() == 1
+
+            # invalid changes are not notified
+            with pytest.raises(KeyError):
+                config.set("_invalid_", 1)
+            with pytest.raises(ValueError):
+                config.set("url-download-timeout", "A")
+            assert count() == 0
+
+        # leaving the context
+        assert count() == 1
+
+        # setting the options when creating the temporary config does not notify
+        with config.temporary("url-download-timeout", 7):
+            assert count() == 1
+        assert count() == 1
+
+    def test_config_save_as_round_trip(self, config, tmp_path):
+        path = tmp_path / "saved.yaml"
+        names = ["url-download-timeout", "check-out-of-date-urls", "maximum-cache-size", "maximum-cache-disk-usage"]
+
+        with config.temporary():
+            config.reset()
+            config.set({"url-download-timeout": "1m", "check-out-of-date-urls": False, "maximum-cache-size": "2G"})
+            expected = {k: config.get(k) for k in names}
+            config.save_as(str(path))
+
+        saved = read_config_yaml(path)
+        # the version is stored in the file but it is not a config option
+        saved.pop("version")
+
+        with config.temporary():
+            config.reset()
+            config.set(saved)
+            assert {k: config.get(k) for k in names} == expected
+
 
 class TestUtilsConfig(ConfigTests):
     env_prefix = "EARTHKIT_TEST_"
