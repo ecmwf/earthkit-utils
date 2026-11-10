@@ -484,35 +484,36 @@ class Config:
         values = self._values
         return ((k, v, self._options.get(k)) for k, v in sorted(values.items()))
 
-    def __repr__(self):
+    def _rows(self):
+        """Return (name, value, default, env) for each value, with env being (variable, value) or None."""
         values = self._values
-        r = []
         env = self._env_vars(values)
+        rows = []
         for k, v in sorted(values.items()):
             config = self._options.get(k, None)
             default = config.default if config else ""
-            if k in env:
-                r.append(f"{k}: ({env[k][0]}={env[k][1]}, {v}, {default})")
+            rows.append((k, v, default, env.get(k)))
+        return rows
+
+    def __repr__(self):
+        r = []
+        for k, v, default, env in self._rows():
+            if env:
+                r.append(f"{k}: ({env[0]}={env[1]}, {v}, {default})")
             else:
                 r.append(f"{k}: ({v}, {default})")
         return "\n".join(r)
 
     def _repr_html_(self):
-        values = self._values
         html = [css("table")]
         html.append("<table class='ek'>")
 
-        env = self._env_vars(values)
         columns = ["Name", "Value", "Default"]
         html.append("<tr><th>%s</th></tr>" % ("</th><th>".join(columns)))
 
-        for k, v in sorted(values.items()):
-            config = self._options.get(k, None)
-            default = config.default if config else ""
-            if k in env:
-                html.append(
-                    "<tr><td>%s</td><td>%s=%r<br>(%r)</td><td>%r</td></tr>" % (k, env[k][0], env[k][1], v, default)
-                )
+        for k, v, default, env in self._rows():
+            if env:
+                html.append("<tr><td>%s</td><td>%s=%r<br>(%r)</td><td>%r</td></tr>" % (k, env[0], env[1], v, default))
             else:
                 html.append("<tr><td>%s</td><td>%r</td><td>%r</td></tr>" % (k, v, default))
 
