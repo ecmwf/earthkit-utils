@@ -608,6 +608,18 @@ class TestUtilsConfig(ConfigTests):
             with pytest.raises(TypeError, match="Config option 'nothing' must be of type"):
                 config.set("nothing", 1)
 
+    def test_config_file_round_trip_of_other_kinds(self, module, tmp_path):
+        options = {"pair": module.ConfigOption((1, 2), "A pair.")}
+        path = tmp_path / "config.yaml"
+
+        config = module.Config.create("kindtest", options, version="1.0.0", config_file=str(path))
+        config.set("pair", (3, 4))
+
+        # the file has to stay readable (a tuple comes back as a list)
+        assert read_config_yaml(path)["pair"] == [3, 4]
+        other = module.Config.create("kindtest", options, version="1.0.0", config_file=str(path))
+        assert other.get("pair") == [3, 4]
+
     def test_create_env_prefix_from_name(self, module, tmp_path, monkeypatch):
         env_name = "EARTHKIT_CREATETEST_URL_DOWNLOAD_TIMEOUT"
         monkeypatch.setenv(env_name, "5")
