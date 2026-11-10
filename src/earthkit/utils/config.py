@@ -169,10 +169,10 @@ class _ConfigFile:
 
                 values.update(s)
 
-            # NOTE: this is a string comparison, which gives the wrong result for versions
-            # like 1.10.0 and 1.9.0. A file without a version fails here, which is logged
-            # as an error. When the file is saved again, the options that are not defined are
-            # dropped. These behaviours are kept as they were in earthkit-data and earthkit-geo.
+            # NOTE: known limitations. The versions are compared as strings, which gives the
+            # wrong result for versions like 1.10.0 and 1.9.0. A file without a version fails
+            # here and is logged as an error. When the file is saved again, the options that
+            # are not defined are dropped.
             if values.get("version") < self._version:  # type: ignore[operator]
                 save = True
 
@@ -200,10 +200,10 @@ class _ConfigFile:
     def _write(self, values: dict[str, Any]) -> None:
         import yaml
 
-        # NOTE: the file is rewritten in place and is not locked when it is read, so a process
-        # that starts during a save can read an empty file, and a crash while saving leaves a
-        # truncated file. Kept as it was in earthkit-data and earthkit-geo. Writing to a
-        # temporary file and replacing the config file would fix this.
+        # NOTE: known limitation. The file is rewritten in place and is not locked when it is
+        # read, so a process that starts during a save can read an empty file, and a crash
+        # while saving leaves a truncated file. Writing to a temporary file and replacing the
+        # config file would avoid this.
         LOG.debug("Saving config")
         from filelock import FileLock
 
@@ -259,8 +259,8 @@ class _Layer:
 
 
 def _default_config_file(name, version):
-    # NOTE: the file does not depend on the version yet. The version is an argument so that
-    # the location can become version specific without changing the callers.
+    # The file is the same for all versions. The version is a parameter so that a version
+    # specific location only needs a change here.
     return os.path.join(os.path.expanduser("~/.config/earthkit"), name, "config.yaml")
 
 

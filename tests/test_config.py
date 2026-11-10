@@ -8,24 +8,22 @@
 
 """Behaviour of the user-facing config object.
 
-The test bodies are taken from the existing earthkit-data and earthkit-geo test suites
-(``tests/core/test_config.py`` and ``tests/utils/test_config.py``). They only use the
-public config API as documented for those packages: ``get``, ``set``, ``reset``,
-``temporary``, ``save_as``, ``autosave`` and the environment variables.
+The tests only use the public config API as documented for earthkit-data and earthkit-geo:
+``get``, ``set``, ``reset``, ``temporary``, ``save_as``, ``autosave`` and the environment
+variables.
 
 ``ConfigTests`` holds the tests and is not collected itself. Each subclass selects the
 implementation under test by providing the ``config`` fixture and the ``env_prefix`` of its
 environment variables:
 
-- ``TestUtilsConfig``: ``earthkit.utils.config``, the implementation to be shared. The only
-  part of the file that depends on how a config is created. It also has the tests for what is
-  specific to the shared implementation (creating configs, several configs in one process,
-  custom validators), which the existing implementations cannot run.
+- ``TestUtilsConfig``: ``earthkit.utils.config``. The only part of the file that depends on
+  how a config is created. It also has the tests for what is specific to this implementation
+  (creating configs, several configs in one process, custom validators and getters).
 - ``TestDataConfig`` and ``TestGeoConfig``: the global config object of earthkit-data and
-  earthkit-geo. They show that the tests describe the behaviour of the existing
-  implementations. Remove them when data and geo use ``earthkit.utils.config``.
+  earthkit-geo, which have to pass the same tests. Remove them when data and geo use
+  ``earthkit.utils.config``.
 
-A subclass is skipped when its implementation is not available.
+The subclasses for earthkit-data and earthkit-geo are skipped when the package is not installed.
 """
 
 import os
@@ -33,6 +31,9 @@ import stat
 
 import pytest
 import yaml
+
+from earthkit.utils import config as config_module
+from earthkit.utils import humanise
 
 
 def read_config_yaml(path):
@@ -301,8 +302,8 @@ class ConfigTests:
                 config.get("url-download-timeout")
 
     # ------------------------------------------------------------------
-    # Additional tests for behaviour that is documented or relied upon by
-    # the packages but not covered by the original test suites.
+    # Further behaviour of the public API that is documented or relied
+    # upon by the packages.
     # ------------------------------------------------------------------
 
     @pytest.fixture
@@ -469,11 +470,10 @@ class TestUtilsConfig(ConfigTests):
 
     @pytest.fixture
     def module(self):
-        return pytest.importorskip("earthkit.utils.config")
+        return config_module
 
     @staticmethod
     def make_options(module):
-        humanise = pytest.importorskip("earthkit.utils.humanise")
         _ = module.ConfigOption
 
         # Same option definitions as the packages use (a subset of those defined by both
@@ -504,7 +504,6 @@ class TestUtilsConfig(ConfigTests):
 
     @pytest.fixture
     def config(self, module, tmp_path):
-        # NOTE: tentative signature of the creation API
         return module.Config.create(
             "test",
             self.make_options(module),
@@ -514,10 +513,8 @@ class TestUtilsConfig(ConfigTests):
         )
 
     # ------------------------------------------------------------------
-    # Tests for the parts that are specific to the shared implementation:
-    # creating configs, and several configs living in one process. The
-    # existing implementations cannot run these, since they only provide
-    # a single global config object.
+    # Tests for the parts that are specific to this implementation:
+    # creating configs, and several configs living in one process.
     # ------------------------------------------------------------------
 
     def test_create_writes_default_file(self, module, tmp_path):

@@ -10,9 +10,7 @@
 
 import pytest
 
-# The tests run against ``earthkit.utils.humanise``. During the move they were
-# validated against the original implementations in earthkit-data and earthkit-geo.
-humanise = pytest.importorskip("earthkit.utils.humanise")
+from earthkit.utils import humanise
 
 
 @pytest.mark.parametrize(

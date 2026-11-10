@@ -10,9 +10,7 @@
 
 import pytest
 
-# The tests run against ``earthkit.utils.html``. During the move they were
-# validated against the original implementations in earthkit-data and earthkit-geo.
-html = pytest.importorskip("earthkit.utils.html")
+from earthkit.utils import html
 
 
 def test_css_table():
