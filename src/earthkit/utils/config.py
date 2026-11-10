@@ -25,7 +25,7 @@ import logging
 import os
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Callable
+from typing import Any, Callable, ContextManager, Iterator
 
 from earthkit.utils.html import css
 from earthkit.utils.humanise import list_to_human
@@ -83,13 +83,13 @@ class ConfigOption:
 
     def __init__(
         self,
-        default,
-        description,
-        getter=None,
-        none_ok=False,
-        kind=None,
-        docs_default=None,
-        validator=None,
+        default: Any,
+        description: str,
+        getter: Callable[..., Any] | None = None,
+        none_ok: bool = False,
+        kind: type | None = None,
+        docs_default: Any = None,
+        validator: Validator | None = None,
     ):
         if getter is not None and not callable(getter):
             raise TypeError(f"The getter of a config option must be a function, not {getter!r}")
@@ -210,7 +210,15 @@ class Config:
         Save the config file when an option changes. Also applies to the temporary configs.
     """
 
-    def __init__(self, name, options, *, version, config_file=None, env_prefix=None):
+    def __init__(
+        self,
+        name: str,
+        options: dict[str, ConfigOption],
+        *,
+        version: str,
+        config_file: str | None = None,
+        env_prefix: str | None = None,
+    ):
         self._name = name
         self._options = dict(options)
         self._version = version
@@ -219,11 +227,19 @@ class Config:
         # The first layer holds the values of the config. Each active temporary config adds
         # a layer on top, which is where all the changes go until the temporary config ends.
         self._layers = [_Layer(dict(self._defaults), config_file)]
-        self._callbacks = []
+        self._callbacks: list[Callable[[], None]] = []
         self.autosave = True
 
     @classmethod
-    def create(cls, name, options, *, version, config_file=None, env_prefix=None):
+    def create(
+        cls,
+        name: str,
+        options: dict[str, ConfigOption],
+        *,
+        version: str,
+        config_file: str | None = None,
+        env_prefix: str | None = None,
+    ) -> "Config":
         """Create the config of a package, using its config file.
 
         The config file is ``config_file`` when it is given, otherwise the file set in the
@@ -365,7 +381,8 @@ class Config:
                 exc_info=True,
             )
 
-    def save_as(self, path):
+    def save_as(self, path: str) -> None:
+        """Save the current values into the file at ``path``."""
         try:
             self._write(path, self._values)
         except Exception:
@@ -378,7 +395,7 @@ class Config:
     # access
     # ------------------------------------------------------------------
 
-    def get(self, name: str, default=None):
+    def get(self, name: str, default: Any = None) -> Any:
         """Get the value of a configuration option.
 
         Parameters
@@ -405,7 +422,7 @@ class Config:
             return value
         return config_item.getter(value, name=name, none_ok=config_item.none_ok)
 
-    def set(self, *args, **kwargs):
+    def set(self, *args: Any, **kwargs: Any) -> None:
         """Set the value of a configuration option.
 
         Either all the options are set or, when one of them is invalid, none.
@@ -461,7 +478,7 @@ class Config:
         LOG.debug(f"set {name}={value} layers={len(self._layers)}")
         return value
 
-    def reset(self, name: str = None):
+    def reset(self, name: str | None = None) -> None:
         """Reset config to default values.
 
         Parameters
@@ -480,7 +497,11 @@ class Config:
             self._values[name] = self._defaults[name]
         self._changed()
 
-    def dump(self):
+    def dump(self) -> Iterator[tuple[str, Any, ConfigOption | None]]:
+        """Return an iterator over the sorted (name, value, option) of the current values.
+
+        The option is ``None`` for values without a definition, such as ``version``.
+        """
         values = self._values
         return ((k, v, self._options.get(k)) for k, v in sorted(values.items()))
 
@@ -533,10 +554,11 @@ class Config:
         for cb in self._callbacks:
             cb()
 
-    def on_change(self, callback: Callable[[], None]):
+    def on_change(self, callback: Callable[[], None]) -> None:
+        """Call ``callback()`` when an option changes or a temporary config starts or ends."""
         self._callbacks.append(callback)
 
-    def temporary(self, *args, config_yaml=None, **kwargs):
+    def temporary(self, *args: Any, config_yaml: str | None = None, **kwargs: Any) -> ContextManager[None]:
         """Return a context manager that applies the options temporarily.
 
         Without options, the current values are used. Changes made in the context are not
@@ -585,7 +607,8 @@ class Config:
                 r[k] = (name, value)
         return r
 
-    def env(self):
+    def env(self) -> dict[str, tuple[str, str]]:
+        """Return the options overridden by an environment variable as ``{name: (variable, value)}``."""
         return self._env_vars(self._layers[0].values)
 
     def _warn_if_env(self, name, action):
