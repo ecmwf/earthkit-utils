@@ -561,6 +561,53 @@ class TestUtilsConfig(ConfigTests):
         if os.name == "posix":
             assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
 
+    def test_create_relative_config_file(self, module, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+
+        config = module.Config.create(
+            "createtest",
+            self.make_options(module),
+            version="1.0.0",
+            config_file="relative.yaml",
+            env_prefix="EARTHKIT_X_",
+        )
+        assert (tmp_path / "relative.yaml").is_file()
+
+        # the file does not depend on the working directory
+        other = tmp_path / "other"
+        other.mkdir()
+        monkeypatch.chdir(other)
+        config.set("url-download-timeout", 7)
+        assert read_config_yaml(tmp_path / "relative.yaml")["url-download-timeout"] == 7
+        assert not (other / "relative.yaml").exists()
+
+    def test_create_relative_config_file_from_env(self, module, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("EARTHKIT_CREATETEST_CONFIG_FILE", "relative.yaml")
+
+        module.Config.create("createtest", self.make_options(module), version="1.0.0")
+        assert (tmp_path / "relative.yaml").is_file()
+
+    def test_config_other_kinds(self, module, tmp_path):
+        options = {
+            "pair": module.ConfigOption((1, 2), "A pair."),
+            "nothing": module.ConfigOption(None, "Not set."),
+        }
+        config = module.Config.create("kindtest", options, version="1.0.0", config_file=str(tmp_path / "config.yaml"))
+
+        with config.temporary():
+            config.set("pair", (3, 4))
+            assert config.get("pair") == (3, 4)
+
+            with pytest.raises(TypeError, match="Config option 'pair' must be of type"):
+                config.set("pair", [3, 4])
+            assert config.get("pair") == (3, 4)
+
+            config.set("nothing", None)
+            assert config.get("nothing") is None
+            with pytest.raises(TypeError, match="Config option 'nothing' must be of type"):
+                config.set("nothing", 1)
+
     def test_create_env_prefix_from_name(self, module, tmp_path, monkeypatch):
         env_name = "EARTHKIT_CREATETEST_URL_DOWNLOAD_TIMEOUT"
         monkeypatch.setenv(env_name, "5")

@@ -148,6 +148,41 @@ def _default_env_prefix(name):
     return f"EARTHKIT_{name.upper().replace('-', '_')}_"
 
 
+def _value_of_kind(name, klass, args, kwargs):
+    """Return the value of an option without a getter from the arguments of set()."""
+    if klass in (bool, int, float, str):
+        # TODO: Proper exceptions
+        assert len(args) == 1
+        assert len(kwargs) == 0
+        value = args[0]
+        if value is not None and klass is bool:
+            try:
+                value = klass(value)
+            except Exception as e:
+                raise ValueError(f"Invalid value for config option '{name}': {value}") from e
+        return value
+
+    if klass is list:
+        assert len(args) > 0
+        assert len(kwargs) == 0
+        if len(args) == 1 and isinstance(args[0], list):
+            return args[0]
+        return list(args)
+
+    if klass is dict:
+        assert len(args) <= 1
+        if len(args) == 0:
+            assert len(kwargs) > 0
+            return kwargs
+        assert len(kwargs) == 0
+        return args[0]
+
+    # any other type takes a single value
+    assert len(args) == 1
+    assert len(kwargs) == 0
+    return args[0]
+
+
 class Config:
     """The configuration of an earthkit package.
 
@@ -202,6 +237,8 @@ class Config:
             config_file = os.environ.get(env_prefix + "CONFIG_FILE")
         if not config_file:
             config_file = _default_config_file(name, version)
+        # so that the file does not depend on the working directory
+        config_file = os.path.abspath(config_file)
 
         config = cls(name, options, version=version, config_file=config_file, env_prefix=env_prefix)
         config._init_file()
@@ -227,9 +264,9 @@ class Config:
 
     def _init_file(self):
         config_file = self._layers[0].file
+        config_dir = os.path.dirname(config_file)
 
         try:
-            config_dir = os.path.dirname(config_file)
             if not os.path.exists(config_dir):
                 ori_mask = os.umask(0o077)
                 try:
@@ -407,37 +444,6 @@ class Config:
 
         config_item = self._options[name]
 
-        klass = config_item.kind
-
-        if klass in (bool, int, float, str):
-            # TODO: Proper exceptions
-            assert len(args) == 1
-            assert len(kwargs) == 0
-            value = args[0]
-            if value is not None:
-                if klass is bool:
-                    try:
-                        value = klass(value)
-                    except Exception as e:
-                        raise ValueError(f"Invalid value for config option '{name}': {value}") from e
-
-        if klass is list:
-            assert len(args) > 0
-            assert len(kwargs) == 0
-            value = list(args)
-            if len(args) == 1 and isinstance(args[0], list):
-                value = args[0]
-
-        if klass is dict:
-            assert len(args) <= 1
-            if len(args) == 0:
-                assert len(kwargs) > 0
-                value = kwargs
-
-            if len(args) == 1:
-                assert len(kwargs) == 0
-                value = args[0]
-
         if config_item.getter is not None:
             assert len(args) == 1
             assert len(kwargs) == 0
@@ -445,6 +451,8 @@ class Config:
             # Check if value is properly formatted for getter
             config_item.getter(value, name=name, none_ok=config_item.none_ok)
         else:
+            klass = config_item.kind
+            value = _value_of_kind(name, klass, args, kwargs)
             if not isinstance(value, klass):
                 raise TypeError("Config option '%s' must be of type '%s'" % (name, klass))
 
