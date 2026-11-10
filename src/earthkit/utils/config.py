@@ -21,8 +21,6 @@ variables, the values set in the session and the config file, which by default i
 """
 
 import contextlib
-import copy
-import functools
 import logging
 import os
 import warnings
@@ -132,30 +130,22 @@ class ConfigOption:
             raise ValueError(f"Config option '{name}' cannot be set to {value}. {self.validator.explain()}")
 
 
-def forward(func):
-    """Run the method on the innermost active temporary config, if there is one."""
+class _Layer:
+    """The values of a config, and the file they are saved to."""
 
-    @functools.wraps(func)
-    def wrapped(self, *args, **kwargs):
-        # only the root config has a stack, the temporary configs are applied directly
-        if self._stack:
-            return func(self._stack[-1], *args, **kwargs)
-        return func(self, *args, **kwargs)
-
-    return wrapped
-
-
-class _Shared:
-    """State shared by a config and its temporary configs."""
-
-    def __init__(self):
-        self.autosave = True
+    def __init__(self, values, file):
+        self.values = values
+        self.file = file
 
 
 def _default_config_file(name, version):
     # NOTE: the file does not depend on the version yet. The version is an argument so that
     # the location can become version specific without changing the callers.
     return os.path.join(os.path.expanduser("~/.config/earthkit"), name, "config.yaml")
+
+
+def _default_env_prefix(name):
+    return f"EARTHKIT_{name.upper().replace('-', '_')}_"
 
 
 class Config:
@@ -178,20 +168,24 @@ class Config:
     env_prefix: str, optional
         Prefix of the environment variables that override the options.
         Defaults to ``EARTHKIT_<NAME>_``.
+
+    Attributes
+    ----------
+    autosave: bool
+        Save the config file when an option changes. Also applies to the temporary configs.
     """
 
     def __init__(self, name, options, *, version, config_file=None, env_prefix=None):
         self._name = name
         self._options = dict(options)
         self._version = version
-        self._config_file = config_file
         self._env_prefix = env_prefix if env_prefix is not None else _default_env_prefix(name)
         self._defaults = {k: v.default for k, v in self._options.items()}
-        self._config = dict(self._defaults)
+        # The first layer holds the values of the config. Each active temporary config adds
+        # a layer on top, which is where all the changes go until the temporary config ends.
+        self._layers = [_Layer(dict(self._defaults), config_file)]
         self._callbacks = []
-        self._stack = []
-        self._root = self
-        self._shared = _Shared()
+        self.autosave = True
 
     @classmethod
     def create(cls, name, options, *, version, config_file=None, env_prefix=None):
@@ -215,16 +209,24 @@ class Config:
             config._save()
         return config
 
-    # ------------------------------------------------------------------
-    # file
-    # ------------------------------------------------------------------
+    @property
+    def _values(self):
+        return self._layers[-1].values
+
+    @_values.setter
+    def _values(self, values):
+        self._layers[-1].values = values
 
     @property
     def _label(self):
         return f"earthkit-{self._name}"
 
+    # ------------------------------------------------------------------
+    # file
+    # ------------------------------------------------------------------
+
     def _init_file(self):
-        config_file = self._config_file
+        config_file = self._layers[0].file
 
         try:
             config_dir = os.path.dirname(config_file)
@@ -254,27 +256,28 @@ class Config:
         """Read the config file. Return True if the file has to be saved again."""
         import yaml
 
+        layer = self._layers[0]
         save = False
         try:
-            with open(self._config_file) as f:
+            with open(layer.file) as f:
                 s = yaml.load(f, Loader=yaml.SafeLoader)
                 if not isinstance(s, dict):
                     s = {}
 
-                self._config.update(s)
+                layer.values.update(s)
 
             # NOTE: this is a string comparison, which gives the wrong result for versions
             # like 1.10.0 and 1.9.0. A file without a version fails here, which is logged
             # as an error. When the file is saved again, the options that are not defined are
             # dropped. These behaviours are kept as they were in earthkit-data and earthkit-geo.
-            if self._config.get("version") < self._version:
+            if layer.values.get("version") < self._version:
                 save = True
 
         except Exception:
             LOG.error(
                 "Cannot load %s config (%s), reverting to defaults",
                 self._label,
-                self._config_file,
+                layer.file,
                 exc_info=True,
             )
 
@@ -310,24 +313,24 @@ class Config:
         except OSError:
             pass
 
-    def _save(self):
-        if self._config_file is None:
+    def _save(self, layer=None):
+        layer = layer if layer is not None else self._layers[-1]
+        if layer.file is None:
             return
 
         try:
-            self._write(self._config_file, self._config)
+            self._write(layer.file, layer.values)
         except Exception:
             LOG.error(
                 "Cannot save %s config (%s)",
                 self._label,
-                self._config_file,
+                layer.file,
                 exc_info=True,
             )
 
-    @forward
     def save_as(self, path):
         try:
-            self._write(path, self._config)
+            self._write(path, self._values)
         except Exception:
             LOG.error(
                 f"Cannot save {self._label} config ({path})",
@@ -338,7 +341,6 @@ class Config:
     # access
     # ------------------------------------------------------------------
 
-    @forward
     def get(self, name: str, default=None):
         """Get the value of a configuration option.
 
@@ -360,15 +362,16 @@ class Config:
 
         st, value, _ = self._env(name)
         if not st:
-            value = self._config[name]
+            value = self._values[name]
 
         if config_item.getter is None:
             return value
         return config_item.getter(value, name=name, none_ok=config_item.none_ok)
 
-    @forward
     def set(self, *args, **kwargs):
         """Set the value of a configuration option.
+
+        Either all the options are set or, when one of them is invalid, none.
 
         Parameters
         ----------
@@ -377,21 +380,26 @@ class Config:
         **kwargs
             Options as keyword arguments, with ``_`` instead of ``-`` in the names.
         """
+        self._values.update(self._prepare_all(args, kwargs))
+        self._changed()
+        if len(args) == 0:
+            # NOTE: with keyword arguments the changes are notified twice
+            self._changed()
+
+    def _prepare_all(self, args, kwargs):
+        """Return the (name, value) pairs of the arguments of set(). Nothing is changed."""
         if len(args) == 0:
             assert len(kwargs) > 0
-            for k, v in kwargs.items():
-                self._set(k.replace("_", "-"), v)
-            self._changed()
+            items = [(k.replace("_", "-"), (v,), {}) for k, v in kwargs.items()]
+        elif len(args) == 1 and isinstance(args[0], dict):
+            items = [(k, (v,), {}) for k, v in args[0].items()]
         else:
-            if len(args) == 1 and isinstance(args[0], dict):
-                for k, v in args[0].items():
-                    self._set(k, v)
-            else:
-                self._set(*args, **kwargs)
-        # NOTE: with keyword arguments the changes are notified twice
-        self._changed()
+            items = [(args[0], args[1:], kwargs)]
 
-    def _set(self, name: str, *args, **kwargs):
+        return [(name, self._prepare(name, *a, **kw)) for name, a, kw in items]
+
+    def _prepare(self, name: str, *args, **kwargs):
+        """Check and convert the value of an option to what is stored."""
         if name not in self._options:
             raise KeyError("No config option '%s'" % (name,))
 
@@ -441,11 +449,10 @@ class Config:
                 raise TypeError("Config option '%s' must be of type '%s'" % (name, klass))
 
         config_item.validate(name, value)
-        self._config[name] = value
 
-        LOG.debug(f"_set {name}={value} stack_size={len(self._root._stack)}")
+        LOG.debug(f"set {name}={value} layers={len(self._layers)}")
+        return value
 
-    @forward
     def reset(self, name: str = None):
         """Reset config to default values.
 
@@ -456,26 +463,24 @@ class Config:
             options are reset to their default values. Defaults to None.
         """
         if name is None:
-            self._config = dict(**self._defaults)
+            self._values = dict(self._defaults)
         else:
             if name not in self._defaults:
                 raise KeyError("No config option name '%s'" % (name,))
 
-            self._config.pop(name, None)
             self._warn_if_env(name, "reset")
-            self._config[name] = self._defaults[name]
+            self._values[name] = self._defaults[name]
         self._changed()
 
-    @forward
     def dump(self):
-        for k, v in sorted(self._config.items()):
-            yield ((k, v, self._options.get(k)))
+        values = self._values
+        return ((k, v, self._options.get(k)) for k, v in sorted(values.items()))
 
-    @forward
     def __repr__(self):
+        values = self._values
         r = []
-        env = self.env()
-        for k, v in sorted(self._config.items()):
+        env = self._env_vars(values)
+        for k, v in sorted(values.items()):
             config = self._options.get(k, None)
             default = config.default if config else ""
             if k in env:
@@ -484,16 +489,16 @@ class Config:
                 r.append(f"{k}: ({v}, {default})")
         return "\n".join(r)
 
-    @forward
     def _repr_html_(self):
+        values = self._values
         html = [css("table")]
         html.append("<table class='ek'>")
 
-        env = self.env()
+        env = self._env_vars(values)
         columns = ["Name", "Value", "Default"]
         html.append("<tr><th>%s</th></tr>" % ("</th><th>".join(columns)))
 
-        for k, v in sorted(self._config.items()):
+        for k, v in sorted(values.items()):
             config = self._options.get(k, None)
             default = config.default if config else ""
             if k in env:
@@ -522,43 +527,29 @@ class Config:
     def on_change(self, callback: Callable[[], None]):
         self._callbacks.append(callback)
 
-    @property
-    def autosave(self):
-        """Save the config file when an option changes (shared with the temporary configs)."""
-        return self._shared.autosave
-
-    @autosave.setter
-    def autosave(self, v):
-        self._shared.autosave = v
-
-    @forward
     def temporary(self, *args, config_yaml=None, **kwargs):
         """Return a context manager that applies the options temporarily.
 
         Without options, the current values are used. Changes made in the context are not
         saved into the config file of the config, but into ``config_yaml`` when it is given.
         """
-        tmp = copy.copy(self)
-        tmp._config = dict(self._config)
-        tmp._config_file = config_yaml
-        tmp._stack = []
-        # until the tmp object is at the top of the stack we do not want
-        # notify the observers
+        layer = _Layer(dict(self._values), config_yaml)
         if len(args) > 0 or len(kwargs) > 0:
-            # tmp does not have any callbacks so it will not broadcast the changes
-            tmp._callbacks = []
-            tmp.set(*args, **kwargs)
-        tmp._callbacks = self._callbacks
-        return self._root._push(tmp)
+            layer.values.update(self._prepare_all(args, kwargs))
+            # the callbacks are not notified until the layer is active
+            if self.autosave:
+                self._save(layer)
+        return self._activate(layer)
 
     @contextlib.contextmanager
-    def _push(self, tmp):
-        self._stack.append(tmp)
-        self._notify()
+    def _activate(self, layer):
+        self._layers.append(layer)
         try:
+            self._notify()
             yield None
         finally:
-            self._stack.pop()
+            # not pop(): the contexts do not have to end in the order they started
+            self._layers.remove(layer)
             self._notify()
 
     # ------------------------------------------------------------------
@@ -577,13 +568,16 @@ class Config:
             return (True, os.environ.get(name), name)
         return (False, None, None)
 
-    def env(self):
+    def _env_vars(self, values):
         r = {}
-        for k in sorted(self._config.keys()):
+        for k in sorted(values.keys()):
             st, value, name = self._env(k)
             if st:
                 r[k] = (name, value)
         return r
+
+    def env(self):
+        return self._env_vars(self._layers[0].values)
 
     def _warn_if_env(self, name, action):
         if self._has_env(name):
@@ -594,7 +588,3 @@ class Config:
             if self.autosave:
                 msg += f" Still, the value {action} here will be saved to the config file."
             warnings.warn(msg)
-
-
-def _default_env_prefix(name):
-    return f"EARTHKIT_{name.upper().replace('-', '_')}_"

@@ -216,6 +216,24 @@ class ConfigTests:
                 assert config.get("url-download-timeout") == 10
             assert config.get("url-download-timeout") == 7
 
+    def test_config_temporary_file(self, config, tmp_path):
+        path = tmp_path / "temporary.yaml"
+
+        # nothing is saved until something changes
+        with config.temporary(config_yaml=str(path)):
+            assert not path.exists()
+
+        # the initial options are saved when the temporary config is created
+        with config.temporary("url-download-timeout", 7, config_yaml=str(path)):
+            assert read_config_yaml(path)["url-download-timeout"] == 7
+
+    def test_config_temporary_reset_nested(self, config):
+        with config.temporary("url-download-timeout", 7):
+            with config.temporary("url-download-timeout", 10):
+                config.reset()
+                assert config.get("url-download-timeout") == 30
+            assert config.get("url-download-timeout") == 7
+
     def test_config_temporary_autosave_1(self, config, tmp_path):
         config_file = str(tmp_path / "temporary.yaml")
 
@@ -621,6 +639,45 @@ class TestUtilsConfig(ConfigTests):
             assert not config.autosave
             config.autosave = True
         assert config.autosave
+
+    def test_config_temporary_callback_error(self, config):
+        def fail():
+            raise RuntimeError("callback failed")
+
+        config.on_change(fail)
+        try:
+            with pytest.raises(RuntimeError):
+                with config.temporary("url-download-timeout", 7):
+                    pass
+        finally:
+            config._callbacks.remove(fail)
+
+        # the temporary config must not stay active
+        assert config.get("url-download-timeout") == 30
+
+    def test_config_temporary_exit_out_of_order(self, config):
+        first = config.temporary("url-download-timeout", 10)
+        second = config.temporary("url-download-timeout", 20)
+
+        first.__enter__()
+        second.__enter__()
+        first.__exit__(None, None, None)
+        assert config.get("url-download-timeout") == 20
+
+        second.__exit__(None, None, None)
+        assert config.get("url-download-timeout") == 30
+
+    def test_config_set_multi_invalid_is_atomic(self, config, tmp_path, changes):
+        path = tmp_path / "config.yaml"
+        changes.clear()
+
+        with pytest.raises(ValueError):
+            config.set({"url-download-timeout": 5, "maximum-cache-size": "bad"})
+
+        # none of the options is changed, saved or notified
+        assert config.get("url-download-timeout") == 30
+        assert "url-download-timeout" not in read_config_yaml(path)
+        assert changes == []
 
     def test_config_custom_validator(self, module, tmp_path):
         class Even(module.Validator):
