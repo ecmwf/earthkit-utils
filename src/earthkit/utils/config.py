@@ -34,15 +34,10 @@ from earthkit.utils.humanise import list_to_human
 
 LOG = logging.getLogger(__name__)
 
-NONE = object()
-
 
 class Validator(metaclass=ABCMeta):
     """Check the values of a config option."""
 
-    # The validator classes used by ``make()`` for the type of a value
-    _validators = {}
-
     @abstractmethod
     def check(self, value):
         pass
@@ -50,25 +45,6 @@ class Validator(metaclass=ABCMeta):
     @abstractmethod
     def explain(self):
         pass
-
-    @staticmethod
-    def make(value):
-        v = Validator._validators.get(type(value), None)
-        if v is not None:
-            return v(value)
-        else:
-            raise TypeError(f"Cannot create Validator for type={type(value)}")
-
-
-class ValueValidator(Validator):
-    def __init__(self, value):
-        self.value = value
-
-    def check(self, value):
-        return value == self.value
-
-    def explain(self):
-        return f"Valid when = {self.value}."
 
 
 class ListValidator(Validator):
@@ -82,9 +58,6 @@ class ListValidator(Validator):
 
     def explain(self):
         return f"Valid values: {list_to_human(self.values)}."
-
-
-Validator._validators.update({bool: ValueValidator, list: ListValidator})
 
 
 class ConfigOption:
@@ -366,7 +339,7 @@ class Config:
     # ------------------------------------------------------------------
 
     @forward
-    def get(self, name: str, default=NONE):
+    def get(self, name: str, default=None):
         """Get the value of a configuration option.
 
         Parameters
@@ -374,7 +347,7 @@ class Config:
         name: str
             The name of the configuration option.
         default: optional
-            Value returned when the option has no value. Defaults to NONE, which raises an error.
+            Not used, every option always has a value. Only kept so that existing calls work.
 
         Returns
         -------
@@ -387,10 +360,7 @@ class Config:
 
         st, value, _ = self._env(name)
         if not st:
-            if default is NONE:
-                value = self._config[name]
-            else:
-                value = self._config.get(name, default)
+            value = self._config[name]
 
         if config_item.getter is None:
             return value
