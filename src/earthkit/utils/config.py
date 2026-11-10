@@ -339,6 +339,9 @@ class Config:
     def _write(self, path, values):
         import yaml
 
+        # NOTE: the file is rewritten in place and is not locked when it is read, so a process
+        # that starts during a save can read an empty file, and a crash while saving leaves a
+        # truncated file. Locking on read would interfere with read-only config locations.
         LOG.debug("Saving config")
         from filelock import FileLock
 
