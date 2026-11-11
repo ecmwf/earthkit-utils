@@ -84,6 +84,7 @@ __all__ = [
     "Target",
     "add_options",
     "index_option",
+    "parse_index",
     "profile_option",
     "source_options",
     "split_csv",
@@ -117,6 +118,9 @@ TARGET_HELP = (
 )
 
 _NAME_PATTERN = re.compile(r"[A-Za-z][\w-]*")
+
+#: Short flags of the default source and target options, the only ones in the common arguments table.
+_SHORT_FLAGS = {"source": "-s", "target": "-t"}
 
 
 def split_csv(ctx: click.Context, param: click.Parameter, value: Iterable[str] | None) -> list[str] | None:
@@ -260,13 +264,17 @@ def _data_param(name: str, positional: bool, help: str, **attrs: Any) -> Callabl
     if positional:
         # click arguments have no help, the command docstring describes them
         return click.argument(name, metavar=name.upper(), required=True, **attrs)
-    return click.option("--" + name.replace("_", "-"), name, required=True, metavar="[NAME:]VALUE", help=help, **attrs)
+    flags = [_SHORT_FLAGS[name]] if name in _SHORT_FLAGS else []
+    return click.option(
+        *flags, "--" + name.replace("_", "-"), name, required=True, metavar="[NAME:]VALUE", help=help, **attrs
+    )
 
 
 def source_options(name: str = "source", *, positional: bool = False) -> Callable[[Any], Any]:
     """Add earthkit-data sources to a command, passed to the command as ``name``.
 
-    Adds the repeatable ``--name`` option, with dashes in ``name``, taking a ``[NAME:]VALUE`` string, e.g.
+    Adds the repeatable ``--name`` option, with dashes in ``name`` (and the short flag ``-s`` for the default
+    ``source``), taking a ``[NAME:]VALUE`` string, e.g.
     ``file:/path/to/file.nc``, ``url:https://myhost.int/file.nc`` or ``mars:{"param": "2t"}``. The command gets
     the object returned by :func:`earthkit.data.from_source`, with several sources merged into a ``multi``
     source. Use a different ``name`` for each source of a command with several sources, e.g. ``source_1``
@@ -289,7 +297,8 @@ def source_options(name: str = "source", *, positional: bool = False) -> Callabl
 def target_options(name: str = "target", *, positional: bool = False) -> Callable[[Any], Any]:
     """Add an earthkit-data target to a command, passed to the command as the :class:`Target` ``name``.
 
-    Adds the ``--name`` option, with dashes in ``name``, taking a ``[NAME:]VALUE`` string, e.g.
+    Adds the ``--name`` option, with dashes in ``name`` (and the short flag ``-t`` for the default ``target``),
+    taking a ``[NAME:]VALUE`` string, e.g.
     ``file:/path/to/file.nc`` or ``zarr:{"xarray_to_zarr_kwargs": {"store": "out.zarr"}}``. Use a different
     ``name`` for each target of a command with several targets.
 
@@ -319,10 +328,11 @@ profile_option = click.option(
 )
 
 
-def _parse_index(ctx: click.Context, param: click.Parameter, value: str | None) -> int | list[int] | slice | None:
-    """Turn an index string into an int (``3``), a list (``4,5,8``) or a slice (``1:7``, ``::2``)."""
-    if value is None:
-        return None
+def parse_index(value: str) -> int | list[int] | slice:
+    """Turn an index string into an int (``3``), a list (``4,5,8``) or a slice (``1:7``, ``::2``).
+
+    Slices exclude their STOP, as in Python. Raises :class:`click.BadParameter` for invalid values.
+    """
     try:
         if ":" in value:
             parts = value.split(":")
@@ -336,6 +346,11 @@ def _parse_index(ctx: click.Context, param: click.Parameter, value: str | None) 
         raise click.BadParameter(
             f"Expected an integer, a comma-separated list or a START:STOP[:STEP] slice, got {value!r}"
         )
+
+
+def _parse_index(ctx: click.Context, param: click.Parameter, value: str | None) -> int | list[int] | slice | None:
+    """The callback of :data:`index_option`, see :func:`parse_index`."""
+    return None if value is None else parse_index(value)
 
 
 #: The index of the items to use, passed as ``index``: an int, a list of ints, a slice, or None if not given.

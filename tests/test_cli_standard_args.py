@@ -22,6 +22,7 @@ from earthkit.cli.standard_args import (
     Target,
     add_options,
     index_option,
+    parse_index,
     profile_option,
     source_options,
     split_csv,
@@ -152,6 +153,28 @@ def test_index_option_invalid(value):
     assert "Invalid value for '-i' / '--index'" in result.output
 
 
+@pytest.mark.parametrize("value, expected", (("3", 3), ("-2", -2), ("0,2", [0, 2]), ("1:5:2", slice(1, 5, 2))))
+def test_parse_index(value, expected):
+    assert parse_index(value) == expected
+
+
+def test_parse_index_invalid():
+    with pytest.raises(click.BadParameter):
+        parse_index("x")
+
+
+def test_standard_args_short_flags(source_file, tmp_path):
+    target = tmp_path / "out.nc"
+    result = _invoke(_command, "-s", str(source_file), "-t", str(target))
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["data"][1] == [["file", str(target)], {}]
+
+
+def test_named_sources_have_no_short_flags():
+    usage = _invoke(_two_sources, "--help").output
+    assert "--source-1" in usage and "-s," not in usage
+
+
 def test_standard_args_stdio(earthkit_data):
     @click.command()
     @add_options([source_options(positional=True), target_options(positional=True)])
@@ -166,9 +189,10 @@ def test_standard_args_stdio(earthkit_data):
 
 
 def test_standard_args_help_text():
-    usage = " ".join(_invoke(_command, "--help").output.split())
+    # click may wrap the help at hyphens, e.g. "earthkit-" / "data", so compare without whitespace
+    usage = "".join(_invoke(_command, "--help").output.split())
     for text in (SOURCE_HELP, TARGET_HELP):
-        assert " ".join(text.split()) in usage
+        assert "".join(text.split()) in usage
 
 
 def test_standard_args_files(source_file, tmp_path):
@@ -279,8 +303,8 @@ def test_standard_args_two_sources(source_file, tmp_path):
 @pytest.mark.parametrize(
     "args, message",
     (
-        (["--target", "file:{tmp}/out.nc"], "Missing option '--source'"),
-        (["--source", "file:{src}"], "Missing option '--target'"),
+        (["--target", "file:{tmp}/out.nc"], "Missing option '-s' / '--source'"),
+        (["--source", "file:{src}"], "Missing option '-t' / '--target'"),
         (["--source", "{tmp}/missing.grib", "--target", "{tmp}/o.nc"], "does not exist"),
         (["--source", "{src}", "--target", "{tmp}"], "is a directory"),
         (["--source", "file:{tmp}/missing.grib", "--target", "file:{tmp}/o.nc"], "does not exist"),
