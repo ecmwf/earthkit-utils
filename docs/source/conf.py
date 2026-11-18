@@ -108,6 +108,7 @@ extlinks = {
 # intersphinx configuration, to automatically link to upstream documentation.
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
+    "click": ("https://click.palletsprojects.com/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
     "pandas": ("https://pandas.pydata.org/docs/", None),
