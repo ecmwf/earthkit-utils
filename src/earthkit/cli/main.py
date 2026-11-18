@@ -34,7 +34,8 @@ imported by the discovery, and the commands of all its submodules are attributed
 Because these modules live outside of the ``earthkit.<package>`` packages, importing them does not run the
 ``__init__`` of those packages. They should only import :mod:`click` and light standard library modules at
 module level and import any heavy dependency (including the contributing package itself) inside the command
-functions, so that ``earthkit -h`` stays fast.
+functions, so that ``earthkit -h`` stays fast. A module that fails to import is skipped with a warning, so that a
+broken package does not break the commands of the other packages.
 """
 
 from __future__ import annotations
@@ -70,11 +71,17 @@ class EarthkitCLI(click.Group):
 
     The modules register their commands on the group when they are imported. If two commands are registered
     under the same name, the first one wins and a warning is emitted.
+
+    A module that fails to import, e.g. because of a missing dependency, is skipped with a warning on stderr, so
+    that the commands of the other packages keep working. ``earthkit info`` lists the modules that failed, and
+    the error for an unknown command names their packages, as they may provide it.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._discovered = False
+        #: The modules that failed to import, by name, with their error.
+        self._failed: dict[str, Exception] = {}
 
     def add_command(self, cmd: click.Command, name: str | None = None) -> None:
         key = name or cmd.name
@@ -85,10 +92,18 @@ class EarthkitCLI(click.Group):
         super().add_command(cmd, name)
 
     def _discover(self) -> None:
-        if not self._discovered:
-            self._discovered = True
-            for name in command_modules():
+        if self._discovered:
+            return
+        self._discovered = True
+        for name in command_modules():
+            try:
                 importlib.import_module(f"earthkit.cli.{name}")
+            except Exception as error:  # a broken package must not break the commands of the other packages
+                self._failed[name] = error
+                click.echo(
+                    f"Warning: the commands of earthkit-{name} could not be loaded: {_describe(error)}",
+                    err=True,
+                )
 
     def list_commands(self, ctx: click.Context) -> list[str]:
         self._discover()
@@ -97,6 +112,23 @@ class EarthkitCLI(click.Group):
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
         self._discover()
         return super().get_command(ctx, cmd_name)
+
+    def resolve_command(
+        self, ctx: click.Context, args: list[str]
+    ) -> tuple[str | None, click.Command | None, list[str]]:
+        try:
+            return super().resolve_command(ctx, args)
+        except click.UsageError as error:
+            # An unknown command may be one of those of a module that failed to import
+            if self._failed and args and not args[0].startswith("-") and args[0] not in self.commands:
+                packages = ", ".join(f"earthkit-{name}" for name in self._failed)
+                error.message += f" It may be provided by {packages}, whose commands could not be loaded."
+            raise
+
+
+def _describe(error: Exception) -> str:
+    """Return the type and message of ``error``, e.g. ``ModuleNotFoundError: No module named 'scipy'``."""
+    return f"{type(error).__name__}: {error}"
 
 
 @click.group(cls=EarthkitCLI, name="earthkit", context_settings={"help_option_names": ["-h", "--help"]})
@@ -128,6 +160,8 @@ def info() -> None:
         commands = ", ".join(sorted(owners.get(name, []))) if name != "utils" else ""
         if commands:
             line += f"  (commands: {commands})"
+        if name in earthkit._failed:
+            line += f"  (failed to load: {_describe(earthkit._failed[name])})"
         click.echo(line)
 
 
