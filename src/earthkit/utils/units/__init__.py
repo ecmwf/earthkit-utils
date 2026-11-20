@@ -7,25 +7,28 @@
 # nor does it submit to any jurisdiction.
 
 from earthkit.utils.units.convert import (
-    UnitLike,
-    UnitSpec,
     are_compatible,
     are_equal,
+    convert,
     convert_array,
     convert_dataarray,
     convert_dataset,
     convert_units,
 )
-from earthkit.utils.units.units import Units
+from earthkit.utils.units.units import PintUnits, StrUnits, Units
+
+# TODO: remove convert_array, it is only kept because earthkit-data and earthkit-plots
+# still use it. New code should use convert_units.
 
 __all__ = [
-    "UnitLike",
-    "UnitSpec",
+    "PintUnits",
+    "StrUnits",
     "Units",
     "are_compatible",
     "are_equal",
+    "convert_units",
+    "convert",
     "convert_array",
     "convert_dataarray",
     "convert_dataset",
-    "convert_units",
 ]

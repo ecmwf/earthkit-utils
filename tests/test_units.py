@@ -9,9 +9,11 @@
 # nor does it submit to any jurisdiction.
 #
 
+import pickle
+
 import pytest
 
-from earthkit.utils.units import Units
+from earthkit.utils.units import PintUnits, StrUnits, Units
 
 
 @pytest.mark.parametrize(
@@ -31,9 +33,20 @@ def test_units_to_str(input_units, expected_value, pint_object):
     r = Units.from_any(input_units)
     assert str(r) == expected_value, f"{str(r)}"
     if pint_object:
+        assert isinstance(r, PintUnits)
         assert r.to_pint() is not None
     else:
+        assert isinstance(r, StrUnits)
         assert r.to_pint() is None
+
+
+@pytest.mark.parametrize("input_units", ["m s-1", "code table"])
+def test_units_pickle(input_units):
+    units = Units.from_any(input_units)
+    restored = pickle.loads(pickle.dumps(units))
+    assert type(restored) is type(units)
+    assert restored == units
+    assert str(restored) == str(units)
 
 
 @pytest.mark.parametrize(
