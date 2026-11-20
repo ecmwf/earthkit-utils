@@ -11,3 +11,4 @@ single, well-tested implementation rather than duplicating the logic themselves.
    :maxdepth: 1
 
    Units <units>
+   Command line interface standards <cli>
