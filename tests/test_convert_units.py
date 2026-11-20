@@ -364,6 +364,55 @@ def test_dataset_single_source_units_applies_to_all_variables(ds):
     np.testing.assert_allclose(result["flag"].values, [0.0, 0.001])
 
 
+# ---- filter_by_source_units ----
+
+
+@pytest.mark.parametrize("source_units", ["m", "meter", ureg.meter])
+@pytest.mark.usefixtures("no_warnings")
+def test_dataset_filter_by_source_units(ds, source_units):
+    result = convert(ds, "km", source_units, errors="raise", filter_by_source_units=True)
+    np.testing.assert_allclose(result["dist"].values, [1.0, 2.0])
+    assert result["dist"].attrs["units"] == "km"
+    xr.testing.assert_identical(result["temp"], ds["temp"])
+    xr.testing.assert_identical(result["flag"], ds["flag"])
+
+
+@pytest.mark.usefixtures("no_warnings")
+def test_dataset_filter_by_source_units_list():
+    ds = xr.Dataset({
+        "a": dataarray([1000.0], "m", name="a"),
+        "b": dataarray([100.0], "cm", name="b"),
+        "c": dataarray([1.0], "s", name="c"),
+    })
+    result = convert(ds, "km", ["m", "cm"], errors="raise", filter_by_source_units=True)
+    np.testing.assert_allclose(result["a"].values, [1.0])
+    np.testing.assert_allclose(result["b"].values, [0.001])
+    xr.testing.assert_identical(result["c"], ds["c"])
+
+
+def test_source_units_list_requires_filter(ds):
+    with pytest.raises(ValueError, match="filter_by_source_units"):
+        convert(ds, "km", ["m", "cm"], errors="ignore")
+
+
+@pytest.mark.usefixtures("no_warnings")
+def test_dataarray_filter_by_source_units_not_matching():
+    da = dataarray(units="km")
+    xr.testing.assert_identical(convert(da, "cm", "m", errors="raise", filter_by_source_units=True), da)
+
+
+@pytest.mark.parametrize("source_units", [None, {"dist": "m"}])
+@pytest.mark.parametrize("errors", ERRORS)
+def test_filter_by_source_units_requires_single_source_units(ds, source_units, errors):
+    with pytest.raises(ValueError, match="filter_by_source_units"):
+        convert(ds, "km", source_units, errors=errors, filter_by_source_units=True)
+
+
+def test_array_filter_by_source_units_has_no_effect():
+    result = convert(np.array([1000.0]), "km", "m", filter_by_source_units=True)
+    np.testing.assert_allclose(result, [1.0])
+
+
 # ---- list target units ----
 
 # (source_units, target_units, values, expected, chosen target units)

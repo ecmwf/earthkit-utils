@@ -23,6 +23,7 @@ def convert(
     target_units,
     source_units=None,
     errors: str = "raise",
+    filter_by_source_units: bool = False,
 ) -> ArrayLike:
     """Convert the units of the data.
 
@@ -35,13 +36,22 @@ def convert(
         unit in it compatible with its source units; two compatible units in
         the list are ambiguous and always raise. A dict, mapping
         DataArray/variable names to units, is only supported for xarray objects.
-    source_units : str, pint.Unit, Units or dict
+    source_units : str, pint.Unit, Units, list or dict
         The units of the data. Required for arrays. For xarray objects it
         defaults to the ``units`` attribute; see the xarray implementation.
+        A list is only accepted with ``filter_by_source_units``.
     errors : {"raise", "ignore"}, default "raise"
         What to do when the conversion cannot be performed. With ``"ignore"``
         a warning is logged and the data is returned unchanged. With ``"raise"``
         the error is raised.
+    filter_by_source_units : bool, default False
+        When True, ``source_units`` selects the data to convert instead of
+        overriding its units metadata: only the data whose own units (e.g. the
+        ``units`` attribute of an xarray object) equal ``source_units``, or one of
+        the units in a ``source_units`` list, is converted. The rest is returned
+        unchanged without a warning or error. ``source_units`` must then be a
+        unit or a list of units, not ``None`` or a dict.
+        Has no effect on arrays, whose units are ``source_units``.
 
     Returns
     -------
@@ -58,7 +68,7 @@ def convert(
     if target_units is None:
         raise TypeError("target_units must be provided")
     dispatched = dispatch(convert, array=True, xarray=True, fieldlist=False)
-    return dispatched(data, target_units, source_units, errors=errors)
+    return dispatched(data, target_units, source_units, errors=errors, filter_by_source_units=filter_by_source_units)
 
 
 def are_equal(unit_1, unit_2) -> bool:
@@ -113,10 +123,16 @@ def convert_units(
     target_units=None,
     source_units=None,
     errors: str = "ignore",
+    filter_by_source_units: bool = True,
 ) -> ArrayLike:
     """Deprecated, use :func:`earthkit.utils.units.convert` instead.
 
     .. warning:: Deprecated API. This function will be removed in a future release.
+
+    ``filter_by_source_units`` defaults to True for backwards compatibility: for an
+    xarray.Dataset, a single ``source_units`` selects the variables to convert. Use
+    False to apply ``source_units`` to all the variables, the default of
+    :func:`earthkit.utils.units.convert`.
     """
     warnings.warn(
         "convert_units is deprecated and will be removed in a future release. "
@@ -124,7 +140,8 @@ def convert_units(
         DeprecationWarning,
         stacklevel=2,
     )
-    return convert(*_legacy_args(data, target_units, source_units), errors)
+    data, filter_by_source_units = _legacy_args(data, source_units, filter_by_source_units)
+    return convert(data, target_units, source_units, errors=errors, filter_by_source_units=filter_by_source_units)
 
 
 def convert_array(
@@ -172,10 +189,16 @@ def convert_dataset(
     target_units=None,
     source_units=None,
     errors: str = "ignore",
+    filter_by_source_units: bool = True,
 ) -> ArrayLike:
     """Deprecated, use :func:`earthkit.utils.units.convert` instead.
 
     .. warning:: Deprecated API. This function will be removed in a future release.
+
+    ``filter_by_source_units`` defaults to True for backwards compatibility: for an
+    xarray.Dataset, a single ``source_units`` selects the variables to convert. Use
+    False to apply ``source_units`` to all the variables, the default of
+    :func:`earthkit.utils.units.convert`.
     """
     warnings.warn(
         "convert_dataset is deprecated and will be removed in a future release. "
@@ -183,29 +206,25 @@ def convert_dataset(
         DeprecationWarning,
         stacklevel=2,
     )
-    return convert(*_legacy_args(data, target_units, source_units), errors)
+    data, filter_by_source_units = _legacy_args(data, source_units, filter_by_source_units)
+    return convert(data, target_units, source_units, errors=errors, filter_by_source_units=filter_by_source_units)
 
 
-def _legacy_args(data, target_units, source_units):
-    """Return the arguments for :func:`convert` that give the behaviour of the deprecated functions.
+def _legacy_args(data, source_units, filter_by_source_units):
+    """Return the data and source units filter that give the behaviour of the deprecated functions.
 
-    Lists and numbers are converted as arrays, and for a Dataset a single ``source_units``
-    selects the variables whose ``units`` attribute matches it, instead of applying to all of them.
+    Lists and numbers are converted as arrays, and the source units filter only applies
+    to a Dataset with a single ``source_units`` (the deprecated functions silently ignored
+    it otherwise, while :func:`convert` rejects a ``None`` or dict ``source_units``).
     """
     if isinstance(data, (list, tuple, int, float)):
-        return np.asarray(data), target_units, source_units
+        return np.asarray(data), False
 
     import xarray as xr
 
-    if (
-        xr is not None
+    return data, (
+        filter_by_source_units
         and isinstance(data, xr.Dataset)
         and source_units is not None
         and not isinstance(source_units, dict)
-    ):
-        target_units = {
-            name: target_units.get(name) if isinstance(target_units, dict) else target_units
-            for name, var in data.data_vars.items()
-            if are_equal(var.attrs.get("units"), source_units)
-        }
-    return data, target_units, source_units
+    )

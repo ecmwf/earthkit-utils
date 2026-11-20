@@ -12,7 +12,7 @@ from itertools import combinations
 import xarray as xr
 
 from .. import array
-from ..convert import are_compatible
+from ..convert import are_compatible, are_equal
 
 LOG = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ def convert(
     target_units,
     source_units=None,
     errors: str = "raise",
+    filter_by_source_units: bool = False,
 ) -> xr.DataArray | xr.Dataset:
     """Convert the units of an xarray.DataArray or of each data variable of an xarray.Dataset.
 
@@ -39,13 +40,21 @@ def convert(
         variables not in it are left unchanged, while a key that is not a
         variable of the Dataset, or a DataArray whose name is not a key, cannot
         be converted (see ``errors``).
-    source_units : str, pint.Unit, Units or dict, optional
+    source_units : str, pint.Unit, Units, list or dict, optional
         The units of the data, overriding the ``units`` attribute. A dict maps
         DataArray/variable names to units, falling back to the ``units`` attribute.
+        A list is only accepted with ``filter_by_source_units``.
     errors : {"raise", "ignore"}, default "raise"
         What to do when a DataArray/variable cannot be converted, including when
         it has no source units. With ``"ignore"`` a warning is logged and it is
         returned unchanged, with ``"raise"`` the error is raised.
+    filter_by_source_units : bool, default False
+        When True, ``source_units`` selects the DataArrays/variables to convert
+        instead of overriding their ``units`` attribute: only those whose
+        ``units`` attribute equals ``source_units``, or one of the units in a
+        ``source_units`` list, are converted. The others are returned unchanged
+        without a warning or error, whatever ``errors`` is. ``source_units``
+        must then be a unit or a list of units, not ``None`` or a dict.
 
     Returns
     -------
@@ -56,6 +65,10 @@ def convert(
 
     if errors not in ("ignore", "raise"):
         raise ValueError(f"errors must be 'ignore' or 'raise', got {errors!r}")
+    if filter_by_source_units and (source_units is None or isinstance(source_units, dict)):
+        raise ValueError("filter_by_source_units requires source_units to be a unit or a list, not None or a dict")
+    if not filter_by_source_units and isinstance(source_units, list):
+        raise ValueError("source_units can only be a list with filter_by_source_units=True")
 
     if isinstance(data, xr.Dataset):
         if isinstance(target_units, dict):
@@ -66,7 +79,7 @@ def convert(
                     raise ValueError(message)
                 LOG.warning(message)
         return data.assign({
-            name: convert(var, target_units, source_units, errors)
+            name: convert(var, target_units, source_units, errors, filter_by_source_units)
             for name, var in data.data_vars.items()
             if not isinstance(target_units, dict) or name in target_units
         })
@@ -82,9 +95,17 @@ def convert(
     if target_units is None:
         return data
 
-    source_units = _get(source_units, data.name)
-    if source_units is None:
-        source_units = data.attrs.get("units")
+    if filter_by_source_units:
+        allowed = source_units if isinstance(source_units, list) else [source_units]
+        matching = [units for units in allowed if are_equal(units, data.attrs.get("units"))]
+        if not matching:
+            LOG.debug(f"Units of '{data.name}' do not match source_units {source_units}, not converting")
+            return data
+        source_units = matching[0]
+    else:
+        source_units = _get(source_units, data.name)
+        if source_units is None:
+            source_units = data.attrs.get("units")
     if source_units is None:
         message = f"No source units found for '{data.name}'"
         if errors == "raise":

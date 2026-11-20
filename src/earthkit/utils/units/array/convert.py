@@ -20,7 +20,13 @@ LOG = logging.getLogger(__name__)
 ArrayLike: TypeAlias = Any
 
 
-def convert(data: ArrayLike, target_units, source_units=None, errors: str = "raise") -> ArrayLike:
+def convert(
+    data: ArrayLike,
+    target_units,
+    source_units=None,
+    errors: str = "raise",
+    filter_by_source_units: bool = False,
+) -> ArrayLike:
     """Convert the units of an array.
 
     Parameters
@@ -38,6 +44,9 @@ def convert(data: ArrayLike, target_units, source_units=None, errors: str = "rai
         a warning is logged and ``data`` is returned unchanged. With ``"raise"``
         the error is raised: a ``ValueError`` for units Pint does not recognise,
         otherwise the Pint error (e.g. ``pint.DimensionalityError``).
+    filter_by_source_units : bool, default False
+        Has no effect: an array has no units of its own, its units are ``source_units``.
+        Accepted for consistency with :func:`earthkit.utils.units.convert`.
 
     Returns
     -------

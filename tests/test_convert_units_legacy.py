@@ -257,6 +257,15 @@ class TestConvertDataset:
         # dist_km should be unchanged because its units are "km" not "m"
         np.testing.assert_array_equal(result["dist_km"].values, [5.0])
 
+    def test_source_units_without_filter_applies_to_all_variables(self):
+        ds = xr.Dataset({
+            "a": xr.DataArray([1000.0], attrs={"units": "m"}),
+            "b": xr.DataArray([2000.0], attrs={"units": "km"}),
+        })
+        result = convert_dataset(ds, target_units="km", source_units="m", filter_by_source_units=False)
+        np.testing.assert_allclose(result["a"].values, [1.0])
+        np.testing.assert_allclose(result["b"].values, [2.0])
+
     def test_no_conversion_returns_original_dataset(self):
         ds = xr.Dataset({
             "temp": xr.DataArray([273.15], attrs={"units": "K"}),

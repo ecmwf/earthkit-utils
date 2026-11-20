@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import re
+from abc import ABC, abstractmethod
 from functools import cache
 from typing import TYPE_CHECKING, Any
 
@@ -74,13 +75,19 @@ def _parse(units: str | None) -> pint.Unit | None:
         return None
 
 
-class Units:
-    """A physical unit, backed by a Pint unit when possible.
+class Units(ABC):
+    """Abstract base class of a physical unit.
 
-    Strings that Pint cannot parse (e.g. ``"code table"``
-    or ``"dBZ"``, common in GRIB and NetCDF metadata) are kept as opaque
-    strings: they can be compared and printed but not converted, and
-    :meth:`to_pint` returns ``None`` for them.
+    Use :meth:`from_any` to create a unit. It returns one of:
+
+    :class:`PintUnits`
+        Wraps a :class:`pint.Unit`. Created when Pint can parse the input;
+        :meth:`to_pint` returns the Pint unit.
+    :class:`StrUnits`
+        Keeps the unit as an opaque string. Created when Pint cannot parse the
+        input (e.g. ``"code table"`` or ``"dBZ"``, common in GRIB and NetCDF
+        metadata). It can be compared and printed but not converted, and
+        :meth:`to_pint` returns ``None``.
 
     Examples
     --------
@@ -123,28 +130,13 @@ class Units:
     :meth:`to_pint`:
 
     >>> u_invalid = Units.from_any("code table")
+    >>> type(u_invalid).__name__
+    'StrUnits'
     >>> str(u_invalid)
     'code table'
     >>> u_invalid.to_pint() is None
     True
     """
-
-    def __init__(self, units: str | pint.Unit | None = None) -> None:
-        """Initialise the unit.
-
-        Parameters
-        ----------
-        units : str, pint.Unit or None
-            The unit. ``None`` means dimensionless.
-        """
-        import pint
-
-        if isinstance(units, pint.Unit):
-            self._units, self._pint = str(units), units
-        elif units is None or isinstance(units, str):
-            self._units, self._pint = units, _parse(units)
-        else:
-            raise TypeError(f"Unsupported type for units: {type(units)}")
 
     @staticmethod
     def from_any(units: str | pint.Unit | Units | None) -> Units:
@@ -153,41 +145,43 @@ class Units:
         Parameters
         ----------
         units : str, None, pint.Unit, or Units
-            The unit. Existing :class:`Units` instances are returned unchanged.
+            The unit. ``None`` means dimensionless. Existing :class:`Units`
+            instances are returned unchanged.
 
         Returns
         -------
-        Units
+        PintUnits or StrUnits
+            A :class:`PintUnits` when Pint can parse the unit, otherwise a :class:`StrUnits`.
 
         Raises
         ------
         TypeError
             If *units* is of an unsupported type.
         """
+        import pint
+
         if isinstance(units, Units):
             return units
-        return Units(units)
+        if isinstance(units, pint.Unit):
+            return PintUnits(units)
+        if units is None or isinstance(units, str):
+            parsed = _parse(units)
+            return StrUnits(units) if parsed is None else PintUnits(parsed)
+        raise TypeError(f"Unsupported type for units: {type(units)}")
 
+    @abstractmethod
     def to_pint(self) -> pint.Unit | None:
         """Return the Pint unit, or ``None`` if Pint cannot parse the unit."""
-        return self._pint
 
+    @abstractmethod
     def _key(self) -> str:
         """Return the string identifying the unit, used for equality and hashing."""
-        return _prepare_str(self._units) if self._pint is None else str(self._pint)
-
-    def __str__(self) -> str:
-        """Return the Pint name of the unit, or the original string when Pint cannot parse it."""
-        return self._units if self._pint is None else str(self._pint)
-
-    def __repr__(self) -> str:
-        return self._units if self._pint is None else repr(self._pint)
 
     def __eq__(self, other: Any) -> bool:
         """Check equality with another unit, which can be any input accepted by :meth:`from_any`."""
         try:
             other = Units.from_any(other)
-        except ValueError:
+        except TypeError:
             return NotImplemented
         return self._key() == other._key()
 
@@ -197,5 +191,46 @@ class Units:
     def __getstate__(self) -> dict:
         return {"units": str(self)}
 
+
+class PintUnits(Units):
+    """A unit backed by a :class:`pint.Unit`."""
+
+    def __init__(self, units: pint.Unit) -> None:
+        self._units = units
+
+    def to_pint(self) -> pint.Unit:
+        return self._units
+
+    def _key(self) -> str:
+        return str(self._units)
+
+    def __str__(self) -> str:
+        return str(self._units)
+
+    def __repr__(self) -> str:
+        return repr(self._units)
+
     def __setstate__(self, state: dict) -> None:
-        self.__init__(state["units"])
+        self._units = get_registry()(state["units"]).units
+
+
+class StrUnits(Units):
+    """A unit that Pint cannot parse, kept as an opaque string."""
+
+    def __init__(self, units: str) -> None:
+        self._units = units
+
+    def to_pint(self) -> None:
+        return None
+
+    def _key(self) -> str:
+        return _prepare_str(self._units)
+
+    def __str__(self) -> str:
+        return self._units
+
+    def __repr__(self) -> str:
+        return self._units
+
+    def __setstate__(self, state: dict) -> None:
+        self._units = state["units"]

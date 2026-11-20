@@ -15,12 +15,14 @@ from earthkit.utils.units.convert import (
     convert_dataset,
     convert_units,
 )
-from earthkit.utils.units.units import Units
+from earthkit.utils.units.units import PintUnits, StrUnits, Units
 
 # TODO: remove convert_array, it is only kept because earthkit-data and earthkit-plots
 # still use it. New code should use convert_units.
 
 __all__ = [
+    "PintUnits",
+    "StrUnits",
     "Units",
     "are_compatible",
     "are_equal",
