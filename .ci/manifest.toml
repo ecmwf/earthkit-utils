@@ -1,0 +1,27 @@
+[matrix.test]
+triggers = ["upstream-change", "rebuild-request"]
+
+[matrix.test.defaults]
+extras = "test"
+job-script = "./.ci/test.sh.j2"
+platform = "gh-ubuntu-26.04"
+runs-on = "ubuntu-26.04"
+
+[[matrix.test.include]]
+python-version = "3.11"
+
+[[matrix.test.include]]
+python-version = "3.12"
+
+[[matrix.test.include]]
+python-version = "3.13"
+
+[package]
+ci-pre-commit = false
+ci-schedule = "34 3 * * *"
+compiler-inputs = []
+fork-pull-requests = false
+full-history = true
+name = "earthkit-utils"
+repo = "ecmwf/earthkit-utils"
+visibility = "public"
