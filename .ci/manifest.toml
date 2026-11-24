@@ -1,6 +1,3 @@
-[downstream]
-run-default = "all"
-
 [matrix.test]
 triggers = ["upstream-change", "rebuild-request"]
 
