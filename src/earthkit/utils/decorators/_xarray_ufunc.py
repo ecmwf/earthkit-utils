@@ -8,7 +8,13 @@
 #
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
 from earthkit.utils.parameters._params import PARAMS
+
+if TYPE_CHECKING:
+    import xarray as xr
 
 OUTPUT_METADATA_KEYS = ["long_name", "standard_name", "units"]
 
@@ -16,7 +22,12 @@ OUTPUT_METADATA_KEYS = ["long_name", "standard_name", "units"]
 _XARRAY_UFUNC_OPTIONS = {"xarray_apply_ufunc_kwargs", "parameters", "attrs", "parameter_definitions"}
 
 
-def _infer_output_count(func) -> int:
+def _describe(value: Any) -> str:
+    """Describe ``value`` for an error message: its repr and type name."""
+    return f"{value!r} (type {type(value).__name__})"
+
+
+def _infer_output_count(func: Callable[..., Any]) -> int:
     """Infer the number of outputs of ``func`` from its return annotation.
 
     Returns the number of elements for a fixed-length ``tuple[...]`` annotation. In all
@@ -42,28 +53,54 @@ def _infer_output_count(func) -> int:
     return 1
 
 
-def _normalise_attrs(attrs, count, is_multi_output):
+def _normalise_attrs(attrs: Any, count: int, is_multi_output: bool) -> list[dict[str, Any] | None]:
     """Return a list of ``count`` attribute dicts (or None) from the user specified ``attrs``.
 
     ``attrs`` can be None, a dict (used for all outputs) or, for multi-output functions,
     a list/tuple with one dict (or None) per output. Values set to None remove the
     corresponding attribute from the result.
+
+    Raises
+    ------
+    TypeError
+        If ``attrs`` has an invalid type: it is not None, not a dict and, for multi-output
+        functions, neither a list/tuple of dicts nor None values.
+    ValueError
+        If, for a multi-output function, the length of ``attrs`` does not match ``count``.
     """
     if attrs is None:
         return [None] * count
     if isinstance(attrs, dict):
         return [attrs] * count
-    if is_multi_output and isinstance(attrs, (tuple, list)):
+
+    if isinstance(attrs, (tuple, list)):
+        if not is_multi_output:
+            raise TypeError(f"For a single-output function, 'attrs' must be a dict, got {_describe(attrs)}")
         if len(attrs) != count:
-            raise ValueError("Length of 'parameters' and 'attrs' must match for multi-output functions.")
-        if all(e is None or isinstance(e, dict) for e in attrs):
-            return list(attrs)
+            raise ValueError(
+                f"For a multi-output function, the length of 'attrs' ({len(attrs)}) must match the number "
+                f"of 'parameters' ({count}), got {_describe(attrs)}"
+            )
+        for item in attrs:
+            if not (item is None or isinstance(item, dict)):
+                raise TypeError(
+                    "For a multi-output function, each item of 'attrs' must be a dict or None, "
+                    f"got {_describe(item)} in {_describe(attrs)}"
+                )
+        return list(attrs)
+
     if is_multi_output:
-        raise ValueError("For multi-output functions, 'attrs' must be a dict or a list/tuple of dicts.")
-    raise ValueError("For single-output functions, 'attrs' must be a dict.")
+        raise TypeError(
+            f"For a multi-output function, 'attrs' must be a dict or a list/tuple of dicts, got {_describe(attrs)}"
+        )
+    raise TypeError(f"For a single-output function, 'attrs' must be a dict, got {_describe(attrs)}")
 
 
-def _resolve_param_info(name, attrs=None, definitions=None):
+def _resolve_param_info(
+    name: str,
+    attrs: dict[str, Any] | None = None,
+    definitions: dict[str, Any] | None = None,
+) -> tuple[str | None, dict[str, Any]]:
     """Return the variable name and attributes for the output described by parameter ``name``.
 
     Parameters
@@ -89,7 +126,7 @@ def _resolve_param_info(name, attrs=None, definitions=None):
     return param_name, param_attrs
 
 
-def _apply_param_metadata(da, param_name, param_attrs):
+def _apply_param_metadata(da: Any, param_name: str | None, param_attrs: dict[str, Any]) -> Any:
     """Rename ``da`` to ``param_name`` and update its attributes with ``param_attrs``.
 
     Attributes with a None value in ``param_attrs`` are removed. The output metadata keys
@@ -114,7 +151,12 @@ def _apply_param_metadata(da, param_name, param_attrs):
     return da
 
 
-def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
+def xarray_ufunc(
+    func: Callable[..., Any],
+    *args: Any,
+    xarray_ufunc_kwargs: dict[str, Any] | None = None,
+    **kwargs: Any,
+) -> xr.DataArray | tuple[xr.DataArray, ...]:
     """Apply ``func`` to xarray objects with :func:`xarray.apply_ufunc`.
 
     Parameters
@@ -138,8 +180,10 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
           leaves that output untouched. Names are looked up in "parameter_definitions" first,
           then in the built-in parameter database.
         - "attrs": dict or list/tuple of dicts, extra attributes added to the result. A single
-          dict is applied to all outputs; a list/tuple must have one item (a dict or None)
-          per output. Values set to None remove the attribute. Requires "parameters".
+          dict is applied to all outputs. For multi-output functions a list/tuple with one item
+          (a dict or None) per output can also be used; its length must match the number of
+          "parameters". Values set to None remove the attribute. Requires "parameters". Any
+          other type raises a TypeError, an invalid length a ValueError.
         - "parameter_definitions": dict, caller-supplied parameter definitions with the same
           shape as the entries of the built-in parameter database (keys are parameter names,
           values are dicts with the "variable", "units", "long_name", "standard_name" and
@@ -165,10 +209,13 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
     Raises
     ------
     ValueError
-        If "attrs" is specified without "parameters" or if it has an invalid type or length,
-        or if a definition in "parameter_definitions" is missing a required key.
+        If "attrs" is specified without "parameters", if its length does not match the number
+        of "parameters" for multi-output functions, or if a definition in
+        "parameter_definitions" is missing a required key.
     TypeError
-        If "parameter_definitions" is not a dict or one of its entries is not a dict.
+        If "attrs" has an invalid type (e.g. it is not a dict or, for multi-output functions,
+        not a list/tuple of dicts), if "parameter_definitions" is not a dict or one of its
+        entries is not a dict.
     KeyError
         If a name in "parameters" is neither in "parameter_definitions" nor in the parameter
         database.
@@ -203,7 +250,7 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
     # (multi-output functions), one per output in the same order.
     param_lookup_name = xarray_ufunc_kwargs.get("parameters")
     attrs = xarray_ufunc_kwargs.get("attrs")
-    param_info = None
+    param_info: list[tuple[str | None, dict[str, Any]]] = []
     if param_lookup_name:
         is_multi_output = isinstance(param_lookup_name, (tuple, list))
         names = list(param_lookup_name) if is_multi_output else [param_lookup_name]
@@ -213,7 +260,9 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
             for name, e in zip(names, attrs_list)
         ]
     elif attrs is not None:
-        raise ValueError("'attrs' in xarray_ufunc_kwargs requires 'parameters' to be specified")
+        raise ValueError(
+            f"'attrs' in xarray_ufunc_kwargs requires 'parameters' to be specified, got {_describe(attrs)}"
+        )
 
     merged = {
         "dask": "parallelized",
@@ -241,7 +290,7 @@ def xarray_ufunc(func, *args, xarray_ufunc_kwargs=None, **kwargs):
     )
 
     # set the name and attributes on the resulting DataArray(s) if applicable
-    if param_info:
+    if len(param_info):
         if isinstance(r, tuple):
             r = tuple(
                 _apply_param_metadata(da, param_name, param_attrs)

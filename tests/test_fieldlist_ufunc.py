@@ -141,6 +141,31 @@ def test_no_name_determined():
     assert "default_parameter" in str(excinfo.value)
 
 
+def test_no_name_determined_message():
+    f = make_field(PARAM_2D)
+
+    # both mappings given and checked: the message shows the values that were looked up
+    # and the mappings they were looked up in
+    with pytest.raises(ValueError, match="Could not determine parameter name") as excinfo:
+        fieldlist_ufunc(
+            lambda x: x,
+            f,
+            fieldlist_ufunc_kwargs={"parameters": {"10u": "temperature"}, "param_ids": {228: "pressure"}},
+        )
+    msg = str(excinfo.value)
+    assert "parameter.variable = '2d'" in msg
+    assert f"metadata.paramId = {PARAM_2D}" in msg
+    assert "parameters = {'10u': 'temperature'}" in msg
+    assert "param_ids = {228: 'pressure'}" in msg
+
+    # no mappings: nothing was looked up, the message says so instead of raising
+    with pytest.raises(ValueError, match="Could not determine parameter name") as excinfo:
+        fieldlist_ufunc(lambda x: x, f)
+    msg = str(excinfo.value)
+    assert "parameter.variable = not looked up (empty 'parameters' mapping)" in msg
+    assert "metadata.paramId = not looked up (empty 'param_ids' mapping)" in msg
+
+
 def test_old_default_variable_no_longer_used():
     # the removed "default_variable" key is ignored: alone it cannot determine the name
     f = make_field()

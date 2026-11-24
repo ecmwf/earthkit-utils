@@ -302,34 +302,71 @@ class TestXarrayUfuncParametersAndAttrs:
         assert all(da.attrs["foo"] == 1 for da in r)
 
     def test_attrs_multi_output_length_mismatch(self):
-        with pytest.raises(ValueError, match="must match"):
-            xarray_ufunc(
-                self._split,
-                TEST_XARRAY_DATAARRAY,
-                xarray_ufunc_kwargs={"parameters": ["wind_speed", "temperature"], "attrs": [{"foo": 1}]},
-            )
-
-    @pytest.mark.parametrize("attrs", ["foo", 1, [1, 2]])
-    def test_attrs_multi_output_invalid_type(self, attrs):
-        with pytest.raises(ValueError, match="dict or a list/tuple of dicts"):
+        attrs = [{"foo": 1}]
+        with pytest.raises(ValueError, match="must match") as exc_info:
             xarray_ufunc(
                 self._split,
                 TEST_XARRAY_DATAARRAY,
                 xarray_ufunc_kwargs={"parameters": ["wind_speed", "temperature"], "attrs": attrs},
             )
+        msg = str(exc_info.value)
+        assert "(1)" in msg
+        assert "(2)" in msg
+        assert repr(attrs) in msg
 
-    @pytest.mark.parametrize("attrs", [[{"foo": 1}], "foo", 1])
+    @pytest.mark.parametrize("attrs", ["foo", 1, 1.5])
+    def test_attrs_multi_output_invalid_type(self, attrs):
+        with pytest.raises(TypeError, match="dict or a list/tuple of dicts") as exc_info:
+            xarray_ufunc(
+                self._split,
+                TEST_XARRAY_DATAARRAY,
+                xarray_ufunc_kwargs={"parameters": ["wind_speed", "temperature"], "attrs": attrs},
+            )
+        assert repr(attrs) in str(exc_info.value)
+        assert type(attrs).__name__ in str(exc_info.value)
+
+    @pytest.mark.parametrize("container", [list, tuple])
+    def test_attrs_multi_output_invalid_element(self, container):
+        attrs = container([{"foo": 1}, "bar"])
+        with pytest.raises(TypeError, match="must be a dict or None") as exc_info:
+            xarray_ufunc(
+                self._split,
+                TEST_XARRAY_DATAARRAY,
+                xarray_ufunc_kwargs={"parameters": ["wind_speed", "temperature"], "attrs": attrs},
+            )
+        msg = str(exc_info.value)
+        assert repr("bar") in msg
+        assert repr(attrs) in msg
+
+    @pytest.mark.parametrize("attrs", ["foo", 1, 1.5])
     def test_attrs_single_output_invalid_type(self, attrs):
-        with pytest.raises(ValueError, match="must be a dict"):
+        with pytest.raises(TypeError, match="must be a dict") as exc_info:
             xarray_ufunc(
                 self._add_one,
                 TEST_XARRAY_DATAARRAY,
                 xarray_ufunc_kwargs={"parameters": "wind_speed", "attrs": attrs},
             )
+        assert repr(attrs) in str(exc_info.value)
+        assert type(attrs).__name__ in str(exc_info.value)
+
+    @pytest.mark.parametrize("container", [list, tuple])
+    def test_attrs_single_output_list_or_tuple_invalid(self, container):
+        attrs = container([{"foo": 1}])
+        with pytest.raises(TypeError, match="must be a dict") as exc_info:
+            xarray_ufunc(
+                self._add_one,
+                TEST_XARRAY_DATAARRAY,
+                xarray_ufunc_kwargs={"parameters": "wind_speed", "attrs": attrs},
+            )
+        msg = str(exc_info.value)
+        assert repr(attrs) in msg
+        assert container.__name__ in msg
 
     def test_attrs_without_parameters_raises(self):
-        with pytest.raises(ValueError, match="requires 'parameters'"):
-            xarray_ufunc(self._add_one, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs={"attrs": {"foo": 1}})
+        attrs = {"foo": 1}
+        with pytest.raises(ValueError, match="requires 'parameters'") as exc_info:
+            xarray_ufunc(self._add_one, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs={"attrs": attrs})
+        assert repr(attrs) in str(exc_info.value)
 
     def test_old_variables_key_no_longer_sets_metadata(self):
         """The removed "variables" key is no longer an option.

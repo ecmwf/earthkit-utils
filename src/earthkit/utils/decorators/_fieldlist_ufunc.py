@@ -1,9 +1,21 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from itertools import repeat
+from typing import TYPE_CHECKING, Any
 
 from earthkit.utils.parameters import PARAMS
 
+if TYPE_CHECKING:
+    from earthkit.data import Field, FieldList
 
-def _field_ufunc(func, *args, fieldlist_ufunc_kwargs=None, **kwargs):
+
+def _field_ufunc(
+    func: Callable[..., Any],
+    *args: Any,
+    fieldlist_ufunc_kwargs: dict[str, Any] | None = None,
+    **kwargs: Any,
+) -> Field:
     """
     Apply a function to the values of earthkit.data Field or FieldList objects.
 
@@ -68,11 +80,13 @@ def _field_ufunc(func, *args, fieldlist_ufunc_kwargs=None, **kwargs):
     default_parameter = fieldlist_ufunc_kwargs.get("default_parameter")
 
     name = None
+    var_in: Any = None
     if parameters:
         var_in = field.get("parameter.variable", default=None)
         if var_in is not None:
             name = parameters.get(var_in)
 
+    param_id_in: Any = None
     if name is None and param_ids:
         param_id_in = field.get("metadata.paramId", default=None)
         if param_id_in is not None:
@@ -82,9 +96,14 @@ def _field_ufunc(func, *args, fieldlist_ufunc_kwargs=None, **kwargs):
         name = default_parameter
 
     if name is None:
+        # on this error path name is None, so a mapping was looked up exactly when it was not empty
+        var_txt = repr(var_in) if parameters else "not looked up (empty 'parameters' mapping)"
+        param_id_txt = repr(param_id_in) if param_ids else "not looked up (empty 'param_ids' mapping)"
         raise ValueError(
-            "Could not determine parameter name for the resulting Field. Please provide "
-            "a 'default_parameter' in 'fieldlist_ufunc_kwargs'."
+            "Could not determine parameter name for the resulting Field. Input field: "
+            f"parameter.variable = {var_txt}, metadata.paramId = {param_id_txt}. "
+            f"Mappings: parameters = {parameters}, param_ids = {param_ids}. "
+            "Please provide a 'default_parameter' in 'fieldlist_ufunc_kwargs'."
         )
 
     # Definitions supplied by the caller, with the same shape as the parameter database (_PARAMS).
@@ -108,7 +127,12 @@ def _field_ufunc(func, *args, fieldlist_ufunc_kwargs=None, **kwargs):
     return result
 
 
-def fieldlist_ufunc(func, *args, fieldlist_ufunc_kwargs=None, **kwargs):
+def fieldlist_ufunc(
+    func: Callable[..., Any],
+    *args: Any,
+    fieldlist_ufunc_kwargs: dict[str, Any] | None = None,
+    **kwargs: Any,
+) -> Field | FieldList:
     """Apply a function to the values of earthkit.data Field or FieldList objects.
 
     Each field of the input FieldList objects is passed to ``func`` together with the
