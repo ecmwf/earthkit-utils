@@ -27,25 +27,25 @@ repo = "ecmwf/earthkit-utils"
 visibility = "public"
 
 [[trigger-downstream]]
+ref = "develop"
 repo = "ecmwf/earthkit-data"
-ref = "develop"
 
 [[trigger-downstream]]
+ref = "develop"
 repo = "ecmwf/earthkit-transforms"
-ref = "develop"
 
 [[trigger-downstream]]
-repo = "ecmwf/earthkit-workflows"
 ref = "main"
+repo = "ecmwf/earthkit-workflows"
 
 [[trigger-downstream]]
+ref = "develop"
 repo = "ecmwf/earthkit-hydro"
-ref = "develop"
 
 [[trigger-downstream]]
+ref = "develop"
 repo = "ecmwf/earthkit-meteo"
-ref = "develop"
 
 [[trigger-downstream]]
-repo = "ecmwf/earthkit"
 ref = "develop"
+repo = "ecmwf/earthkit"
