@@ -1,9 +1,21 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from itertools import repeat
+from typing import TYPE_CHECKING, Any
 
 from earthkit.utils.parameters import FIELD_PARAMS
 
+if TYPE_CHECKING:
+    from earthkit.data import Field, FieldList
 
-def _field_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
+
+def _field_ufunc(
+    func: Callable[..., Any],
+    *args: Any,
+    fieldlist_ufunc_kwargs: dict[str, Any] = {},
+    **kwargs: Any,
+) -> Field:
     """
     Apply a function to the values of earthkit.data Field or FieldList objects.
 
@@ -53,7 +65,7 @@ def _field_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
     param_ids = fieldlist_ufunc_kwargs.get("param_ids", {})
     default = fieldlist_ufunc_kwargs.get("default_variable")
 
-    name = None
+    name: str | None = None
     if variables:
         var_in = field.get("parameter.variable", default=None)
         if var_in is not None:
@@ -83,7 +95,12 @@ def _field_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
     return result
 
 
-def fieldlist_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
+def fieldlist_ufunc(
+    func: Callable[..., Any],
+    *args: Any,
+    fieldlist_ufunc_kwargs: dict[str, Any] = {},
+    **kwargs: Any,
+) -> Field | FieldList:
     import earthkit.data as ekd
 
     if args:
@@ -102,7 +119,7 @@ def fieldlist_ufunc(func, *args, fieldlist_ufunc_kwargs={}, **kwargs):
     # about lengths
     safe_args = [arg if arg is not None else repeat(None) for arg in args]
 
-    result = []
+    result: list[Field] = []
     for fields in zip(*safe_args):
         result.append(
             _field_ufunc(

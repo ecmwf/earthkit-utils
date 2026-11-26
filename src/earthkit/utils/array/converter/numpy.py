@@ -6,23 +6,27 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from __future__ import annotations
+
+from typing import Any
+
 from earthkit.utils.array.converter.unknown import FromUnknownConverter
 
 
 class FromNumpyConverter(FromUnknownConverter):
-    def __init__(self, xp_target):
+    def __init__(self, xp_target: Any) -> None:
         super().__init__(xp_target)
 
-    def to_numpy(self, array, **kwargs):
+    def to_numpy(self, array: Any, **kwargs: Any) -> Any:
         return array
 
-    def to_cupy(self, array, **kwargs):
+    def to_cupy(self, array: Any, **kwargs: Any) -> Any:
         return self.xp_target.array(array, **kwargs)
 
-    def to_torch(self, array, **kwargs):
+    def to_torch(self, array: Any, **kwargs: Any) -> Any:
         # TODO: add device handling
         return self.xp_target.from_numpy(array, **kwargs)
 
-    def to_jax(self, array, **kwargs):
+    def to_jax(self, array: Any, **kwargs: Any) -> Any:
         # TODO: add device handling
         return self.xp_target.array(array, **kwargs)

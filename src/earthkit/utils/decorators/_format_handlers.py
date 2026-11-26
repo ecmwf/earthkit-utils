@@ -6,14 +6,19 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from __future__ import annotations
+
 import inspect
 import logging
 import types
 import typing as T
+from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 LOG = logging.getLogger(__name__)
 
+UNION_TYPES: list[Any]
 try:
     UNION_TYPES = [T.Union, types.UnionType]
 except AttributeError:
@@ -22,18 +27,18 @@ except AttributeError:
         T.Union,
     ]
 
-EMPTY_TYPES = [inspect._empty]
+EMPTY_TYPES: list[Any] = [inspect._empty]
 
 
 # Consider moving these to earthkit-utils
-def _ensure_iterable(input_item):
+def _ensure_iterable(input_item: Any) -> list[Any] | tuple[Any, ...] | dict[Any, Any]:
     """Ensure that an item is iterable."""
     if not isinstance(input_item, (tuple, list, dict)):
         return [input_item]
     return input_item
 
 
-def _ensure_tuple(input_item):
+def _ensure_tuple(input_item: Any) -> tuple[Any, ...]:
     """Ensure that an item is a tuple."""
     if not isinstance(input_item, tuple):
         return tuple(_ensure_iterable(input_item))
@@ -41,9 +46,9 @@ def _ensure_tuple(input_item):
 
 
 def format_handler(
-    kwarg_types: T.Dict[str, T.Any] = {},
-    convert_types: T.Union[None, T.Tuple[T.Any], T.Dict[str, T.Tuple[T.Any]]] = None,
-) -> T.Callable:
+    kwarg_types: dict[str, Any] = {},
+    convert_types: None | tuple[Any, ...] | dict[str, tuple[Any, ...]] = None,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Transform the inputs to a function to match the requirements.
 
     Parameters
@@ -65,14 +70,19 @@ def format_handler(
     if convert_types is None:
         convert_types = {}
 
-    def decorator(function: T.Callable) -> T.Callable:
-        def _wrapper(_kwarg_types, _convert_types, *args, **kwargs):
+    def decorator(function: Callable[..., Any]) -> Callable[..., Any]:
+        def _wrapper(
+            _kwarg_types: dict[str, Any],
+            _convert_types: None | tuple[Any, ...] | dict[str, tuple[Any, ...]],
+            *args: Any,
+            **kwargs: Any,
+        ) -> Any:
             _kwarg_types = {**_kwarg_types}
             signature = inspect.signature(function)
             mapping = signature_mapping(signature, _kwarg_types)
 
             # Store positional arg names for extraction later
-            arg_names = []
+            arg_names: list[str] = []
             for arg, name in zip(args, signature.parameters):
                 arg_names.append(name)
                 kwargs[name] = arg
@@ -130,12 +140,12 @@ def format_handler(
             #             pass
 
             # Extract positional args again
-            args = [kwargs.pop(name) for name in arg_names]
-            LOG.debug("ek-data %s %s", args, kwargs)
-            return function(*args, **kwargs)
+            new_args = [kwargs.pop(name) for name in arg_names]
+            LOG.debug("ek-data %s %s", new_args, kwargs)
+            return function(*new_args, **kwargs)
 
         @wraps(function)
-        def wrapper(*args, _auto_inputs_transform=True, **kwargs):
+        def wrapper(*args: Any, _auto_inputs_transform: bool = True, **kwargs: Any) -> Any:
             if not _auto_inputs_transform:
                 return function(*args, **kwargs)
             return _wrapper(kwarg_types, convert_types, *args, **kwargs)
@@ -145,7 +155,7 @@ def format_handler(
     return decorator
 
 
-def signature_mapping(signature: inspect.Signature, kwarg_types: dict[str, str]):
+def signature_mapping(signature: inspect.Signature, kwarg_types: dict[str, Any]) -> dict[str, Any]:
     """Map args and kwargs to object types.
 
     Uses hierarchical selection method:
@@ -153,9 +163,9 @@ def signature_mapping(signature: inspect.Signature, kwarg_types: dict[str, str])
     2. Based on Type setting in function
     3. Do nothing
     """
-    mapping = {}
+    mapping: dict[str, Any] = {}
     for key, parameter in signature.parameters.items():
-        kwarg_type: T.Any
+        kwarg_type: Any
         if key in kwarg_types:
             # 1. Use explicitly defined type[s]
             kwarg_type = kwarg_types.get(key)

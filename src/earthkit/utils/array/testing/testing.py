@@ -6,15 +6,18 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from __future__ import annotations
+
 import logging
 from importlib import import_module
+from typing import Any
 
-from earthkit.utils.array.namespace import _NAMESPACES
+from earthkit.utils.array.namespace import _NAMESPACES, UnknownPatchedNamespace
 
 LOG = logging.getLogger(__name__)
 
 
-def _modules_installed(*modules):
+def _modules_installed(*modules: str) -> bool:
     for module in modules:
         try:
             import_module(module)
@@ -35,7 +38,7 @@ if not NO_CUPY:
     except Exception:
         NO_CUPY = True
 
-ARRAY_NAMES = ["numpy"]
+ARRAY_NAMES: list[str] = ["numpy"]
 if not NO_TORCH:
     ARRAY_NAMES.append("torch")
 if not NO_CUPY:
@@ -44,9 +47,9 @@ if not NO_CUPY:
 #     ARRAY_NAMES.append("jax")
 
 
-def _get_namespace_devices(names):
-    devices = []
-    namespaces = []
+def _get_namespace_devices(names: list[str]) -> list[tuple[UnknownPatchedNamespace, Any]]:
+    devices: list[Any] = []
+    namespaces: list[UnknownPatchedNamespace] = []
     for name in names:
         xp = _NAMESPACES[name]
         xp_devices = xp.__array_namespace_info__().devices()

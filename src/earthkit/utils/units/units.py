@@ -7,6 +7,8 @@
 # nor does it submit to any jurisdiction.
 
 
+from __future__ import annotations
+
 import re
 from abc import ABCMeta, abstractmethod
 from typing import Any
@@ -135,7 +137,7 @@ class Units(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Check equality with another unit."""
         pass
 
@@ -145,12 +147,12 @@ class Units(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def __getstate__(self) -> dict:
+    def __getstate__(self) -> dict[str, str]:
         """Return a picklable state dictionary."""
         pass
 
     @abstractmethod
-    def __setstate__(self, state: dict) -> None:
+    def __setstate__(self, state: dict[str, str]) -> None:
         """Restore the unit from a state dictionary.
 
         Parameters
@@ -173,7 +175,7 @@ class Units(metaclass=ABCMeta):
         pass
 
     @staticmethod
-    def from_any(units):
+    def from_any(units: str | pint.Unit | Units | None) -> Units:
         """Construct a :class:`Units` instance from various input types.
 
         Parameters
@@ -234,7 +236,7 @@ class StrUnits(Units):
         """Return the stored unit string."""
         return self._units
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Check equality by comparing string representations.
 
         Parameters
@@ -263,7 +265,7 @@ class StrUnits(Units):
         """
         return None
 
-    def __getstate__(self) -> dict:
+    def __getstate__(self) -> dict[str, str]:
         """Return the pickle state dictionary.
 
         Returns
@@ -273,7 +275,7 @@ class StrUnits(Units):
         """
         return {"units": self._units}
 
-    def __setstate__(self, state: dict) -> None:
+    def __setstate__(self, state: dict[str, str]) -> None:
         """Restore the unit from a pickle state dictionary.
 
         Parameters
@@ -297,7 +299,7 @@ class PintUnits(Units):
         """
         self._units = units
 
-    def __repr__(self) -> Any:
+    def __repr__(self) -> str:
         """Return the Pint unit's repr."""
         return self._units.__repr__()
 
@@ -305,7 +307,7 @@ class PintUnits(Units):
         """Return the string form of the Pint unit."""
         return str(self._units)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Check equality against another unit.
 
         Parameters
@@ -357,7 +359,7 @@ class PintUnits(Units):
         """
         return ureg(units).units
 
-    def __getstate__(self) -> dict:
+    def __getstate__(self) -> dict[str, str]:
         """Return the pickle state dictionary.
 
         Returns
@@ -367,7 +369,7 @@ class PintUnits(Units):
         """
         return {"units": str(self)}
 
-    def __setstate__(self, state: dict) -> None:
+    def __setstate__(self, state: dict[str, str]) -> None:
         """Restore the unit from a pickle state dictionary.
 
         Parameters

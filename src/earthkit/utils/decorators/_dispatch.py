@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
-def is_module_loaded(module_name):
+def is_module_loaded(module_name: str) -> bool:
     return module_name in sys.modules
 
 
@@ -94,9 +94,9 @@ class XArrayDispatcher(DataDispatcher):
     def match(obj: Any) -> bool:
         return _is_xarray(obj)
 
-    def dispatch(self, func, module, *args, **kwargs):
-        module = import_module(module + ".xarray")
-        return getattr(module, func)(*args, **kwargs)
+    def dispatch(self, func: str, module: str, *args: Any, **kwargs: Any) -> Any:
+        submodule = import_module(module + ".xarray")
+        return getattr(submodule, func)(*args, **kwargs)
 
 
 class FieldListDispatcher(DataDispatcher):
@@ -104,9 +104,9 @@ class FieldListDispatcher(DataDispatcher):
     def match(obj: Any) -> bool:
         return _is_fieldlist(obj)
 
-    def dispatch(self, func, module, *args, **kwargs):
-        module = import_module(module + ".fieldlist")
-        return getattr(module, func)(*args, **kwargs)
+    def dispatch(self, func: str, module: str, *args: Any, **kwargs: Any) -> Any:
+        submodule = import_module(module + ".fieldlist")
+        return getattr(submodule, func)(*args, **kwargs)
 
 
 class ArrayDispatcher(DataDispatcher):
@@ -114,9 +114,9 @@ class ArrayDispatcher(DataDispatcher):
     def match(obj: Any) -> bool:
         return _is_array(obj)
 
-    def dispatch(self, func, module, *args, **kwargs):
-        module = import_module(module + ".array")
-        return getattr(module, func)(*args, **kwargs)
+    def dispatch(self, func: str, module: str, *args: Any, **kwargs: Any) -> Any:
+        submodule = import_module(module + ".array")
+        return getattr(submodule, func)(*args, **kwargs)
 
 
 class ArrayLikeDispatcher(ArrayDispatcher):
@@ -126,13 +126,13 @@ class ArrayLikeDispatcher(ArrayDispatcher):
 
 
 def dispatch(
-    func: Callable,
+    func: Callable[..., Any],
     match: int | str = 0,
     xarray: bool = True,
     fieldlist: bool = True,
     array: bool = True,
     array_like: bool = False,
-):
+) -> Callable[..., Any]:
     """Decorator to dispatch function calls based on input data types.
 
     The dispatch will attempt to route the call to the appropriate
@@ -168,8 +168,8 @@ def dispatch(
 
     """
 
-    def _make_wrapper(_func):
-        DISPATCHERS = []
+    def _make_wrapper(_func: Callable[..., Any]) -> Callable[..., Any]:
+        DISPATCHERS: list[DataDispatcher] = []
         if xarray:
             DISPATCHERS.append(XArrayDispatcher())
         if fieldlist:
@@ -198,7 +198,7 @@ def dispatch(
             raise TypeError(f"'match' must be an integer index or a string parameter name, got {type(match)}")
 
         @wraps(_func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             bound_args = sig.bind(*args, **kwargs)
             bound_args.apply_defaults()
 

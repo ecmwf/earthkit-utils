@@ -6,8 +6,12 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from __future__ import annotations
+
 import warnings
+from collections.abc import Callable
 from functools import wraps
+from typing import Any, TypeVar, cast, overload
 
 __all__ = ["ExperimentalWarning", "experimental"]
 
@@ -20,6 +24,8 @@ __all__ = ["ExperimentalWarning", "experimental"]
 #   warnings.filterwarnings("ignore", category=ExperimentalWarning)
 _WARNING_PREFIX = "earthkit experimental:"
 
+_F = TypeVar("_F", bound=Callable[..., Any])
+
 _DEFAULT_DOCS_MESSAGE = "**Experimental API**: may change or be removed without notice."
 
 
@@ -27,12 +33,30 @@ class ExperimentalWarning(UserWarning):
     """Warning category for experimental API usage."""
 
 
+@overload
 def experimental(
-    obj=None,
+    obj: _F,
     *,
-    msg=_DEFAULT_DOCS_MESSAGE,
-    warn_runtime=True,
-):
+    msg: str = ...,
+    warn_runtime: bool = ...,
+) -> _F: ...
+
+
+@overload
+def experimental(
+    obj: None = None,
+    *,
+    msg: str = ...,
+    warn_runtime: bool = ...,
+) -> Callable[[_F], _F]: ...
+
+
+def experimental(
+    obj: _F | None = None,
+    *,
+    msg: str = _DEFAULT_DOCS_MESSAGE,
+    warn_runtime: bool = True,
+) -> _F | Callable[[_F], _F]:
     """Mark a function as experimental.
 
     This signals to users that the decorated function is considered experimental
@@ -89,7 +113,7 @@ def experimental(
     indented = "\n".join("   " + line for line in msg.splitlines())
     warning_block = f".. warning::\n{indented}\n"
 
-    def decorate(target):
+    def decorate(target: _F) -> _F:
         doc = (target.__doc__ or "").strip()
         target.__doc__ = warning_block + ("\n" + doc if doc else "")
 
@@ -97,7 +121,7 @@ def experimental(
             return target
 
         @wraps(target)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             warnings.warn(
                 f"{_WARNING_PREFIX} {target.__qualname__} may change or be removed without notice.",
                 category=ExperimentalWarning,
@@ -105,7 +129,7 @@ def experimental(
             )
             return target(*args, **kwargs)
 
-        return wrapper
+        return cast(_F, wrapper)
 
     if obj is None:
         return decorate

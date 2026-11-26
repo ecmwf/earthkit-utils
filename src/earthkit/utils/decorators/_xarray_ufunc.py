@@ -8,8 +8,11 @@
 #
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
 
-def _infer_output_count(func) -> int:
+
+def _infer_output_count(func: Callable[..., Any]) -> int:
     import inspect
     from typing import get_args, get_origin
 
@@ -29,11 +32,11 @@ def _infer_output_count(func) -> int:
     return 1
 
 
-def xarray_ufunc(func, *args, **kwargs):
+def xarray_ufunc(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
     import xarray as xr
 
     xarray_ufunc_kwargs = kwargs.pop("xarray_ufunc_kwargs", {})
-    merged = {
+    merged: dict[str, Any] = {
         "dask": "parallelized",
         "keep_attrs": True,
     }

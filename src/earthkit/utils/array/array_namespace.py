@@ -6,14 +6,16 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import typing as T
+from __future__ import annotations
+
+from typing import Any
 
 import array_api_compat
 
 from earthkit.utils.array.namespace import _DEFAULT_NAMESPACE, _NAMESPACES, UnknownPatchedNamespace
 
 
-def _get_array_name(xp):
+def _get_array_name(xp: Any) -> str:
     name = xp.__name__
     if "jax" in name:
         return "jax"
@@ -27,7 +29,7 @@ def _get_array_name(xp):
         return name
 
 
-def _get_namespace_from_array(*arrays):
+def _get_namespace_from_array(*arrays: Any) -> UnknownPatchedNamespace:
     xp = array_api_compat.array_namespace(*arrays)
     namespace = _NAMESPACES.get(_get_array_name(xp))
     if namespace is None:
@@ -35,7 +37,7 @@ def _get_namespace_from_array(*arrays):
     return namespace
 
 
-def array_namespace(*args: T.Any) -> T.Any:
+def array_namespace(*args: Any) -> Any:
     """Return the array namespace of the arguments.
 
     Parameters
@@ -62,6 +64,7 @@ def array_namespace(*args: T.Any) -> T.Any:
     behaviour. E.g. sign() for torch.
 
     """
+    xp: UnknownPatchedNamespace
     arrays = [a for a in args if array_api_compat.is_array_api_obj(a)]
     if not arrays:
         # TODO: decide if we want to support this or not

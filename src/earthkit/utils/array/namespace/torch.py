@@ -6,25 +6,30 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import Any
+
 from earthkit.utils.array.namespace.unknown import UnknownPatchedNamespace
 from earthkit.utils.decorators import thread_safe_cached_property
 
 
 class PatchedTorchNamespace(UnknownPatchedNamespace):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(None)
 
     @thread_safe_cached_property
-    def xp(self):
+    def xp(self) -> Any:
         import array_api_compat.torch as torch
 
         return torch
 
     @property
-    def _earthkit_array_namespace_name(self):
+    def _earthkit_array_namespace_name(self) -> str:
         return "torch"
 
-    def sign(self, x, *args, **kwargs):
+    def sign(self, x: Any, *args: Any, **kwargs: Any) -> Any:
         """Reimplement the sign function to handle NaNs.
 
         The problem is that torch.sign returns 0 for NaNs, but the array API
@@ -34,34 +39,34 @@ class PatchedTorchNamespace(UnknownPatchedNamespace):
         r[self.xp.isnan(x)] = self.xp.nan
         return r
 
-    def percentile(self, a, q, axis=None):
+    def percentile(self, a: Any, q: Any, axis: int | None = None) -> Any:
         return self.xp.quantile(a, q / 100, dim=axis)
 
-    def quantile(self, a, q, axis=None):
+    def quantile(self, a: Any, q: Any, axis: int | None = None) -> Any:
         return self.xp.quantile(a, q, dim=axis)
 
-    def size(self, x):
+    def size(self, x: Any) -> int:
         """Return the size of an array."""
         return x.numel()
 
-    def shape(self, x):
+    def shape(self, x: Any) -> tuple[int, ...]:
         """Return the shape of an array."""
         return tuple(x.shape)
 
-    def histogramdd(self, x, *, bins=10):
+    def histogramdd(self, x: Any, *, bins: int | Sequence[int] = 10) -> Any:
         return self.xp.histogramdd(x, bins=bins)
 
-    def to_device(self, x, device, **kwargs):
+    def to_device(self, x: Any, device: Any, **kwargs: Any) -> Any:
         return x.to(device, **kwargs)
 
-    def rad2deg(self, x):
+    def rad2deg(self, x: Any) -> Any:
         return self.xp.rad2deg(x)
 
-    def deg2rad(self, x):
+    def deg2rad(self, x: Any) -> Any:
         return self.xp.deg2rad(x)
 
-    def choice(self, a, size, replace=True, generator=None):
-        kwargs = {}
+    def choice(self, a: Any, size: int, replace: bool = True, generator: Any = None) -> Any:
+        kwargs: dict[str, Any] = {}
         if not isinstance(a, int):
             kwargs["device"] = self.device(a)
         rng = self.xp.Generator(**kwargs) if generator is None else generator
