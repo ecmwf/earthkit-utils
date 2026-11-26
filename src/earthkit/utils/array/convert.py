@@ -6,13 +6,17 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from __future__ import annotations
+
+from typing import Any
+
 from earthkit.utils.array.array_namespace import _get_array_name
 from earthkit.utils.array.array_namespace import array_namespace as array_namespace_func
 from earthkit.utils.array.converter import _CONVERTERS, FromUnknownConverter
 from earthkit.utils.array.namespace import _CUPY_NAMESPACE, _NUMPY_NAMESPACE, UnknownPatchedNamespace
 
 
-def _get_converter(source_array_namespace):
+def _get_converter(source_array_namespace: Any) -> type[FromUnknownConverter]:
     if isinstance(source_array_namespace, UnknownPatchedNamespace):
         return _CONVERTERS.get(_get_array_name(source_array_namespace), FromUnknownConverter)
     elif isinstance(source_array_namespace, str):
@@ -21,7 +25,7 @@ def _get_converter(source_array_namespace):
         raise ValueError(f"Unknown array backend: {source_array_namespace._earthkit_array_namespace_name}")
 
 
-def convert(array, *, device=None, array_namespace=None, **kwargs):
+def convert(array: Any, *, device: Any = None, array_namespace: Any = None, **kwargs: Any) -> Any:
     """Return a copy/view of a converted array.
 
     Parameters
@@ -73,7 +77,7 @@ def convert(array, *, device=None, array_namespace=None, **kwargs):
     return array
 
 
-def convert_dtype(dtype, array_namespace):
+def convert_dtype(dtype: Any, array_namespace: Any) -> Any:
     target_xp = array_namespace_func(array_namespace)
     if type(dtype) is str:
         return target_xp.__array_namespace_info__().dtypes()[dtype]

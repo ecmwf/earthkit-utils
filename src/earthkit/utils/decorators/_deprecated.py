@@ -6,8 +6,12 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from __future__ import annotations
+
 import warnings
+from collections.abc import Callable
 from functools import wraps
+from typing import Any, TypeVar, cast, overload
 
 __all__ = ["DeprecatedWarning", "deprecated"]
 
@@ -20,6 +24,8 @@ __all__ = ["DeprecatedWarning", "deprecated"]
 #   warnings.filterwarnings("ignore", category=DeprecatedWarning)
 _WARNING_PREFIX = "earthkit deprecated:"
 
+_F = TypeVar("_F", bound=Callable[..., Any])
+
 _DEFAULT_DOCS_MESSAGE = "**Deprecated API**: will be removed in a future release."
 
 
@@ -27,14 +33,36 @@ class DeprecatedWarning(DeprecationWarning):
     """Warning category for deprecated API usage."""
 
 
+@overload
 def deprecated(
-    obj=None,
+    obj: _F,
     *,
-    msg=_DEFAULT_DOCS_MESSAGE,
-    replacement=None,
-    removal_version=None,
-    warn_runtime=True,
-):
+    msg: str = ...,
+    replacement: str | None = ...,
+    removal_version: str | None = ...,
+    warn_runtime: bool = ...,
+) -> _F: ...
+
+
+@overload
+def deprecated(
+    obj: None = None,
+    *,
+    msg: str = ...,
+    replacement: str | None = ...,
+    removal_version: str | None = ...,
+    warn_runtime: bool = ...,
+) -> Callable[[_F], _F]: ...
+
+
+def deprecated(
+    obj: _F | None = None,
+    *,
+    msg: str = _DEFAULT_DOCS_MESSAGE,
+    replacement: str | None = None,
+    removal_version: str | None = None,
+    warn_runtime: bool = True,
+) -> _F | Callable[[_F], _F]:
     """Mark a function as experimental.
 
     This signals to users that the decorated function is considered deprecated
@@ -91,7 +119,7 @@ def deprecated(
     ...
 
     """
-    details = [msg]
+    details: list[str] = [msg]
     if replacement:
         details.append(f"Use {replacement} instead.")
     if removal_version:
@@ -102,7 +130,7 @@ def deprecated(
     indented = "\n".join("   " + line for line in msg.splitlines())
     warning_block = f".. warning::\n{indented}\n"
 
-    def decorate(target):
+    def decorate(target: _F) -> _F:
         doc = (target.__doc__ or "").strip()
         target.__doc__ = warning_block + ("\n" + doc if doc else "")
 
@@ -110,7 +138,7 @@ def deprecated(
             return target
 
         @wraps(target)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             warnings.warn(
                 f"{_WARNING_PREFIX} {target.__qualname__} may change or be removed without notice.",
                 category=DeprecatedWarning,
@@ -118,7 +146,7 @@ def deprecated(
             )
             return target(*args, **kwargs)
 
-        return wrapper
+        return cast(_F, wrapper)
 
     if obj is None:
         return decorate

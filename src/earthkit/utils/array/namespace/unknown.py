@@ -7,26 +7,32 @@
 # nor does it submit to any jurisdiction.
 
 
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import Any
+
+
 class UnknownPatchedNamespace:
-    def __init__(self, xp):
+    def __init__(self, xp: Any) -> None:
         self._xp = xp
 
     @property
-    def xp(self):
+    def xp(self) -> Any:
         return self._xp
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         return getattr(self.xp, name)  # Delegate to underlying namespace
 
     # TODO: come up with a better way to compare namespaces
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return self._earthkit_array_namespace_name == other._earthkit_array_namespace_name
 
     @property
-    def _earthkit_array_namespace_name(self):
+    def _earthkit_array_namespace_name(self) -> str:
         return self.xp.__name__
 
-    def polyval(self, x, c):
+    def polyval(self, x: Any, c: Any) -> Any:
         """Evaluation of a polynomial using Horner's scheme.
 
         If ``c`` is of length ``n + 1``, this function returns the value
@@ -60,7 +66,7 @@ class UnknownPatchedNamespace:
             c0 = c[-i] + c0 * x
         return c0
 
-    def percentile(self, a, q, axis=None):
+    def percentile(self, a: Any, q: Any, axis: int | None = None) -> Any:
         """Compute percentiles by calling the quantile function."""
         if axis is None:
             axis = 0
@@ -78,10 +84,10 @@ class UnknownPatchedNamespace:
 
         return (1 - weight) * a_low + weight * a_high
 
-    def quantile(self, a, q, axis=None):
+    def quantile(self, a: Any, q: Any, axis: int | None = None) -> Any:
         return self.percentile(a, q * 100, axis=axis)
 
-    def histogram2d(self, x, y, *, bins=10):
+    def histogram2d(self, x: Any, y: Any, *, bins: int | Sequence[int] = 10) -> Any:
         """Compute a 2D histogram.
 
         Parameters
@@ -97,7 +103,7 @@ class UnknownPatchedNamespace:
         """
         return self.xp.histogramdd(self.xp.stack([x, y]).T, bins=bins)
 
-    def histogramdd(self, x, *, bins=10):
+    def histogramdd(self, x: Any, *, bins: int | Sequence[int] = 10) -> tuple[Any, list[Any]]:
         N, D = x.shape
 
         if isinstance(bins, int):
@@ -110,23 +116,23 @@ class UnknownPatchedNamespace:
 
         edges = [self.xp.linspace(mins[d], maxs[d], bins[d] + 1) for d in range(D)]
 
-        idx = []
+        idx: list[Any] = []
         for d in range(D):
             bin_width = edges[d][1] - edges[d][0]
             i = self.xp.floor((x[:, d] - edges[d][0]) / bin_width).astype(int)
             i = self.xp.clip(i, 0, bins[d] - 1)
             idx.append(i)
 
-        idx = self.xp.stack(idx, axis=1)
+        stacked_idx = self.xp.stack(idx, axis=1)
 
         # TODO: do we need to handle device here?
         H = self.xp.zeros(bins, dtype=float)
         for i in range(N):
-            H[tuple(idx[i])] += 1
+            H[tuple(stacked_idx[i])] += 1
 
         return H, edges
 
-    def size(self, x):
+    def size(self, x: Any) -> Any:
         """Return the size of an array."""
         # array.size is part of array api spec
         # but in practice not all backends implement it yet
@@ -134,7 +140,7 @@ class UnknownPatchedNamespace:
         # in order to be able to patch it if needed
         return x.size
 
-    def shape(self, x):
+    def shape(self, x: Any) -> Any:
         """Return the shape of an array."""
         # array.shape is part of array api spec
         # but in practice not all backends implement it yet
@@ -142,7 +148,7 @@ class UnknownPatchedNamespace:
         # in order to be able to patch it if needed
         return x.shape
 
-    def to_device(self, x, device, **kwargs):
+    def to_device(self, x: Any, device: Any, **kwargs: Any) -> Any:
         # array.to_device(device, **kwargs) is part of array api spec
         # but in practice not all backends implement it yet
         # therefore we provide this function
@@ -151,7 +157,7 @@ class UnknownPatchedNamespace:
 
         return array_api_compat.to_device(x, device, **kwargs)
 
-    def device(self, x):
+    def device(self, x: Any) -> Any:
         # array.device is part of array api spec
         # but in practice not all backends implement it yet
         # therefore we provide this function
@@ -160,29 +166,29 @@ class UnknownPatchedNamespace:
 
         return array_api_compat.device(x)
 
-    def dtype(self, x):
+    def dtype(self, x: Any) -> Any:
         # array.device is part of array api spec
         # but in practice not all backends implement it yet
         # therefore we provide this function
         # in order to be able to patch it if needed
         return x.dtype
 
-    def isclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
+    def isclose(self, x: Any, y: Any, *, rtol: float = 1e-5, atol: float = 1e-8, equal_nan: bool = False) -> Any:
         result = self.xp.abs(x - y) <= atol + rtol * self.xp.abs(y)
         if equal_nan:
             nan_mask = self.xp.isnan(x) & self.xp.isnan(y)
             result = result | nan_mask
         return result
 
-    def allclose(self, x, y, *, rtol=1e-5, atol=1e-8, equal_nan=False):
+    def allclose(self, x: Any, y: Any, *, rtol: float = 1e-5, atol: float = 1e-8, equal_nan: bool = False) -> Any:
         return self.xp.all(self.isclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan))
 
-    def deg2rad(self, x):
+    def deg2rad(self, x: Any) -> Any:
         from earthkit.utils.constants import radian
 
         return x * radian
 
-    def rad2deg(self, x):
+    def rad2deg(self, x: Any) -> Any:
         from earthkit.utils.constants import degree
 
         return x * degree

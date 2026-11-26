@@ -6,10 +6,16 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from __future__ import annotations
+
 import threading
+from collections.abc import Callable
+from typing import Any, Generic, TypeVar, overload
+
+_T = TypeVar("_T")
 
 
-class thread_safe_cached_property:
+class thread_safe_cached_property(Generic[_T]):
     """A thread-safe cached property decorator.
 
     It was implemented because the functools.cached_property is not thread-safe
@@ -27,12 +33,18 @@ class thread_safe_cached_property:
 
     """
 
-    def __init__(self, method):
+    def __init__(self, method: Callable[[Any], _T]) -> None:
         self.method = method
         self.name = f"_c_{method.__name__}"
         self.lock = threading.Lock()
 
-    def __get__(self, instance, owner=None):
+    @overload
+    def __get__(self, instance: None, owner: type | None = None) -> thread_safe_cached_property[_T]: ...
+
+    @overload
+    def __get__(self, instance: object, owner: type | None = None) -> _T: ...
+
+    def __get__(self, instance: object | None, owner: type | None = None) -> thread_safe_cached_property[_T] | _T:
         if instance is None:
             return self
 
@@ -51,6 +63,6 @@ class thread_safe_cached_property:
         with self.lock:
             if self.name in cache:
                 return cache[self.name]
-            value = self.method(instance)
+            value: _T = self.method(instance)
             cache[self.name] = value
             return value

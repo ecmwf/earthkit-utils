@@ -1,4 +1,12 @@
-_FIELD_PARAMS = {
+# A single parameter definition, e.g. {"variable": "2t", "units": "K", ...}
+
+from __future__ import annotations
+
+from typing import Any
+
+ParamDefinition = dict[str, Any]
+
+_FIELD_PARAMS: dict[str, ParamDefinition] = {
     "10m_wind_direction": {"variable": "10wdir", "units": "degrees", "paramId": 260260, "edition": ("2",)},
     "10m_wind_speed": {
         "variable": "10si",
@@ -117,13 +125,13 @@ _FIELD_PARAMS = {
 
 
 class _ParamDB:
-    def __init__(self):
-        self.params = _FIELD_PARAMS
+    def __init__(self) -> None:
+        self.params: dict[str, ParamDefinition] = _FIELD_PARAMS
 
-    def get(self, name):
+    def get(self, name: str) -> ParamDefinition:
         return self.params[name]
 
-    def field_parameter_metadata(self, name):
+    def field_parameter_metadata(self, name: str) -> dict[str, Any]:
         param_item = self.get(name)
         return {"parameter.variable": param_item["variable"], "parameter.units": param_item["units"]}
 

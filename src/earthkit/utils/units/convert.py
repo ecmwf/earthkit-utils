@@ -6,8 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from __future__ import annotations
+
 import logging
 import sys
+from collections.abc import Hashable, Mapping
 from typing import TYPE_CHECKING, Any, TypeAlias, Union
 
 import pint
@@ -24,21 +27,26 @@ if TYPE_CHECKING:
     import xarray  # type: ignore[import]
 
 
-def is_module_loaded(module_name):
+def is_module_loaded(module_name: str) -> bool:
     return module_name in sys.modules
 
 
-def _check_errors(errors):
+def _check_errors(errors: str) -> None:
     if errors not in ("raise", "ignore"):
         raise ValueError(f"errors must be 'raise' or 'ignore', got {errors!r}")
 
 
-def _not_converted(data, errors, message):
+def _not_converted(data: Any, errors: str, message: str) -> Any:
     """Raise ``message`` when ``errors="raise"``, otherwise log it and return ``data`` unchanged."""
     if errors == "raise":
         raise ValueError(message)
     LOG.warning(message)
     return data
+
+
+def _lookup_units(units: Mapping[Any, UnitLike], name: Hashable, default: UnitLike | None = None) -> UnitLike | None:
+    """Return the units of variable ``name`` from a mapping keyed by variable name, or ``default``."""
+    return units.get(name, default)
 
 
 def are_equal(unit_1: UnitLike | None, unit_2: UnitLike | None) -> bool:
@@ -118,11 +126,11 @@ def convert_array(
 
 
 def convert_dataarray(
-    data: "xarray.DataArray",
+    data: xarray.DataArray,
     target_units: UnitSpec = None,
     source_units: UnitSpec = None,
     errors: str = "ignore",
-) -> "xarray.DataArray":
+) -> xarray.DataArray:
     """
     Convert the units of an xarray.DataArray.
 
@@ -161,7 +169,7 @@ def convert_dataarray(
 
     # Resolve target units
     if isinstance(target_units, dict):
-        target_units_resolved = target_units.get(data.name)
+        target_units_resolved = _lookup_units(target_units, data.name)
     else:
         target_units_resolved = target_units
     if target_units_resolved is None:
@@ -171,7 +179,7 @@ def convert_dataarray(
 
     # Resolve source units
     if isinstance(source_units, dict):
-        source_units_resolved = source_units.get(data.name, data.attrs.get("units"))
+        source_units_resolved = _lookup_units(source_units, data.name, data.attrs.get("units"))
     elif isinstance(source_units, str):
         source_units_resolved = source_units
     else:
@@ -214,11 +222,11 @@ def are_compatible(unit_1: UnitLike | None, unit_2: UnitLike | None) -> bool:
 
 
 def convert_dataset(
-    data: "xarray.Dataset",
+    data: xarray.Dataset,
     target_units: UnitSpec = None,
     source_units: UnitSpec = None,
     errors: str = "ignore",
-) -> "xarray.Dataset":
+) -> xarray.Dataset:
     """
     Convert the units of variables in an xarray.Dataset.
 
@@ -270,7 +278,7 @@ def convert_dataset(
     for name, da in data.data_vars.items():
         # Get target units for this variable; variables without target units are not requested
         if isinstance(target_units, dict):
-            target_units_for_var = target_units.get(name)
+            target_units_for_var = _lookup_units(target_units, name)
         else:
             target_units_for_var = target_units
         if target_units_for_var is None:
@@ -279,7 +287,7 @@ def convert_dataset(
         # Get source units for this variable, checking in order:
         source_units_for_var = da.attrs.get("units")
         if isinstance(source_units, dict):
-            source_units_for_var = source_units.get(name, source_units_for_var)
+            source_units_for_var = _lookup_units(source_units, name, source_units_for_var)
         elif isinstance(source_units, str):
             if not are_equal(source_units, source_units_for_var):
                 continue

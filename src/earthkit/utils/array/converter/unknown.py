@@ -7,13 +7,18 @@
 # nor does it submit to any jurisdiction.
 
 
+from __future__ import annotations
+
+from typing import Any
+
+
 class FromUnknownConverter:
-    def __init__(self, xp_target):
+    def __init__(self, xp_target: Any) -> None:
         # TODO: check if we ever will need source also
         # self.xp_source = xp_source
         self.xp_target = xp_target
 
-    def to(self, array, target_backend, **kwargs):
+    def to(self, array: Any, target_backend: str, **kwargs: Any) -> Any:
         method_name = f"to_{target_backend}"
         if hasattr(self, method_name):
             method = getattr(self, method_name)
@@ -21,7 +26,7 @@ class FromUnknownConverter:
         else:
             return self.to_unknown(array, **kwargs)
 
-    def _default_convert(self, xp, array, **kwargs):
+    def _default_convert(self, xp: Any, array: Any, **kwargs: Any) -> Any:
         """Default attempt to convert from other backend to this backend.
 
         Process is the following:
@@ -46,23 +51,23 @@ class FromUnknownConverter:
                     except Exception:
                         return xp.array(numpy_array, **kwargs)
 
-    def to_unknown(self, array, **kwargs):
+    def to_unknown(self, array: Any, **kwargs: Any) -> Any:
         return self._default_convert(self.xp_target, array, **kwargs)
 
-    def to_numpy(self, array, **kwargs):
+    def to_numpy(self, array: Any, **kwargs: Any) -> Any:
         from earthkit.utils.array.namespace import _NUMPY_NAMESPACE
 
         return self._default_convert(_NUMPY_NAMESPACE, array, **kwargs)
 
-    def to_torch(self, array, **kwargs):
+    def to_torch(self, array: Any, **kwargs: Any) -> Any:
         from earthkit.utils.array.namespace import _TORCH_NAMESPACE
 
         return self._default_convert(_TORCH_NAMESPACE, array, **kwargs)
 
-    def to_cupy(self, array, **kwargs):
+    def to_cupy(self, array: Any, **kwargs: Any) -> Any:
         from earthkit.utils.array.namespace import _CUPY_NAMESPACE
 
         return self._default_convert(_CUPY_NAMESPACE, array, **kwargs)
 
-    def to_jax(self, array, **kwargs):
+    def to_jax(self, array: Any, **kwargs: Any) -> Any:
         return self._default_convert(self.xp_target, array, **kwargs)
