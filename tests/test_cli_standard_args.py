@@ -7,19 +7,20 @@
 # nor does it submit to any jurisdiction.
 #
 
-import json
 import sys
-import types
+from typing import Any, NamedTuple
 
 import click
 import pytest
 from click.testing import CliRunner
 
+from earthkit.cli import standard_args
 from earthkit.cli.main import command_modules
 from earthkit.cli.standard_args import (
     SOURCE_HELP,
     TARGET_HELP,
     Target,
+    _earthkit_data,
     add_options,
     index_option,
     parse_index,
@@ -30,51 +31,85 @@ from earthkit.cli.standard_args import (
 )
 
 
+class Call(NamedTuple):
+    """The arguments of a call to the fake earthkit-data."""
+
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
+
+
+def call(*args, **kwargs):
+    return Call(args, kwargs)
+
+
+class FakeEarthkitData:
+    """Stands for earthkit.data: ``from_source`` returns its arguments, ``to_target`` records them."""
+
+    def __init__(self):
+        self.written = []
+
+    def from_source(self, *args, **kwargs):
+        return Call(args, kwargs)
+
+    def to_target(self, *args, **kwargs):
+        self.written.append(Call(args, kwargs))
+
+
 @pytest.fixture(autouse=True)
-def earthkit_data(monkeypatch):
-    """Stub earthkit.data, with from_source returning its arguments and to_target recording its calls."""
-    module = types.ModuleType("earthkit.data")
-    module.from_source = lambda *args, **kwargs: [list(args), kwargs]
-    module.to_target = lambda *args, **kwargs: module.written.append((args, kwargs))
-    module.written = []
-    monkeypatch.setitem(sys.modules, "earthkit.data", module)
-    return module
+def ekd(monkeypatch):
+    """Replace earthkit-data with a fake where standard_args gets it, so no test reads or writes data."""
+    fake = FakeEarthkitData()
+    monkeypatch.setattr(standard_args, "_earthkit_data", lambda: fake)
+    return fake
 
 
-def _resolved_json(*data):
-    return json.dumps([[list(d.args), d.kwargs] if isinstance(d, Target) else d for d in data])
+@pytest.fixture(autouse=True)
+def in_tmp_path(tmp_path, monkeypatch):
+    """Run each test in a directory holding the source files used in the tests, so they have relative paths."""
+    monkeypatch.chdir(tmp_path)
+    for name in ("in.grib", "a:b.grib", "2020-01-01T00:00.grib", ":in.grib"):
+        (tmp_path / name).touch()
 
 
-@click.command()
-@add_options([source_options(), target_options(), profile_option])
-@click.option("--keys", multiple=True, callback=split_csv)
-def _command(source, target, profile, keys):
-    assert isinstance(target, Target)
-    click.echo(json.dumps({"data": json.loads(_resolved_json(source, target)), "profile": profile, "keys": keys}))
+def standard():
+    return [source_options(), target_options()]
 
 
-@click.command()
-@add_options([source_options("source_1"), source_options("source_2"), target_options()])
-def _two_sources(source_1, source_2, target):
-    click.echo(_resolved_json(source_1, source_2, target))
+def named():
+    return [source_options("source_1"), source_options("source_2"), target_options()]
 
 
-def _invoke(command, *args):
-    return CliRunner().invoke(command, [str(a) for a in args])
+def positional():
+    return [source_options("source_1", positional=True), source_options("source_2"), target_options(positional=True)]
 
 
-def _resolved(*args, command=_command):
-    result = _invoke(command, *args)
-    assert result.exit_code == 0, result.output + repr(result.exception)
-    resolved = json.loads(result.output)
-    return resolved["data"] if command is _command else resolved
+def run(*args, options=standard):
+    """Invoke a command made of the arguments and options returned by ``options()`` on ``args``.
+
+    Returns the click result and the keyword arguments the command was called with.
+    """
+    received = {}
+
+    @click.command()
+    @add_options(options())
+    def command(**kwargs):
+        received.update(kwargs)
+
+    return CliRunner().invoke(command, list(args)), received
 
 
-@pytest.fixture
-def source_file(tmp_path):
-    path = tmp_path / "in.grib"
-    path.touch()
-    return path
+def received_by(*args, options=standard):
+    """Return the keyword arguments of the command invoked on ``args``, which must succeed."""
+    result, received = run(*args, options=options)
+    assert result.exit_code == 0, result.output
+    return received
+
+
+def help_text(options=standard):
+    return run("--help", options=options)[0].output
+
+
+# ---------------------------------------------------------------------------- helpers
 
 
 @pytest.mark.parametrize(
@@ -90,14 +125,14 @@ def test_split_csv(value, expected):
     assert split_csv(None, None, value) == expected
 
 
-def test_standard_args_usage():
-    result = _invoke(_command, "--help")
-    assert result.exit_code == 0
-    assert "[OPTIONS]\n" in result.output
-    for option in ("--source [NAME:]VALUE", "--target [NAME:]VALUE", "--profile"):
-        assert option in result.output
-    for removed in ("--source-file", "--source-request", "--target-file", "--target-options"):
-        assert removed not in result.output
+@pytest.mark.parametrize("value, expected", (("3", 3), ("-2", -2), ("0,2", [0, 2]), ("1:5:2", slice(1, 5, 2))))
+def test_parse_index(value, expected):
+    assert parse_index(value) == expected
+
+
+def test_parse_index_invalid():
+    with pytest.raises(click.BadParameter):
+        parse_index("x")
 
 
 @pytest.mark.parametrize(
@@ -109,296 +144,206 @@ def test_standard_args_usage():
     ),
 )
 def test_profile_option(args, expected):
-    @click.command()
-    @profile_option
-    def command(profile):
-        click.echo(json.dumps(profile))
+    assert received_by(*args, options=lambda: [profile_option]) == {"profile": expected}
 
-    result = _invoke(command, *args)
-    assert result.exit_code == 0, result.output
-    assert json.loads(result.output) == expected
+
+@pytest.mark.parametrize(
+    "args, expected",
+    (
+        ([], None),
+        (["-i", "3"], 3),
+        (["-i", "-1"], -1),
+        (["-i", "4,5,8"], [4, 5, 8]),
+        (["-i", "1:7"], slice(1, 7)),
+        (["-i", "::2"], slice(None, None, 2)),
+        (["--index", "2:"], slice(2, None)),
+    ),
+)
+def test_index_option(args, expected):
+    assert received_by(*args, options=lambda: [index_option]) == {"index": expected}
+
+
+@pytest.mark.parametrize("value", ("a", "1,a", "1:2:3:4", "1.5"))
+def test_index_option_invalid(value):
+    result, _ = run("--index", value, options=lambda: [index_option])
+    assert result.exit_code == 2
+    assert "Invalid value for '-i' / '--index'" in result.output
+
+
+# ---------------------------------------------------------------------------- usage
+
+
+def test_usage():
+    usage = help_text()
+    assert "[OPTIONS]\n" in usage
+    assert "-s, --source [NAME:]VALUE" in usage
+    assert "-t, --target [NAME:]VALUE" in usage
+    # click may wrap the help at hyphens, e.g. "earthkit-" / "data", so compare without whitespace
+    for text in (SOURCE_HELP, TARGET_HELP):
+        assert "".join(text.split()) in "".join(usage.split())
+
+
+def test_usage_named():
+    usage = help_text(named)
+    for option in ("--source-1 [NAME:]VALUE", "--source-2 [NAME:]VALUE", "-t, --target [NAME:]VALUE"):
+        assert option in usage
+    # only the default source and target have short flags
+    assert "-s," not in usage
+
+
+def test_usage_positional():
+    usage = help_text(positional)
+    assert "[OPTIONS] SOURCE_1 TARGET\n" in usage
+    assert "--source-2 [NAME:]VALUE" in usage
+    assert "--source-1" not in usage and "--target " not in usage
+
+
+@pytest.mark.parametrize("name", ("", "source-1", "1source"))
+@pytest.mark.parametrize("is_positional", (False, True))
+def test_invalid_name(name, is_positional):
+    with pytest.raises(ValueError):
+        source_options(name, positional=is_positional)
+
+
+# ---------------------------------------------------------------------------- sources and targets
 
 
 @pytest.mark.parametrize(
     "value, expected",
     (
-        (None, None),
-        ("3", 3),
-        ("-1", -1),
-        ("4,5,8", [4, 5, 8]),
-        ("1:7", slice(1, 7)),
-        ("::2", slice(None, None, 2)),
-        ("2:", slice(2, None)),
+        ("in.grib", call("file", "in.grib")),
+        ("file:in.grib", call("file", "in.grib")),
+        ("file:*.grib", call("file", "*.grib")),
+        # text before the first ':' that is not a valid name belongs to the path
+        ("./a:b.grib", call("file", "./a:b.grib")),
+        ("2020-01-01T00:00.grib", call("file", "2020-01-01T00:00.grib")),
+        (":in.grib", call("file", ":in.grib")),
+        # only the first ':' separates the name from the value
+        ("url:https://myhost.int/file.nc", call("url", "https://myhost.int/file.nc")),
+        ("dummy:", call("dummy")),
+        ('mars:{"param": "2t", "levtype": "sfc"}', call("mars", request={"param": "2t", "levtype": "sfc"})),
+        ('cds:{"dataset": "era5", "year": "2020"}', call("cds", "era5", request={"year": "2020"})),
+        (
+            'cds:[{"dataset": "era5", "year": "2020"}, {"dataset": "era5", "year": "2021"}]',
+            call("cds", "era5", request=[{"year": "2020"}, {"year": "2021"}]),
+        ),
     ),
 )
-def test_index_option(value, expected):
-    @click.command()
-    @index_option
-    def command(index):
-        click.echo(repr(index))
-
-    result = _invoke(command, *(["-i", value] if value is not None else []))
-    assert result.exit_code == 0, result.output
-    assert result.output.strip() == repr(expected)
+def test_source(value, expected):
+    assert received_by("--source", value, "--target", "out.nc")["source"] == expected
 
 
-@pytest.mark.parametrize("value", ("a", "1,a", "1:2:3:4", "1.5"))
-def test_index_option_invalid(value):
-    @click.command()
-    @index_option
-    def command(index): ...
-
-    result = _invoke(command, "--index", value)
-    assert result.exit_code == 2
-    assert "Invalid value for '-i' / '--index'" in result.output
-
-
-@pytest.mark.parametrize("value, expected", (("3", 3), ("-2", -2), ("0,2", [0, 2]), ("1:5:2", slice(1, 5, 2))))
-def test_parse_index(value, expected):
-    assert parse_index(value) == expected
-
-
-def test_parse_index_invalid():
-    with pytest.raises(click.BadParameter):
-        parse_index("x")
+@pytest.mark.parametrize(
+    "value, expected",
+    (
+        ("out.nc", Target(("file", "out.nc"))),
+        ("file:out.nc", Target(("file", "out.nc"))),
+        ('{"file": "out.grib", "append": true}', Target(("file",), {"file": "out.grib", "append": True})),
+        ('file:{"file": "out.grib", "append": true}', Target(("file",), {"file": "out.grib", "append": True})),
+        (
+            'zarr:{"xarray_to_zarr_kwargs": {"store": "out.zarr"}}',
+            Target(("zarr",), {"xarray_to_zarr_kwargs": {"store": "out.zarr"}}),
+        ),
+        ("dummy:", Target(("dummy",))),
+    ),
+)
+def test_target(value, expected):
+    assert received_by("--source", "in.grib", "--target", value)["target"] == expected
 
 
-def test_standard_args_short_flags(source_file, tmp_path):
-    target = tmp_path / "out.nc"
-    result = _invoke(_command, "-s", str(source_file), "-t", str(target))
-    assert result.exit_code == 0, result.output
-    assert json.loads(result.output)["data"][1] == [["file", str(target)], {}]
-
-
-def test_named_sources_have_no_short_flags():
-    usage = _invoke(_two_sources, "--help").output
-    assert "--source-1" in usage and "-s," not in usage
-
-
-def test_standard_args_stdio(earthkit_data):
-    @click.command()
-    @add_options([source_options(positional=True), target_options(positional=True)])
-    def command(source, target):
-        assert source[0] == ["stream", sys.stdin.buffer]
-        assert target.args == ("file", sys.stdout.buffer)
-        target.to_target("data")
-
-    result = CliRunner().invoke(command, ["-", "-"], input=b"GRIB")
-    assert result.exit_code == 0, result.output + repr(result.exception)
-    assert earthkit_data.written[0][1] == {"data": "data"}
-
-
-def test_standard_args_help_text():
-    # click may wrap the help at hyphens, e.g. "earthkit-" / "data", so compare without whitespace
-    usage = "".join(_invoke(_command, "--help").output.split())
-    for text in (SOURCE_HELP, TARGET_HELP):
-        assert "".join(text.split()) in usage
-
-
-def test_standard_args_files(source_file, tmp_path):
-    target = tmp_path / "out.nc"
-    result = _invoke(
-        _command, "--source", f"file:{source_file}", "--target", f"file:{target}", "--profile", "mars", "--keys", "a,b"
-    )
-    assert result.exit_code == 0, result.output
-    assert json.loads(result.output) == {
-        "data": [[["file", str(source_file)], {}], [["file", str(target)], {}]],
-        "profile": ["mars"],
-        "keys": ["a", "b"],
+def test_short_flags():
+    assert received_by("-s", "in.grib", "-t", "out.nc") == {
+        "source": call("file", "in.grib"),
+        "target": Target(("file", "out.nc")),
     }
 
 
-def _resolved_source(value, tmp_path):
-    return _resolved("--source", value, "--target", f"file:{tmp_path / 'out.nc'}")[0]
+def test_sources_are_merged():
+    received = received_by("--source", "in.grib", "--source", "url:https://myhost.int/file.nc", "--target", "o.nc")
+    assert received["source"] == call("multi", call("file", "in.grib"), call("url", "https://myhost.int/file.nc"))
 
 
-def _resolved_target(value, source_file):
-    return _resolved("--source", f"file:{source_file}", "--target", value)[1]
-
-
-def test_standard_args_source_glob(source_file, tmp_path):
-    assert _resolved_source(f"file:{tmp_path / '*.grib'}", tmp_path) == [["file", str(tmp_path / "*.grib")], {}]
-
-
-@pytest.mark.parametrize("prefix", ("", "file:"))
-def test_standard_args_default_file(source_file, tmp_path, prefix):
-    target = tmp_path / "out.nc"
-    resolved = _resolved("--source", f"{prefix}{source_file}", "--target", f"{prefix}{target}")
-    assert resolved == [[["file", str(source_file)], {}], [["file", str(target)], {}]]
-
-
-@pytest.mark.parametrize("name", ("a:b.grib", "2020-01-01T00:00.grib", ":in.grib"))
-def test_standard_args_default_file_with_colon(tmp_path, name):
-    # Text before the first ':' that is not a valid name, e.g. '/tmp/.../a', belongs to the path
-    path = tmp_path / name
-    path.touch()
-    assert _resolved_source(str(path), tmp_path) == [["file", str(path)], {}]
-
-
-def test_standard_args_default_file_json_target(source_file, tmp_path):
-    options = {"file": str(tmp_path / "out.grib"), "append": True}
-    assert _resolved_target(json.dumps(options), source_file) == [["file"], options]
-
-
-def test_standard_args_url_source(tmp_path):
-    # Only the first ':' separates the name from the value
-    resolved = _resolved_source("url:https://myhost.int/file.nc", tmp_path)
-    assert resolved == [["url", "https://myhost.int/file.nc"], {}]
-
-
-def test_standard_args_name_only(source_file, tmp_path):
-    assert _resolved_source("dummy:", tmp_path) == [["dummy"], {}]
-    assert _resolved_target("dummy:", source_file) == [["dummy"], {}]
-
-
-def test_standard_args_request_with_dataset(tmp_path):
-    request = {"variable": ["2m_temperature"], "year": "2020"}
-    resolved = _resolved_source("cds:" + json.dumps({"dataset": "reanalysis-era5-single-levels", **request}), tmp_path)
-    assert resolved == [["cds", "reanalysis-era5-single-levels"], {"request": request}]
-
-
-def test_standard_args_request_without_dataset(tmp_path):
-    request = {"param": "2t", "levtype": "sfc"}
-    assert _resolved_source("mars:" + json.dumps(request), tmp_path) == [["mars"], {"request": request}]
-
-
-def test_standard_args_request_list_with_dataset(tmp_path):
-    requests = [{"dataset": "d", "year": "2020"}, {"dataset": "d", "year": "2021"}]
-    resolved = _resolved_source("cds:" + json.dumps(requests), tmp_path)
-    assert resolved == [["cds", "d"], {"request": [{"year": "2020"}, {"year": "2021"}]}]
-
-
-def test_standard_args_file_target_with_options(source_file, tmp_path):
-    options = {"file": str(tmp_path / "out.grib"), "append": True}
-    assert _resolved_target("file:" + json.dumps(options), source_file) == [["file"], options]
-
-
-def test_standard_args_other_target(source_file, tmp_path):
-    options = {"xarray_to_zarr_kwargs": {"store": str(tmp_path / "out.zarr")}}
-    assert _resolved_target("zarr:" + json.dumps(options), source_file) == [["zarr"], options]
-
-
-def test_standard_args_two_sources(source_file, tmp_path):
-    usage = _invoke(_two_sources, "--help").output
-    for option in ("--source-1 [NAME:]VALUE", "--source-2 [NAME:]VALUE", "--target [NAME:]VALUE"):
-        assert option in usage
-
-    request = {"dataset": "reanalysis-era5-single-levels", "year": "2020"}
-    resolved = _resolved(
-        "--source-1",
-        f"file:{source_file}",
-        "--source-2",
-        "cds:" + json.dumps(request),
-        "--target",
-        f"file:{tmp_path / 'out.nc'}",
-        command=_two_sources,
+def test_named():
+    received = received_by(
+        "--source-1", "in.grib", "--source-2", 'cds:{"dataset": "era5", "year": "2020"}', "-t", "out.nc", options=named
     )
-    assert resolved == [
-        [["file", str(source_file)], {}],
-        [["cds", "reanalysis-era5-single-levels"], {"request": {"year": "2020"}}],
-        [["file", str(tmp_path / "out.nc")], {}],
-    ]
+    assert received == {
+        "source_1": call("file", "in.grib"),
+        "source_2": call("cds", "era5", request={"year": "2020"}),
+        "target": Target(("file", "out.nc")),
+    }
+
+
+def test_positional():
+    received = received_by("in.grib", "in.grib", "zarr:{}", "--source-2", "in.grib", options=positional)
+    assert received == {
+        "source_1": call("multi", call("file", "in.grib"), call("file", "in.grib")),
+        "source_2": call("file", "in.grib"),
+        "target": Target(("zarr",), {}),
+    }
+
+
+def test_stdio():
+    @click.command()
+    @add_options([source_options(positional=True), target_options(positional=True)])
+    def command(source, target):
+        # stdin and stdout are only replaced by the runner while the command runs
+        assert source == call("stream", sys.stdin.buffer)
+        assert target == Target(("file", sys.stdout.buffer))
+
+    result = CliRunner().invoke(command, ["-", "-"])
+    assert result.exit_code == 0, result.output + repr(result.exception)
 
 
 @pytest.mark.parametrize(
-    "args, message",
+    "options, args, message",
     (
-        (["--target", "file:{tmp}/out.nc"], "Missing option '-s' / '--source'"),
-        (["--source", "file:{src}"], "Missing option '-t' / '--target'"),
-        (["--source", "{tmp}/missing.grib", "--target", "{tmp}/o.nc"], "does not exist"),
-        (["--source", "{src}", "--target", "{tmp}"], "is a directory"),
-        (["--source", "file:{tmp}/missing.grib", "--target", "file:{tmp}/o.nc"], "does not exist"),
-        (["--source", "file:{src}", "--target", "file:{tmp}"], "is a directory"),
-        (["--source", "file:{src}", "--target", 'file:{"file": "{tmp}"}'], "is a directory"),
-        (["--source-file", "{src}", "--target", "file:{tmp}/o.nc"], "No such option"),
-        (["--source", "file:{src}", "--target-file", "{tmp}/o.nc"], "No such option"),
-        (["--source", 'mars:{"param": ', "--target", "file:{tmp}/o.nc"], "Invalid JSON"),
-        (["--source", "mars:[1, 2]", "--target", "file:{tmp}/o.nc"], "Expected a JSON object or a list of objects"),
-        (["--source", "file:{src}", "--target", 'zarr:[{"a": 1}]'], "Expected a JSON object"),
-        (["--source", 'cds:[{"dataset": "a"}, {"dataset": "b"}]', "--target", "file:{tmp}/o.nc"], "same 'dataset'"),
-        (["--source", 'cds:[{"dataset": "a"}, {"year": "2020"}]', "--target", "file:{tmp}/o.nc"], "same 'dataset'"),
+        (standard, ["--target", "out.nc"], "Missing option '-s' / '--source'"),
+        (standard, ["--source", "in.grib"], "Missing option '-t' / '--target'"),
+        (standard, ["--source", "missing.grib", "--target", "out.nc"], "does not exist"),
+        (standard, ["--source", "file:missing.grib", "--target", "out.nc"], "does not exist"),
+        (standard, ["--source", "in.grib", "--target", "."], "is a directory"),
+        (standard, ["--source", "in.grib", "--target", "file:."], "is a directory"),
+        (standard, ["--source", "in.grib", "--target", 'file:{"file": "."}'], "is a directory"),
+        (standard, ["--source-file", "in.grib", "--target", "out.nc"], "No such option"),
+        (standard, ["--source", "in.grib", "--target-file", "out.nc"], "No such option"),
+        (standard, ["--source", 'mars:{"param": ', "--target", "out.nc"], "Invalid JSON"),
+        (standard, ["--source", "mars:[1, 2]", "--target", "out.nc"], "Expected a JSON object or a list of objects"),
+        (standard, ["--source", "in.grib", "--target", 'zarr:[{"a": 1}]'], "Expected a JSON object"),
+        (standard, ["--source", 'cds:[{"dataset": "a"}, {"dataset": "b"}]', "-t", "out.nc"], "same 'dataset'"),
+        (standard, ["--source", 'cds:[{"dataset": "a"}, {"year": "2020"}]', "-t", "out.nc"], "same 'dataset'"),
+        (positional, ["--source-2", "in.grib"], "Missing argument 'SOURCE_1'"),
+        # a single value is taken by TARGET
+        (positional, ["in.grib", "--source-2", "in.grib"], "Missing argument 'SOURCE_1'"),
+        (positional, ["missing.grib", "out.nc", "--source-2", "in.grib"], "Invalid value for 'SOURCE_1'"),
     ),
 )
-def test_standard_args_invalid(source_file, tmp_path, args, message):
-    args = [a.replace("{tmp}", str(tmp_path)).replace("{src}", str(source_file)) for a in args]
-    result = _invoke(_command, *args)
+def test_invalid(options, args, message):
+    result, received = run(*args, options=options)
     assert result.exit_code == 2, result.output
     assert message in result.output
+    assert received == {}
 
 
-@click.command()
-@add_options([source_options("source_1", positional=True), source_options("source_2"), target_options(positional=True)])
-def _positional(source_1, source_2, target):
-    click.echo(_resolved_json(source_1, source_2, target))
+# ---------------------------------------------------------------------------- earthkit-data
 
 
-def test_standard_args_positional(source_file, tmp_path):
-    usage = _invoke(_positional, "--help").output
-    assert "[OPTIONS] SOURCE_1 TARGET\n" in usage
-    assert "--source-2 [NAME:]VALUE" in usage
-    assert "--source-1" not in usage and "--target " not in usage
-
-    request = {"dataset": "d", "year": "2020"}
-    resolved = _resolved(
-        source_file,
-        "zarr:{}",
-        "--source-2",
-        "cds:" + json.dumps(request),
-        command=_positional,
-    )
-    assert resolved == [
-        [["file", str(source_file)], {}],
-        [["cds", "d"], {"request": {"year": "2020"}}],
-        [["zarr"], {}],
-    ]
-
-
-def test_standard_args_positional_merges_sources(source_file):
-    resolved = _resolved(source_file, source_file, "out.nc", "--source-2", source_file, command=_positional)
-    assert resolved[0] == [["multi", [["file", str(source_file)], {}], [["file", str(source_file)], {}]], {}]
-    assert resolved[2] == [["file", "out.nc"], {}]
-
-
-@pytest.mark.parametrize(
-    "args, message",
-    (
-        (["--source-2", "{src}"], "Missing argument 'SOURCE_1'"),
-        (["{src}", "--source-2", "{src}"], "Missing argument 'SOURCE_1'"),
-        (["{tmp}/missing.grib", "{tmp}/o.nc", "--source-2", "{src}"], "Invalid value for 'SOURCE_1'"),
-    ),
-)
-def test_standard_args_positional_invalid(source_file, tmp_path, args, message):
-    args = [a.replace("{tmp}", str(tmp_path)).replace("{src}", str(source_file)) for a in args]
-    result = _invoke(_positional, *args)
-    assert result.exit_code == 2, result.output
-    assert message in result.output
-
-
-def test_standard_args_merges_sources(source_file):
-    resolved = _resolved("--source", source_file, "--source", "url:https://myhost.int/file.nc", "--target", "o.nc")
-    assert resolved[0] == [
-        ["multi", [["file", str(source_file)], {}], [["url", "https://myhost.int/file.nc"], {}]],
-        {},
-    ]
-
-
-def test_target_calls_earthkit_data(earthkit_data):
+def test_target_to_target(ekd):
     Target(("file", "out.grib"), {"append": False}).to_target("data", append=True)
-    assert earthkit_data.written == [(("file", "out.grib"), {"data": "data", "append": True})]
+    assert ekd.written == [call("file", "out.grib", data="data", append=True)]
 
 
-def test_missing_earthkit_data(monkeypatch, source_file):
+# _earthkit_data is the function imported above, not the fake the ekd fixture puts in standard_args
+
+
+def test_earthkit_data():
+    assert _earthkit_data() is pytest.importorskip("earthkit.data")
+
+
+def test_missing_earthkit_data(monkeypatch):
     monkeypatch.setitem(sys.modules, "earthkit.data", None)
-    result = _invoke(_command, "--source", source_file, "--target", "o.nc")
-    assert result.exit_code == 1
-    assert "earthkit-data is required" in result.output
-
-
-@pytest.mark.parametrize("name", ("", "source-1", "1source"))
-@pytest.mark.parametrize("positional", (False, True))
-def test_source_options_invalid_name(name, positional):
-    with pytest.raises(ValueError):
-        source_options(name, positional=positional)
+    with pytest.raises(click.ClickException, match="earthkit-data is required"):
+        _earthkit_data()
 
 
 def test_standard_args_is_not_a_command_module():
