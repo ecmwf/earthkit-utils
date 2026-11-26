@@ -12,7 +12,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 import xarray as xr
-from earthkit.data import SimpleFieldList
 
 from earthkit.utils.decorators import _dispatch as dispatch_module
 from earthkit.utils.decorators._dispatch import (
@@ -31,7 +30,33 @@ from earthkit.utils.decorators._dispatch import (
 TEST_NUMPY_ARRAY = np.array([1, 2, 3, 4, 5])
 TEST_XARRAY_DATAARRAY = xr.DataArray(TEST_NUMPY_ARRAY, name="test", dims=["x"], coords={"x": [0, 1, 2, 3, 4]})
 TEST_XARRAY_DATASET = xr.Dataset({"test": TEST_XARRAY_DATAARRAY})
-TEST_FIELDLIST = SimpleFieldList(TEST_NUMPY_ARRAY)
+
+
+def _earthkit_data_modules():
+    return {name for name in sys.modules if name == "earthkit.data" or name.startswith("earthkit.data.")}
+
+
+@pytest.fixture(scope="module")
+def fieldlist():
+    """A FieldList, with earthkit.data unloaded again after the tests of this module if it was loaded here.
+
+    earthkit.data is imported here rather than at the top of the module, as test modules are all imported
+    before any test runs, and other test modules rely on earthkit.data not being loaded,
+    e.g. tests/test_cli_standard_args.py replaces it with a stub in ``sys.modules``.
+    """
+    import earthkit
+
+    modules_before = _earthkit_data_modules()
+    had_attribute = hasattr(earthkit, "data")
+
+    from earthkit.data import SimpleFieldList
+
+    yield SimpleFieldList(TEST_NUMPY_ARRAY)
+
+    for name in _earthkit_data_modules() - modules_before:
+        del sys.modules[name]
+    if not had_attribute and hasattr(earthkit, "data"):
+        del earthkit.data
 
 
 class TestIsModuleLoaded:
@@ -83,9 +108,9 @@ class TestIsXarray:
 class TestIsFieldlist:
     """Test the _is_fieldlist helper function."""
 
-    def test_fieldlist(self):
+    def test_fieldlist(self, fieldlist):
         """Test that FieldList is correctly identified."""
-        assert _is_fieldlist(TEST_FIELDLIST)
+        assert _is_fieldlist(fieldlist)
 
     def test_not_fieldlist_when_module_not_loaded(self):
         """Test that objects are not identified as FieldList when earthkit.data is not loaded."""
@@ -144,10 +169,10 @@ class TestXArrayDispatcher:
 class TestFieldListDispatcher:
     """Test the FieldListDispatcher class."""
 
-    def test_match_with_fieldlist(self):
+    def test_match_with_fieldlist(self, fieldlist):
         """Test that FieldListDispatcher matches FieldList objects."""
         dispatcher = FieldListDispatcher()
-        assert dispatcher.match(TEST_FIELDLIST)
+        assert dispatcher.match(fieldlist)
 
     def test_no_match_with_regular_objects(self):
         """Test that FieldListDispatcher does not match regular objects."""
