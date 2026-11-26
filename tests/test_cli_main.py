@@ -56,8 +56,20 @@ def command_modules(tmp_path, monkeypatch):
         sys.modules.pop(module, None)
 
 
+def _runner():
+    """Return a CliRunner capturing stderr separately from stdout, so ``result.stderr`` can be checked.
+
+    This is the default from click 8.2, which removed the ``mix_stderr`` argument; before 8.2 stderr is mixed into
+    stdout unless ``mix_stderr=False`` is given.
+    """
+    try:
+        return CliRunner(mix_stderr=False)
+    except TypeError:
+        return CliRunner()
+
+
 def _invoke(*args):
-    return CliRunner().invoke(earthkit, list(args), prog_name="earthkit")
+    return _runner().invoke(earthkit, list(args), prog_name="earthkit")
 
 
 def test_broken_module_does_not_break_other_commands(command_modules):
