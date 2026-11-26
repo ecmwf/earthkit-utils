@@ -32,8 +32,8 @@ interchangeably:
 
 **Graceful degradation**
 
-If a unit string is not recognised by Pint, earthkit-utils stores it as an
-opaque ``StrUnits`` object rather than raising an error. Conversion between two
+If a unit string is not recognised by Pint, earthkit-utils keeps it as an
+opaque string (``Units.to_pint()`` returns ``None``) rather than raising an error. Conversion between two
 such unrecognised units is skipped and the original data is returned unchanged,
 with a warning logged. This ensures that pipelines handling heterogeneous or
 non-standard metadata remain robust.
