@@ -9,6 +9,7 @@
 import builtins
 import copy
 import sys
+import warnings
 from typing import Tuple
 from unittest.mock import patch
 
@@ -146,7 +147,8 @@ class TestXarrayUfunc:
         def add_one(x):
             return x + 1
 
-        result = xarray_ufunc(add_one, data, xarray_ufunc_kwargs={"keep_attrs": False})
+        with pytest.warns(DeprecationWarning, match="keep_attrs"):
+            result = xarray_ufunc(add_one, data, xarray_ufunc_kwargs={"keep_attrs": False})
 
         assert "unit" not in result.attrs
 
@@ -157,11 +159,12 @@ class TestXarrayUfunc:
         def total(x):
             return x.sum(axis=-1)
 
-        result = xarray_ufunc(
-            total,
-            da,
-            xarray_ufunc_kwargs={"input_core_dims": [["b"]], "output_core_dims": [[]], "output_dtypes": [float]},
-        )
+        with pytest.warns(DeprecationWarning, match="input_core_dims"):
+            result = xarray_ufunc(
+                total,
+                da,
+                xarray_ufunc_kwargs={"input_core_dims": [["b"]], "output_core_dims": [[]], "output_dtypes": [float]},
+            )
 
         assert result.dims == ("a",)
         np.testing.assert_array_equal(result.values, [3.0, 12.0])
@@ -174,23 +177,95 @@ class TestXarrayUfunc:
         def add_one(x):
             return x + 1
 
-        result = xarray_ufunc(
-            add_one,
-            data,
-            xarray_ufunc_kwargs={
-                "parameters": "wind_speed",
-                "keep_attrs": False,
-                "xarray_apply_ufunc_kwargs": {"keep_attrs": True},
-            },
-        )
+        with pytest.warns(DeprecationWarning, match="keep_attrs"):
+            result = xarray_ufunc(
+                add_one,
+                data,
+                xarray_ufunc_kwargs={
+                    "parameters": "wind_speed",
+                    "keep_attrs": False,
+                    "xarray_apply_ufunc_kwargs": {"keep_attrs": True},
+                },
+            )
 
         assert result.name == "ws"
         assert result.attrs["unit"] == "meters"
 
     def test_ufunc_does_not_modify_xarray_ufunc_kwargs(self):
         opts = {"parameters": "wind_speed", "keep_attrs": False, "xarray_apply_ufunc_kwargs": {}}
-        xarray_ufunc(lambda x: x + 1, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs=opts)
+        with pytest.warns(DeprecationWarning, match="keep_attrs"):
+            xarray_ufunc(lambda x: x + 1, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs=opts)
         assert opts == {"parameters": "wind_speed", "keep_attrs": False, "xarray_apply_ufunc_kwargs": {}}
+
+    def test_ufunc_legacy_warning_names_keys(self):
+        """The warning lists the legacy keys (sorted) and names the replacement option."""
+
+        def add_one(x):
+            return x + 1
+
+        with pytest.warns(DeprecationWarning) as record:
+            xarray_ufunc(
+                add_one,
+                TEST_XARRAY_DATAARRAY,
+                xarray_ufunc_kwargs={"output_dtypes": [float], "keep_attrs": False},
+            )
+
+        msg = str(record[0].message)
+        assert msg.startswith("earthkit deprecated:")
+        assert "keep_attrs" in msg
+        assert "output_dtypes" in msg
+        # the keys are listed in sorted order
+        assert msg.index("keep_attrs") < msg.index("output_dtypes")
+        assert "xarray_apply_ufunc_kwargs" in msg
+
+    def test_ufunc_legacy_multiple_keys_warn_once(self):
+        """Several legacy keys in one call produce exactly one warning."""
+
+        def add_one(x):
+            return x + 1
+
+        with pytest.warns(DeprecationWarning) as record:
+            xarray_ufunc(
+                add_one,
+                TEST_XARRAY_DATAARRAY,
+                xarray_ufunc_kwargs={"keep_attrs": False, "output_dtypes": [float], "dask": "allowed"},
+            )
+
+        assert len(record) == 1
+
+    def test_ufunc_legacy_warning_points_at_caller(self):
+        """stacklevel=2 makes the warning point at the caller, ie. this test file."""
+
+        def add_one(x):
+            return x + 1
+
+        with pytest.warns(DeprecationWarning) as record:
+            xarray_ufunc(add_one, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs={"keep_attrs": False})
+
+        assert record[0].filename == __file__
+
+    @pytest.mark.parametrize(
+        "opts",
+        [
+            None,
+            {},
+            {"xarray_apply_ufunc_kwargs": {"keep_attrs": False}},
+            {"parameters": "wind_speed"},
+            {"parameters": "wind_speed", "attrs": {"foo": "bar"}},
+            {"parameter_definitions": None},
+        ],
+    )
+    def test_ufunc_no_warning_without_legacy_keys(self, opts):
+        """None, empty and own options do not warn; any DeprecationWarning becomes an error here."""
+
+        def add_one(x):
+            return x + 1
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            result = xarray_ufunc(add_one, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs=opts)
+
+        assert isinstance(result, xr.DataArray)
 
     def test_ufunc_with_multiple_outputs(self):
         """Test xarray ufunc with function returning multiple outputs."""
@@ -371,11 +446,12 @@ class TestXarrayUfuncParametersAndAttrs:
     def test_old_variables_key_no_longer_sets_metadata(self):
         """The removed "variables" key is no longer an option.
 
-        It is forwarded to :func:`xarray.apply_ufunc` as an unknown keyword, which raises
-        a TypeError.
+        It is treated as a legacy key (deprecated warning) and forwarded to
+        :func:`xarray.apply_ufunc` as an unknown keyword, which raises a TypeError.
         """
-        with pytest.raises(TypeError, match="unexpected keyword argument 'variables'"):
-            xarray_ufunc(self._add_one, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs={"variables": "wind_speed"})
+        with pytest.warns(DeprecationWarning, match="variables"):
+            with pytest.raises(TypeError, match="unexpected keyword argument 'variables'"):
+                xarray_ufunc(self._add_one, TEST_XARRAY_DATAARRAY, xarray_ufunc_kwargs={"variables": "wind_speed"})
 
 
 class TestXarrayUfuncParameterDefinitions:

@@ -8,6 +8,7 @@
 #
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
@@ -196,7 +197,8 @@ def xarray_ufunc(
 
         For backward compatibility, any other key is treated as a keyword argument for
         :func:`xarray.apply_ufunc` (e.g. ``{"input_core_dims": ..., "output_dtypes": ...}``), as
-        if it had been given in "xarray_apply_ufunc_kwargs". Entries in
+        if it had been given in "xarray_apply_ufunc_kwargs". This usage is deprecated: it emits a
+        :class:`DeprecationWarning` and may be removed in a future version. Entries in
         "xarray_apply_ufunc_kwargs" take precedence. The dict is not modified.
     **kwargs
         Keyword arguments passed to ``func``.
@@ -231,8 +233,16 @@ def xarray_ufunc(
     # Backward compatibility: xarray_ufunc_kwargs used to be passed directly to xarray.apply_ufunc
     # (e.g. {"input_core_dims": ..., "output_dtypes": ...}). Any key that is not one of our own
     # options is therefore still forwarded to xarray.apply_ufunc. Explicit entries in
-    # "xarray_apply_ufunc_kwargs" take precedence.
+    # "xarray_apply_ufunc_kwargs" take precedence. This usage is deprecated.
     legacy_apply_ufunc_kwargs = {k: v for k, v in xarray_ufunc_kwargs.items() if k not in _XARRAY_UFUNC_OPTIONS}
+    if legacy_apply_ufunc_kwargs:
+        warnings.warn(
+            f"earthkit deprecated: passing the legacy key(s) {sorted(legacy_apply_ufunc_kwargs)} directly in "
+            '"xarray_ufunc_kwargs" may be removed in a future version. Pass them in '
+            '"xarray_apply_ufunc_kwargs" instead.',
+            DeprecationWarning,
+            stacklevel=2,
+        )
     xarray_apply_ufunc_kwargs = {**legacy_apply_ufunc_kwargs, **xarray_apply_ufunc_kwargs}
 
     # Caller-supplied parameter definitions ("parameter_definitions"): names in "parameters" are
