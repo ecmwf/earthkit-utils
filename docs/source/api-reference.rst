@@ -21,8 +21,15 @@ Submodules
 
 - :doc:`autodocs/earthkit.utils.constants`
 
+Command line interface
+----------------------
+
+- :doc:`autodocs/earthkit.cli.main`
+- :doc:`autodocs/earthkit.cli.standard_args`
+
 .. toctree::
    :maxdepth: 2
    :hidden:
 
    earthkit.utils <autodocs/earthkit.utils>
+   earthkit.cli <autodocs/earthkit.cli>
