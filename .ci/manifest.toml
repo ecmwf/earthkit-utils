@@ -26,3 +26,27 @@ full-history = true
 name = "earthkit-utils"
 repo = "ecmwf/earthkit-utils"
 visibility = "public"
+
+[[trigger-downstream]]
+ref = "develop"
+repo = "ecmwf/earthkit-data"
+
+[[trigger-downstream]]
+ref = "develop"
+repo = "ecmwf/earthkit-transforms"
+
+[[trigger-downstream]]
+ref = "main"
+repo = "ecmwf/earthkit-workflows"
+
+[[trigger-downstream]]
+ref = "develop"
+repo = "ecmwf/earthkit-hydro"
+
+[[trigger-downstream]]
+ref = "develop"
+repo = "ecmwf/earthkit-meteo"
+
+[[trigger-downstream]]
+ref = "develop"
+repo = "ecmwf/earthkit"
